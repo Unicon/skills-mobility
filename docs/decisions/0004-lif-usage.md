@@ -1,6 +1,6 @@
 # 0004. LIF Component Usage in the Initial POC
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-10
 
 ## Context
@@ -60,9 +60,9 @@ Decision categories used below:
 
 ## Translation Notes
 
-- The initially proposed architecture did not explicitly include a Translator service. However, if the LLM Decision Service is going to be proposing data mappings for data that needs to be translated, this those mappings need to be executed somewhere.
+- The initially proposed architecture did not explicitly include a Translator service. However, if the LLM Decision Service is going to be proposing data mappings for data that needs to be translated, then those mappings need to be executed somewhere.
 - The Translator and MDR should be treated as a paired decision, not independent ones.
-- If JSONata translation instructions make the most sense for this project, then the LIF Translator and MDR can act as an existing solution to store and execute those instructions.
+- ADR 0005 makes JSONata the proposed primary mapping language for this work, which aligns well with using the LIF Translator and MDR.
 - If AI-generated translation instructions become part of the design, the MDR is the most natural place to store and manage them.
 - If that happens, translation generation may deserve its own dedicated AI-assisted service instead of being bundled into one general-purpose LLM decision service.
 - The current broken MDR model-import path is a known adoption risk and may need to be fixed early.
@@ -93,7 +93,6 @@ The orchestration choice is still open. Based on current official documentation 
 
 - Should the project's canonical learner and credential model be LIF-native, LIF-compatible, or only LIF-inspired?
 - Should routing, translation generation, and destination selection be handled by one LLM decision service or by multiple specialized AI-assisted services?
-- If we adopt the Translator and MDR, do we also want to standardize on JSONata for transformation instructions?
 - Does the proposed Context Builder overlap enough with the LIF Query Planner that they should be unified?
 - Is AWS Step Functions the best initial orchestrator, or do Dagster or Airflow offer enough strategic upside to justify their additional platform shape?
 - If an external orchestrator is chosen, do we want a stable abstraction layer in front of it from the start?
