@@ -1,0 +1,112 @@
+{
+  "courses": [
+    {
+      "id": "1001",
+      "name": "Introduction to Data Analysis",
+      "course_code": "ITD-101",
+      "workflow_state": "available"
+    }
+  ],
+  "students": [
+    {
+      "id": "2001",
+      "name": "Allison Hill",
+      "sortable_name": "Hill, Allison",
+      "login_id": "allison.hill"
+    }
+  ],
+  "enrollments": [
+    {
+      "id": "9001",
+      "course_id": "1001",
+      "user_id": "2001",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active"
+    }
+  ],
+  "modules": [
+    {
+      "id": "5001",
+      "course_id": "1001",
+      "name": "Module 1: Foundations of Data Analysis",
+      "position": 1,
+      "items": [
+        {
+          "id": "500101",
+          "title": "Course Syllabus",
+          "type": "Page",
+          "content_id": "syllabus"
+        },
+        {
+          "id": "500102",
+          "title": "Final Data Analysis Project",
+          "type": "Assignment",
+          "content_id": "4001"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "course_id": "1001",
+      "url": "syllabus",
+      "title": "Course Syllabus",
+      "body": "This course introduces the foundations of Data Analysis, culminating in a final project assessed against the Data Analysis outcome."
+    }
+  ],
+  "assignments": [
+    {
+      "id": "4001",
+      "course_id": "1001",
+      "name": "Final Data Analysis Project",
+      "description": "Apply data analysis to a provided real-world dataset and present findings.",
+      "points_possible": 100.0,
+      "due_at": "2026-02-13T00:37:51.680872Z"
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "3001",
+      "title": "Data Analysis",
+      "display_name": "Apply core concepts and techniques in data analysis",
+      "description": "Learner can independently apply data analysis to analyze a problem and draw valid, well-supported conclusions.",
+      "mastery_points": 3.0,
+      "points_possible": 5.0
+    }
+  ],
+  "outcome_results": [
+    {
+      "id": "7001",
+      "course_id": "1001",
+      "user_id": "2001",
+      "outcome_id": "3001",
+      "assignment_id": "4001",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-04-24T10:46:01.998203Z"
+    }
+  ],
+  "outcome_alignments": [
+    {
+      "id": "8001",
+      "course_id": "1001",
+      "outcome_id": "3001",
+      "assignment_id": "4001",
+      "name": "Final Data Analysis Project"
+    }
+  ],
+  "submissions": [
+    {
+      "id": "6001",
+      "course_id": "1001",
+      "assignment_id": "4001",
+      "user_id": "2001",
+      "score": 95.0,
+      "grade": "A",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-04T20:23:57.026144Z",
+      "graded_at": "2026-04-24T10:46:01.998203Z"
+    }
+  ]
+}

@@ -71,7 +71,7 @@ skills-mobility/
 
 The following decisions are intentionally deferred and should be captured in follow-up ADRs if they become material to delivery:
 
-* Python workspace and packaging tooling
+* Python workspace and packaging tooling — **provisionally exercised** by the first code landing; see [Implementation Notes](#implementation-notes-2026-06-10).
 * JavaScript/TypeScript workspace tooling
 * Contract generation and schema ownership across Python and TypeScript
 * CI checks used to enforce dependency boundaries
@@ -134,6 +134,65 @@ This decision should be revisited if one or more of the following occur:
 * Service boundaries become difficult to enforce with conventional linting, CI, and code review
 * The number of deployables or independently reusable components grows enough that build, test, or ownership boundaries become hard to manage
 * The project needs stricter architectural enforcement than the monorepo conventions provide
+
+## Implementation Notes (2026-06-10)
+
+The first code landed with the Mock Event Producer. These choices are
+**provisional** — they exercise the structure above without re-opening the
+decision, and may be moved if the lead prefers a different direction.
+
+### Directories instantiated
+
+The placeholder directories from the layout above now have their first real
+occupants:
+
+```
+skills-mobility/
+  apps/mock-lms/        # mock-lms-ui: React + TS + Vite demo console
+  libs/events/          # skills-mobility-events: shared event contracts (Pydantic)
+  services/mock-lms/    # mock-lms: Canvas-style mock LMS APIs + event emission + SSE
+  pyproject.toml        # uv workspace root (virtual; not a package)
+  .python-version       # 3.12 (per ADR-0003)
+```
+
+`packages/` and `infra/` remain unpopulated until generated TS contracts and CDK
+land (per the Mock Event Producer design's build order). The React app uses
+npm + Vite (not part of the uv workspace); a JS/TS workspace tool remains a
+deferred decision should a second JS package appear.
+
+### Python workspace tooling (provisional): uv workspace
+
+This addresses the deferred "Python workspace and packaging tooling" item.
+
+- A **uv workspace** is declared at the repo root (`[tool.uv.workspace]` with
+  members `libs/*` and `services/*`). The root is virtual (`package = false`).
+- Each member is a standalone package with its own `pyproject.toml` and a
+  `src/` layout, built with **hatchling**.
+- Cross-package dependencies use uv workspace sources (e.g. `mock-lms` depends
+  on `skills-mobility-events` via `{ workspace = true }`), so the dependency
+  rules above (`services/` may depend on `libs/`) are expressed in metadata, not
+  just convention.
+- Shared dev tooling (pytest, ruff, mypy, coverage — per CLAUDE.md) is pinned in
+  the root `[dependency-groups].dev` and configured once at the root.
+- `uv.lock` and `.python-version` are committed; `.venv/` and tool caches are
+  gitignored.
+
+Common commands:
+
+```bash
+uv sync --all-packages          # create env + install all members
+uv run pytest                   # run the whole suite
+uv run ruff check .             # lint
+uv run mypy libs/*/src services/*/src   # type-check
+uv run mock-lms                 # run the service locally
+```
+
+Why uv: single fast tool for venv + resolution + workspace, first-class
+multi-package monorepo support, and a committed lockfile for reproducibility —
+which keeps the "lightweight POC" intent while still enforcing package
+boundaries. Alternatives (Poetry, Hatch, Pants/uv-less pip) were not separately
+evaluated in an ADR; if the lead wants a different tool, the per-package
+`pyproject.toml` files port with minimal change.
 
 ## Alternatives Considered
 

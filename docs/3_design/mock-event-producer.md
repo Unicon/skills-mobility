@@ -134,12 +134,23 @@ The POC uses **CloudFront-layer auth** (requirements §7): the UI logs in direct
 
 The service reads role from a single `get_current_role()` dependency that, for the POC, resolves the role from the CloudFront-injected claim/header. Keeping role resolution in one dependency means a hypothetical future issuer change (e.g. Cognito) would be contained to that dependency rather than spread across handlers — but that is not in scope; the implemented path is CloudFront-layer auth.
 
-## 8. Persistence
+## 8. Data, persistence & repeatability
 
-- **Scenario store:** seeded from version-controlled fixtures at startup; in-memory by default, SQLite optional for convenience. Read-only at runtime (FR-A1).
-- **Emission log:** in-memory ring (live feed) + optional DynamoDB/SQLite for replay. DynamoDB matches the AWS diagram's store for the broader system; for the POC, SQLite/in-memory is sufficient.
+Mock data follows a **generate → capture → commit → replay** model:
 
-Generated artifacts (`audit-output/`, `execution-traces/`, `logs/`, `*.db`) stay gitignored per CLAUDE.md; canonical scenario fixtures are committed.
+1. **Generate** — a seeded Faker generator (`mock_lms/generators/`) builds a realistic `Catalog` + `Scenario` set. Entity ids are deterministic sequences (course `1001..`, learner `2001..`, outcome `3001..`, assignment `4001..`) so the Canvas-style APIs and scenario references stay stable and eyeball-able; content (names, titles, dates, grades) is Faker-driven and seeded. The primary learner+course is guaranteed a happy path (mastered outcome result + graded submission) so the canonical scenarios always demonstrate mastery regardless of seed. No wall-clock is used, so a given seed + Faker version yields byte-identical output.
+2. **Capture** — `mock-lms-generate` serializes the result to the committed `fixtures/catalog.json` + `fixtures/scenarios.json` (the canonical snapshot).
+3. **Replay** — at runtime the service loads the frozen snapshot read-only (FR-A1); it never runs the generator. API determinism therefore depends on the file being frozen, not on the generator being deterministic. `MOCK_LMS_FIXTURES_DIR` can point at a larger generated set (e.g. gitignored `generated-fixtures/`) for richer demos.
+
+This yields **two distinct repeatability guarantees**:
+
+- *Source data* — identical request → identical response, every run (frozen snapshot).
+- *Emitted events* — each run mints fresh `event_id`/`emission_id`/`correlation_id` over stable business keys, so a scenario re-runs cleanly all demo long while every event still traces back to the same source data.
+
+- **Scenario store:** built from the snapshot at startup; in-memory, read-only.
+- **Emission log:** in-memory ring (live feed) + optional DynamoDB/SQLite for replay. DynamoDB matches the AWS diagram's store for the broader system; for the POC, in-memory is sufficient.
+
+Generated artifacts (`audit-output/`, `execution-traces/`, `logs/`, `*.db`, `generated-fixtures/`) stay gitignored per CLAUDE.md; the canonical `fixtures/` snapshot is committed.
 
 ## 9. Testing
 
