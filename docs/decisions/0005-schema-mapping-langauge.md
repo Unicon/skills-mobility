@@ -30,16 +30,7 @@ Because of that, the mapping-language choice affects more than syntax. It influe
 
 ## Decision
 
-For the initial POC, the project will use `JSONata` as the primary schema-mapping language.
-
-This decision is being made up front rather than deferred behind a pre-decision experiment. The purpose of the POC is partly to pressure test architectural choices in practice, and JSONata is currently the best fit based on project needs and prior LIF experience.
-
-This means:
-
-- translation instructions should be represented primarily as JSONata expressions,
-- downstream translation architecture should assume JSONata compatibility,
-- the LIF Translator and MDR remain attractive specifically because they already align with that choice, and
-- the POC itself will validate whether this was the right architectural decision.
+For the initial POC, if a schema mapping language is needed, the project will use `JSONata` for that purpose.
 
 ## Options Considered
 
@@ -59,8 +50,7 @@ JSONata is the right proposed choice for this project because all or most of the
 - mappings should be stored outside workflow code,
 - mappings should be reusable across many sources and destinations,
 - AI-generated mappings are part of the design,
-- reviewers need to inspect mapping instructions as data rather than code, and
-- alignment with the LIF Translator plus MDR is important.
+- reviewers need to inspect mapping instructions as data rather than code
 
 Cons:
 
@@ -76,6 +66,7 @@ Cons:
 
 ## Open Questions
 
+- Will we opt to have AI generate the output directly rather than utilize a schema mapping language?
 - How readable will non-trivial JSONata mappings remain once they include conditionals, array reshaping, and destination-specific output structure?
 - Will AI-generated mappings be reliable and reviewable enough in JSONata for ongoing use?
 - Do we need one mapping language across the whole project, or should we intentionally allow a hybrid model for exceptional cases?

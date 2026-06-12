@@ -33,7 +33,7 @@ For the initial POC, we will use LIF selectively rather than adopting the full L
 
 We will:
 
-- adopt the LIF Translator and LIF MDR together as the primary candidate translation layer,
+- defer the LIF Translator and LIF MDR, potentially reimplementing their functionality directly within this project,
 - defer components that may become useful once identity resolution, orchestration, or MCP exposure are better defined, and
 - not use LIF components whose main purpose is serving learner records, caching learner data, or providing advisor-style user experiences.
 
@@ -48,9 +48,9 @@ Decision categories used below:
 | LIF component | Initial decision | Rationale | Revisit when |
 | --- | --- | --- | --- |
 | GraphQL API | `Do not use` | The project is currently about data compilation and transport, not storing learner data or serving it through a shared query layer. A GraphQL API is therefore outside the current scope. | The project expands into serving compiled learner or credential data to other systems or clients. |
-| Translator | `Adopt now` | This is one of the strongest fits with project goals. The project needs reusable translation across varied source and destination models, and the current event-driven, single-learner workflow avoids the batch and cohort concerns that have been raised about more traditional ETL use cases. | Integration cost, mapping expressiveness, or event-driven execution constraints prove to be blocking in practice. |
+| Translator | `Defer` | The LIF Translator is a strong conceptual fit for the project's reusable translation needs, but it is more expedient to reimplement this functionality directly within the project rather than integrate an external dependency. A direct reimplementation can also be tailored to the AI-assisted workflow of this project. | The project's translation complexity grows to the point where the LIF Translator offers clear advantages over an internal reimplementation, or LIF Translator maturity improves significantly. |
 | Identity Mapper | `Defer` | Identity mapping may become important quickly, especially for connecting learner identities between the LMS and downstream wallets. It may also influence routing decisions. However, the current LIF Identity Mapper is incomplete, so adopting it likely means contributing to LIF or building substantial missing pieces. | LMS-to-wallet or multi-system identity resolution becomes a concrete implemented requirement. |
-| MDR Service | `Adopt now` | If we use the LIF Translator, we should also use the MDR because the Translator depends on it for translation instructions. The MDR is also a natural place to store AI-generated mapping and translation instructions for reuse. This likely accelerates work if we continue with LIF's current JSONata-based approach. | The MDR's current limitations, including broken model import, make adoption too costly relative to the value it provides. |
+| MDR Service | `Defer` | The MDR has an active bug preventing import of new data schemas, blocking integration of the LMS schema needed for this POC. It is more expedient to reimplement MDR functionality directly within the project, and doing so creates an opportunity to redesign and re-architect aspects of the MDR to better suit this project's needs. | The MDR bug is resolved and its capabilities clearly exceed what a project-internal reimplementation provides. |
 | MDR UI | `Defer` | The UI is not required for the core pipeline, but it may become useful for importing data models, reviewing AI-generated mappings, and demonstrating the work. Its value increases if model import and MDR-centered workflows become part of the demo or operator experience. | We need a human-facing workflow for model import, mapping review, or demo presentation around MDR content. |
 | Advisor API & UI | `Do not use` | Conversational learner advising is not part of the current scope. | The project adds a natural-language advising or assistant use case over learner data. |
 | Semantic Search MCP Server | `Defer` | MCP is in scope for the broader project, but it is still unclear how MCP should be used here. A more likely near-term direction is consuming MCP from external systems than exposing this project's data through a LIF MCP server. | We decide this project should expose semantically searchable data or workflow context through MCP. |
@@ -62,10 +62,9 @@ Decision categories used below:
 
 - The initially proposed architecture did not explicitly include a Translator service. However, if the LLM Decision Service is going to be proposing data mappings for data that needs to be translated, then those mappings need to be executed somewhere.
 - The Translator and MDR should be treated as a paired decision, not independent ones.
-- ADR 0005 makes JSONata the proposed primary mapping language for this work, which aligns well with using the LIF Translator and MDR.
-- If AI-generated translation instructions become part of the design, the MDR is the most natural place to store and manage them.
+- ADR 0005 makes JSONata the proposed primary mapping language for this work, which aligns with the LIF approach and can guide the design of any internal reimplementation.
+- If AI-generated translation instructions become part of the design, an internal reimplementation of MDR-style storage is the natural place to manage them.
 - If that happens, translation generation may deserve its own dedicated AI-assisted service instead of being bundled into one general-purpose LLM decision service.
-- The current broken MDR model-import path is a known adoption risk and may need to be fixed early.
 
 ## Orchestration Notes
 
@@ -84,9 +83,8 @@ The orchestration choice is still open. Based on current official documentation 
 ## Consequences
 
 - The initial POC stays focused on translation and transport instead of expanding into a learner-data serving platform.
-- Direct adoption of Translator plus MDR could accelerate reusable mappings across many source and destination combinations.
-- Adopting Translator plus MDR also likely commits us, at least initially, to MDR-backed mapping storage and probably JSONata-based transformation instructions.
-- We may need to fix MDR import behavior before the adoption path is practical.
+- Deferring the LIF Translator and MDR avoids external dependency risks and creates an opportunity to design the translation layer specifically for this project's AI-assisted workflow.
+- The project remains committed to a JSONata-based translation approach, now potentially expressed through an internal reimplementation rather than direct LIF adoption.
 - Identity resolution, query planning, MCP exposure, and orchestration abstraction remain open design areas rather than settled architecture.
 
 ## Open Questions
