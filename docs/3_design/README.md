@@ -6,22 +6,25 @@
 
 | Doc | Scope |
 |---|---|
-| [`mock-event-producer.md`](./mock-event-producer.md) | Design for the Mock Event Producer ("Mock LMS") — service, UI, event model, real-time feed, local-vs-AWS, build order |
+| [`mock-lms.md`](./mock-lms.md) | Design for the **Mock LMS** (Event Producer + LMS Resource APIs + Demo UI) — modules, event model, Actions, real-time feed, data model, local-vs-AWS, build order |
 | [`architecture/`](./architecture/) | Architecture diagrams (below) |
+
+The Mock LMS *requirements* are split across three docs in [`../2_requirements/`](../2_requirements/) (event-producer / apis / ui); design is kept as one document because the parts interact closely.
 
 ### `architecture/`
 
 | File | What it shows |
 |---|---|
+| `enablement-layer-data-mapping-flow.png` | **Canonical / source diagram** — the end-to-end data-mapping flow from the POC requirements doc (source event → delivery target, by stage) |
 | `aws-poc-architecture.jpg` | POC architecture on AWS — EventBridge → Event Consumer → Step Functions, invoked services, data stores, logging, tech stack |
-| `enablement-layer-data-mapping-flow.png` | End-to-end data-mapping flow from source event to delivery target, by stage |
-| `whiteboard-component-overview.png` | Mock LMS component breakdown (Event Producer, LMS Metadata APIs) and downstream components; "out of scope for happy path" |
+| `whiteboard-component-overview.png` | Mock LMS component breakdown (Event Producer, LMS Resource APIs) and downstream components |
 | `whiteboard-happy-paths.png` | Happy paths (Badge Awarded / Skill Mastered / Course Completed), Canvas-style endpoint table, Canvas Live Events references |
-| `whiteboard-all-paths.png` | "All paths" variant with AI-generated data-mapping / wallet-routing annotations |
+
+`enablement-layer-data-mapping-flow.png` is the most authoritative of these — it came with the POC requirements. The whiteboard images are working sketches.
 
 ## Conventions
 
-- **Naming:** one design file per component (`<component>.md`), matching its requirements counterpart at `../2_requirements/<component>.md`; keep them cross-linked.
+- **Naming:** design docs match their requirements counterparts in `../2_requirements/` and stay cross-linked.
 - Diagrams live in `architecture/` with descriptive filenames (originals were clipboard exports — see git history for original names).
 
 ## Workflows

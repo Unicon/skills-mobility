@@ -4,12 +4,11 @@
 
 ## Contents
 
-_No dedicated product brief yet._ Product-level context currently lives in:
+| Doc | Scope |
+|---|---|
+| [`product-brief.md`](./product-brief.md) | Problem, what we're validating, audience, demo narrative, success criteria, in/out of scope |
 
-- The repository [`README.md`](../../README.md) — purpose, initial POC scope, out-of-scope, success criteria.
-- [`../2_requirements/poc-requirements.md`](../2_requirements/poc-requirements.md) §Context / §POC Objectives / §Success Criteria — the product framing behind the requirements.
-
-A standalone product brief (problem, audience, value, demo narrative for the sales-demo trajectory) can land here as `product-brief.md` when warranted.
+Additional product framing lives in the repository [`README.md`](../../README.md) and in [`../2_requirements/poc-requirements.md`](../2_requirements/poc-requirements.md) (§Context / §POC Objectives / §Success Criteria).
 
 ## Workflows
 
