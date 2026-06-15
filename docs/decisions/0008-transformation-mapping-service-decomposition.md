@@ -140,6 +140,8 @@ The two-loop structure validates two meaningfully different AI capabilities with
 
 Validating both loops in a single POC workflow increases the informational value of the POC significantly. The scope cost is real — up to four LLM invocations for the transformation path alone — but each invocation tests a distinct and independently valuable capability.
 
+Additionally, capturing the output of the first loop could not only be heavily cached, but that loop could be it's own workflow to generate badge templates based on learning context as a value proposition on its own. By storing the credential template and field mappings for future use, this workflow can also be easily adapted into one with significantly more human review before these templates or mappings are used with actual learners.
+
 ## Sequencing and Pipeline Shape
 
 The pipeline consists of two sequential loops. Within each loop, the three phases are also sequential. No phase can run until the preceding phase in the same loop has completed, and Loop 2 cannot begin until Loop 1 has completed.
@@ -186,7 +188,7 @@ The Policy Rules Service may validate the credential template after phase 1c and
 
 - The credential template is an explicit, inspectable, auditable artifact representing the achievement definition — independent of any individual learner and reusable across future events from the same learning context; once stored, Loop 1 is skipped for subsequent events
 - AI-generated JSONata mapping specifications are stored in the mock MDR, keyed by source+target combination; future events with the same pairing can skip the field mapping LLM phase and proceed directly to field synthesis and JSONata execution
-- The pipeline serves as a concrete mock of three deferred LIF components: the DCC Credential Co-Writer (Loop 1), the LIF Translator (phases 1c and 2c), and the LIF MDR (mapping specification storage)
+- The pipeline serves as a concrete mock of three deferred open source components: the DCC Credential Co-Writer (Loop 1), the LIF Translator (phases 1c and 2c), and the LIF MDR (mapping specification storage)
 - Field mapping and field synthesis are separated within each loop, keeping each LLM invocation focused on a single kind of reasoning
 - The placeholder mechanism creates a clean contract between field mapping and field synthesis: each placeholder carries its own source data specification, so the enrichment step receives targeted briefs rather than raw full context
 - Placeholders double as JSONata expressions, so final assembly is a uniform JSONata execution pass with no structural special-casing for generated values
