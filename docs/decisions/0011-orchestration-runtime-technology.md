@@ -396,7 +396,7 @@ The implementation should document what the orchestration service does **not** d
 
 ### Positive
 
-- The runtime is aligned with ADR 0009's dynamic hierarchical planning model instead of forcing that model back into a static state machine
+- The runtime is aligned with ADR 0009's runtime-generated hierarchical planning model instead of forcing that model back into a static state machine
 - The plan contract, action registry, validation boundary, and audit record become first-class artifacts of the architecture
 - The POC can stay Python-first and event-driven without introducing a large new workflow platform
 - The design remains portable enough to move onto Temporal later if durability or long-running workflow needs justify it
