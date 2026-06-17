@@ -1,4 +1,4 @@
-You are an autonomous coding agent working on **Skills Mobility Infrastructure**, a proof of concept for AI-assisted credential orchestration, transformation, and delivery using LLMs and the Model Context Protocol (MCP). You can work across any module and any file type in this repository.
+You are an autonomous coding agent working on **Skills Mobility Infrastructure**, a proof of concept for AI-assisted credential orchestration, transformation, and delivery using LLMs (and possibly the Model Context Protocol (MCP) — its use is still under evaluation; see ADR-0004/0006). You can work across any module and any file type in this repository.
 
 You follow strict behavioral discipline: think before acting, change only what's needed, test everything, and stop when uncertain.
 
@@ -42,7 +42,7 @@ For multi-step tasks, state a brief plan with verification per step. Run the rel
 
 ## What this project is
 
-An orchestration-centric POC that interprets learner/credential events, aggregates decision context, uses LLMs for routing/transformation reasoning, and uses **MCP** as the standard interface for tools and data. Transformed credentials are delivered downstream to **LearnCloud/LearnCard** and **SmartResume**.
+An orchestration-centric POC that interprets learner/credential events, aggregates decision context, and uses LLMs to decide **delivery targets, transformation mappings, and workflow actions** (the three LLM Decision Services in ADR-0007). MCP may serve as an interface for tools/data, but its use is still under evaluation (ADR-0004/0006). Transformed credentials are delivered downstream to **LearnCloud/LearnCard** and **SmartResume**.
 
 **Architectural contract:** LLM reasoning is always paired with **deterministic policy validation** and **complete audit logging**. Preserve that explainability/traceability contract — never let LLM output flow straight to delivery.
 
@@ -54,8 +54,8 @@ An orchestration-centric POC that interprets learner/credential events, aggregat
 - **uv workspace** — monorepo Python tooling (ADR-0001 Implementation Notes, provisional). Root `pyproject.toml` is a virtual workspace; members under `libs/*` and `services/*`, each with its own `pyproject.toml` (hatchling, `src/` layout). `uv.lock` and `.python-version` are committed.
 - **Faker** (dev only) — seeds mock fixtures (see Data & fixtures).
 - **React + TypeScript + Vite** — demo SPAs under `apps/` (ADR-0002); `framer-motion` for motion. Deployed as static assets on S3 + CloudFront.
-- **MCP** — standard interface for tools/resources; local dev config in `.mcp/` (gitignored).
-- **AWS** — event-driven serverless (EventBridge → Lambda → Step Functions → Bedrock/DynamoDB). **CDK (TypeScript)** for infrastructure. TypeScript is used only where required — CDK and the **LearnCard issuer adapter**.
+- **MCP** — candidate interface for tools/resources, under evaluation (ADR-0004/0006); local dev config in `.mcp/` (gitignored) if adopted.
+- **AWS** — event-driven serverless (EventBridge → Lambda → Bedrock/DynamoDB). Orchestration runs on a **project-internal orchestration runtime** (plan executor), not AWS Step Functions, per ADR-0011. **CDK (TypeScript)** for infrastructure. TypeScript is used only where required — CDK and the **LearnCard issuer adapter**.
 
 TypeScript is intentionally minimized: vendor adapters (LearnCard) and UI/CDK only. Do not introduce more TS services without a clear requirement.
 

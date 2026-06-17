@@ -68,9 +68,9 @@ For each Action, this documents the event payload, the LMS endpoints the Context
 
 | Action | Event | Relevant LMS endpoints | Context Builder id tracing |
 |---|---|---|---|
-| Submit skill mastery | `skill_mastered` | outcome by id; outcome_results (+alignments); submissions; rubrics | `learning_outcome_id`→outcome, `assignment_id`→assignment/submission/rubric, `user_id`→profile |
+| Submit skill mastery | `skill_mastered` | outcome by id; outcome_results (+alignments); assignments; submissions; rubrics; user profile | `learning_outcome_id`→outcome, `assignment_id`→assignment/submission/rubric, `user_id`→profile |
 | Submit final grade | `course_completed` | course; enrollment (incl. `current_grade`/`current_points`); modules/pages | `course_id`→course, `user_id`→enrollment (final grade) |
-| Award badge (skill/course) | `badge_awarded` | badge by id; outcome or course; user profile (email) | `badge_id`→badge, `user_id`→profile email (badge recipient), `outcome_id`/`course_id`→source |
+| Award badge (skill/course) | `badge_awarded` | badge by id (primary); user profile (optional) | `badge_id`→badge. Badge is pre-defined, so no learning-context endpoints are needed; `user_id`→profile is only for downstream account matching (the learner's email is also already in the badge). |
 
 ## 6. Repeatability
 
@@ -79,7 +79,7 @@ For each Action, this documents the event payload, the LMS endpoints the Context
 
 ## 7. Where emission fits
 
-Per the AWS architecture, flow is **Mock LMS → Amazon EventBridge → Event Consumer (Lambda) → Step Functions**. The producer's emit is a `PutEvents` to EventBridge; it does not call downstream services directly. Locally, an in-process emitter stands in for the bus.
+Per the AWS architecture, flow is **Mock LMS → Amazon EventBridge → the internal orchestration runtime** (ADR-0011). The producer's emit is a `PutEvents` to EventBridge; it does not call downstream services directly. Locally, an in-process emitter stands in for the bus.
 
 ## 8. Out of scope
 

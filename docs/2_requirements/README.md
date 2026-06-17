@@ -26,7 +26,7 @@ The **Mock LMS** stands in for a real LMS (Open edX in production; modeled on **
 
 ## Conventions
 
-- One file per component, named `mock-lms-<component>.md`. Each references the master `poc-requirements.md` and relevant ADRs in [`../decisions/`](../decisions/) rather than restating them. Design lives in [`../3_design/`](../3_design/).
+- One requirements doc per component, named after the component. The Mock LMS currently spans three (`mock-lms-event-producer.md`, `mock-lms-apis.md`, `mock-lms-ui.md`); the `mock-lms-` prefix is specific to those — other components (Context Builder, Policy Rules, the LLM Decision Services, etc.) won't carry it. Each doc references the master `poc-requirements.md` and relevant ADRs in [`../decisions/`](../decisions/) rather than restating them. Design lives in [`../3_design/`](../3_design/).
 
 ## Workflows
 

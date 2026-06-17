@@ -14,7 +14,7 @@ The UI SHALL present a **course**, not an abstract list of trigger buttons — s
 
 - **FR-UI1** The operator SHALL pick a **course**, then see its **modules** (and the course's outcomes/skills, assignments, learners, submissions) sourced from the [LMS Resource APIs](./mock-lms-apis.md) — the same endpoints the Context Builder reads.
 - **FR-UI2** **Action triggers SHALL be placed in course context:** a *Submit skill mastery* Action at the bottom of the module that corresponds to that skill; *Submit final grade* / *Award badge* Actions at the course level (bottom of the course / last module). The Actions shown depend on the [course kind](./mock-lms-event-producer.md) (standard vs digital-credential-supported).
-- **FR-UI3** Each Action SHALL be runnable for **one learner** or **all learners**. For a one-learner Action the operator can view that learner's submission/outcome data first.
+- **FR-UI3** Each Action SHALL be runnable for **one learner** or **all learners**. For a one-learner Action, the operator can view that learner's submission/outcome data first.
 
 ## 3. Inspect · Trigger · Observe
 

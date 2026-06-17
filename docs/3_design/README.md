@@ -16,7 +16,7 @@ The Mock LMS *requirements* are split across three docs in [`../2_requirements/`
 | File | What it shows |
 |---|---|
 | `enablement-layer-data-mapping-flow.png` | **Canonical / source diagram** — the end-to-end data-mapping flow from the POC requirements doc (source event → delivery target, by stage) |
-| `aws-poc-architecture.jpg` | POC architecture on AWS — EventBridge → Event Consumer → Step Functions, invoked services, data stores, logging, tech stack |
+| `aws-poc-architecture.jpg` | POC architecture on AWS — EventBridge → Event Consumer → Step Functions, invoked services, data stores, logging, tech stack. *(Early sketch — predates ADR-0011's decision to run orchestration on a project-internal runtime rather than Step Functions.)* |
 | `whiteboard-component-overview.png` | Mock LMS component breakdown (Event Producer, LMS Resource APIs) and downstream components |
 | `whiteboard-happy-paths.png` | Happy paths (Badge Awarded / Skill Mastered / Course Completed), Canvas-style endpoint table, Canvas Live Events references |
 

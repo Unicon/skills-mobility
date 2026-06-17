@@ -14,7 +14,7 @@ The **Mock LMS** is three parts across the ADR-0001 monorepo:
 | Demo UI | `apps/mock-lms/` | React + TypeScript SPA | Course-centric inspect, trigger Actions, live emission feed |
 | Event contracts | `libs/events/` (Py) + optionally `packages/event-contracts/` (TS) | Pydantic / generated TS | Event names, envelope, body schemas — the producer is source of truth |
 
-The service is the **only** component that writes to the bus; the UI talks **only** to the service. The Context Builder (downstream) reads the LMS Resource APIs directly.
+The **Event Producer** is the only component that writes to the bus. The **UI** reads data from the LMS Resource APIs and triggers Actions that emit the related events; it never writes to the bus itself. The Context Builder (downstream) reads the LMS Resource APIs directly.
 
 ```
 ┌──────────────── apps/mock-lms (React SPA, S3+CloudFront) ────────────────┐
@@ -28,7 +28,7 @@ The service is the **only** component that writes to the bus; the UI talks **onl
 │  Emission API ──record──► Emission Log (ring) ──► SSE feed                 │
 └────────────────────────────────────────┬─────────────────────────────────┘
                                           ▼
-                          EventBridge → Event Consumer → Step Functions (downstream)
+                          EventBridge → internal orchestration runtime (ADR-0011, downstream)
 ```
 
 ## 2. Service modules
