@@ -87,9 +87,7 @@ The bus is behind an `Emitter` interface: `LocalEmitter` captures envelopes in-p
 
 ## 9. Auth
 
-CloudFront-layer per ADR-0002, resolved in a single dependency so the issuer can change cheaply. A **single demo user** with full capability — no instructor/admin split (it added no functionality for the POC).
-
-> **Open item:** the tech sync leaned toward **Cognito**, which conflicts with ADR-0002's CloudFront-layer decision. Being reconciled with the team; not settled here. The single auth boundary keeps the switch cheap if the team chooses Cognito.
+CloudFront-layer per ADR-0002 (decided — Cognito was considered and not chosen), resolved in a single dependency so the issuer could change cheaply if that ever changes. A **single demo user** with full capability — no instructor/admin split (it added no functionality for the POC).
 
 ## 10. Build order
 
@@ -99,7 +97,7 @@ CloudFront-layer per ADR-0002, resolved in a single dependency so the issuer can
 4. SSE feed + emission log.
 5. `apps/mock-lms`: course view → Action triggers → live timeline.
 6. `EventBridgeEmitter` + CDK infra; deploy.
-7. CloudFront-layer auth (pending the Cognito reconciliation).
+7. CloudFront-layer auth (ADR-0002).
 
 ## 11. Testing
 

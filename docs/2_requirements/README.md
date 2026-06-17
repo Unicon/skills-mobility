@@ -22,7 +22,7 @@ The **Mock LMS** stands in for a real LMS (Open edX in production; modeled on **
 
 **Shared scope.** In: a read-only Canvas-style API over seeded data; an emission control API publishing Canvas Live Events–shaped payloads; version-controlled, repeatable demo data; a React SPA. Out: real Canvas parity, writes/mutations through the APIs, the downstream orchestration/LLM/policy/delivery, production auth, multi-tenant concerns.
 
-**Auth (POC):** CloudFront-layer per ADR-0002, a **single demo user** (no separate instructor/admin roles). *Open item:* the tech sync leaned toward Cognito — being reconciled with the team; not settled here.
+**Auth (POC):** CloudFront-layer per ADR-0002 (decided — not Cognito), a **single demo user** (no separate instructor/admin roles).
 
 ## Conventions
 

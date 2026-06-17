@@ -28,9 +28,7 @@ The UI SHALL present a **course**, not an abstract list of trigger buttons — s
 ## 4. User & auth
 
 - **FR-UI10** A single **demo user** signs in and has full capability (inspect, trigger, watch the live feed, replay). There is **no separate instructor vs administrator role** — for the POC the distinction adds no functionality.
-- Auth is **CloudFront-layer** per ADR-0002; no secrets in the repo.
-
-> **Open item:** the tech sync leaned toward **Cognito** for this sign-in, which conflicts with ADR-0002's CloudFront-layer decision. Being reconciled with the team — not settled in this PR. The design keeps auth behind one boundary so the issuer can change cheaply.
+- Auth is **CloudFront-layer** per ADR-0002 (decided — Cognito was considered and not chosen); no secrets in the repo. The design keeps auth behind a single boundary so the issuer could change cheaply if that ever changes.
 
 ## 5. Non-functional
 
