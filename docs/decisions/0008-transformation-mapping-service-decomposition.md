@@ -229,5 +229,5 @@ This decision should be revisited if:
 - [ADR 0004: LIF Component Usage in the Initial POC](0004-lif-usage.md)
 - [LIF Microservices Overview](https://github.com/LIF-Initiative/lif-core/blob/main/docs/overview/services-overview.md)
 - [DCC Credential Co-Writer (Live Tool)](https://co-writer.dcconsortium.org/)
-- [Skills Mobility Infrastructure POC Requirements](../SkillsMobilityInfrastructurePOCRequirements.md)
+- [Skills Mobility Infrastructure POC Requirements](../2_requirements/poc-requirements.md)
 - [O*NET Online](https://www.onetonline.org/)

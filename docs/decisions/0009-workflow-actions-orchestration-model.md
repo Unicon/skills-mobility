@@ -129,4 +129,4 @@ This decision should be revisited if:
 
 - [ADR 0007: LLM Decision Service Decomposition](0007-llm-decision-service-decomposition.md)
 - [ADR 0008: Transformation Mapping Service Decomposition](0008-transformation-mapping-service-decomposition.md)
-- [Skills Mobility Infrastructure POC Requirements](../SkillsMobilityInfrastructurePOCRequirements.md)
+- [Skills Mobility Infrastructure POC Requirements](../2_requirements/poc-requirements.md)

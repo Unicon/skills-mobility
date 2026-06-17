@@ -9,6 +9,12 @@
 | [0001](./0001-repo-structure.md) | Repository Structure — Conventional Monorepo vs. Polylith | Accepted |
 | [0002](./0002-frontend-architecture.md) | Frontend Architecture (two React SPAs, S3+CloudFront, CloudFront-layer auth) | Accepted |
 | [0003](./0003-programming-language.md) | Primary Programming Language Selection (Python-first) | Accepted |
+| [0004](./0004-lif-usage.md) | LIF Component Usage in the Initial POC | Accepted |
+| [0005](./0005-schema-mapping-langauge.md) | Schema Mapping Language (JSONata) | Accepted |
+| [0006](./0006-other-open-source-usage.md) | Other Open Source Usage | Accepted |
+| [0007](./0007-llm-decision-service-decomposition.md) | LLM Decision Service Decomposition (delivery targets / transformation mappings / workflow actions) | Accepted |
+| [0008](./0008-transformation-mapping-service-decomposition.md) | Transformation Mapping Service Decomposition | Accepted |
+| [0009](./0009-workflow-actions-orchestration-model.md) | Workflow Actions Orchestration Model: Peer vs. Hierarchical | Accepted |
 
 ## Conventions
 
