@@ -1,31 +1,38 @@
 import { AnimatePresence } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
-import { api, setRole } from "./api";
-import { EmissionTimeline } from "./components/EmissionTimeline";
+import { api } from "./api";
+import { CourseRail } from "./components/CourseRail";
 import { EnvelopeModal } from "./components/EnvelopeModal";
 import { Header } from "./components/Header";
 import { Inspector } from "./components/Inspector";
-import { ScenarioRail } from "./components/ScenarioRail";
-import { useEmissionStream } from "./hooks/useEmissionStream";
-import type { Emission, Role, Scenario } from "./types";
+import { TriggerPanel } from "./components/TriggerPanel";
+import type { ActionView, CourseWithActions, EventEnvelope, RunResult, Scope } from "./types";
 import { copy } from "./util";
 
 export default function App() {
-  const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  const [courses, setCourses] = useState<CourseWithActions[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [role, setRoleState] = useState<Role>("instructor");
-  const [open, setOpen] = useState<Emission | null>(null);
+  const [scope, setScope] = useState<Scope>("one");
+  const [learnerId, setLearnerId] = useState<string | null>(null);
+  const [busyActionId, setBusyActionId] = useState<string | null>(null);
+  const [lastRun, setLastRun] = useState<RunResult | null>(null);
+  const [open, setOpen] = useState<EventEnvelope | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  const { emissions, state, clear } = useEmissionStream();
-
   useEffect(() => {
-    api.scenarios().then((s) => {
-      setScenarios(s);
-      setActiveId((cur) => cur ?? s[0]?.id ?? null);
+    api.courses().then((cs) => {
+      setCourses(cs);
+      setActiveId((cur) => cur ?? cs[0]?.id ?? null);
     });
   }, []);
+
+  const active = courses.find((c) => c.id === activeId) ?? null;
+
+  // Default the learner selection to the active course's first learner.
+  useEffect(() => {
+    setLearnerId(active?.learners[0]?.id ?? null);
+    setLastRun(null);
+  }, [activeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const flash = useCallback((msg: string) => {
     setToast(msg);
@@ -39,49 +46,49 @@ export default function App() {
     [flash],
   );
 
-  const onRole = (r: Role) => {
-    setRoleState(r);
-    setRole(r);
-  };
-
-  const onRun = async (id: string) => {
-    setBusyId(id);
-    setActiveId(id);
+  const onRun = async (action: ActionView) => {
+    if (!active) return;
+    setBusyActionId(action.id);
     try {
-      await api.runScenario(id);
+      const result = await api.runAction(
+        active.id,
+        action.id,
+        scope,
+        scope === "one" ? (learnerId ?? undefined) : undefined,
+      );
+      setLastRun(result);
+      flash(`Emitted ${result.emitted.length} event(s)`);
     } catch (e) {
       flash(`Run failed: ${e}`);
     } finally {
-      setBusyId(null);
+      setBusyActionId(null);
     }
   };
 
-  const onReset = async (id: string) => {
-    await api.resetScenario(id);
-    clear();
-    flash("Emission log reset");
-  };
-
-  const active = scenarios.find((s) => s.id === activeId) ?? null;
-
   return (
     <div className="app">
-      <Header state={state} count={emissions.length} role={role} onRole={onRole} />
+      <Header />
       <div className="cols">
-        <ScenarioRail
-          scenarios={scenarios}
-          activeId={activeId}
-          busyId={busyId}
-          onSelect={setActiveId}
+        <CourseRail courses={courses} activeId={activeId} onSelect={setActiveId} />
+        <Inspector course={active} learnerId={learnerId} />
+        <TriggerPanel
+          course={active}
+          scope={scope}
+          onScope={setScope}
+          learnerId={learnerId}
+          onLearner={setLearnerId}
+          busyActionId={busyActionId}
           onRun={onRun}
-          onReset={onReset}
+          lastRun={lastRun}
+          onOpenEnvelope={setOpen}
+          onCopy={onCopy}
         />
-        <Inspector scenario={active} />
-        <EmissionTimeline emissions={emissions} onCopy={onCopy} onOpen={setOpen} />
       </div>
 
       <AnimatePresence>
-        {open && <EnvelopeModal emission={open} onClose={() => setOpen(null)} onCopy={onCopy} />}
+        {open && (
+          <EnvelopeModal envelope={open} onClose={() => setOpen(null)} onCopy={onCopy} />
+        )}
       </AnimatePresence>
 
       {toast && <div className="toast">{toast}</div>}

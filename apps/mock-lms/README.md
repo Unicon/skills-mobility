@@ -1,23 +1,28 @@
 # mock-lms-ui — Mock LMS demo console
 
-Presenter-facing SPA for the Skills Mobility POC: a three-pane console to
-inspect the mock LMS source data, trigger credential events, and watch them
-stream onto the bus in real time. Pairs with the `services/mock-lms` backend.
+Presenter-facing SPA for the Skills Mobility POC. A course-centric console that
+**mimics an LMS**: browse a course's source data, trigger a grading Action, and
+see the event it emits — so a stakeholder can compare the source data to the
+badge issued downstream. Pairs with the `services/mock-lms` backend.
+
+Observing the orchestration itself (live execution timeline, per-step status,
+correlation tracing) is the **Admin UI's** job — a separate app, out of scope
+here (design §4, ADR-0002).
 
 React + TypeScript + Vite. Deployed as a static SPA (S3 + CloudFront per
-ADR-0002); auth is CloudFront-layer (the UI sends the role as `X-Demo-Role`).
+ADR-0002); auth is CloudFront-layer, a single demo user.
 
 ## Panes
 
-- **Scenario rail** — list the canonical scenarios; `Emit` runs one (publishes its events), `Reset` clears the emission log.
-- **Inspector** — browses the active scenario's Canvas-style source data (course, outcome/skill, assignments, submissions) via `/api/v1/*` — the same surface the Context Builder reads.
-- **Emission timeline** — live SSE feed (`/demo/stream`); color-coded by event type, newest highlighted, click any event for the raw envelope JSON, copyable correlation ids.
+- **Courses** — pick a course (standard or digital-credential); shows kind, institution, term, and how many Actions it offers.
+- **Inspector** — browses the course's Canvas-style source data (modules, assignments, the selected learner's submissions, rubrics) via `/api/v1/*` — the same surface the Context Builder reads.
+- **Trigger & Confirm** — choose scope (one learner / all) and run a grading Action; the emitted envelope(s) and the run's `correlation_id` come back synchronously, click an event for the raw envelope JSON.
 
 ## Develop
 
 Run the backend first (defaults to `:8000`), then the UI dev server — Vite
 proxies `/api`, `/demo`, and `/healthz` to the backend, so the SPA is
-same-origin and SSE streams cleanly.
+same-origin.
 
 ```bash
 # terminal 1 — backend (from repo root)

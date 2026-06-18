@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import type { Assignment, Course, Outcome, OutcomeResult, Scenario, Submission } from "../types";
+import type { Assignment, CourseWithActions, Module, Rubric, Submission } from "../types";
 
 interface Loaded {
-  course: Course;
-  outcome: Outcome | null;
+  modules: Module[];
   assignments: Assignment[];
+  rubrics: Rubric[];
   submissions: Submission[];
-  results: OutcomeResult[];
 }
 
 function Skeleton() {
@@ -20,30 +19,32 @@ function Skeleton() {
   );
 }
 
-export function Inspector({ scenario }: { scenario: Scenario | null }) {
+export function Inspector({
+  course,
+  learnerId,
+}: {
+  course: CourseWithActions | null;
+  learnerId: string | null;
+}) {
   const [data, setData] = useState<Loaded | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  const primary = scenario?.events[0];
+  const courseId = course?.id ?? null;
 
   useEffect(() => {
-    if (!primary) return;
+    if (!courseId) return;
     let live = true;
     setData(null);
     setErr(null);
     (async () => {
       try {
-        const [course, assignments, submissions] = await Promise.all([
-          api.course(primary.course_id),
-          api.assignments(primary.course_id),
-          api.submissions(primary.course_id, primary.user_id),
+        const [modules, assignments, rubrics] = await Promise.all([
+          api.modules(courseId),
+          api.assignments(courseId),
+          api.rubrics(courseId),
         ]);
-        const outcome = primary.outcome_id ? await api.outcome(primary.outcome_id) : null;
-        const results = primary.outcome_id
-          ? (await api.outcomeResults(primary.course_id, primary.user_id, primary.outcome_id))
-              .outcome_results
-          : [];
-        if (live) setData({ course, outcome, assignments, submissions, results });
+        const submissions = learnerId ? await api.submissions(courseId, learnerId) : [];
+        if (live) setData({ modules, assignments, rubrics, submissions });
       } catch (e) {
         if (live) setErr(String(e));
       }
@@ -51,62 +52,53 @@ export function Inspector({ scenario }: { scenario: Scenario | null }) {
     return () => {
       live = false;
     };
-  }, [primary?.course_id, primary?.user_id, primary?.outcome_id]);
+  }, [courseId, learnerId]);
 
   return (
     <section className="col">
       <div className="col-head">
         <span className="eyebrow">Inspector — Canvas-style source data</span>
-        {primary && <span className="tag mono">course {primary.course_id}</span>}
+        {course && <span className="tag mono">{course.course_code}</span>}
       </div>
       <div className="col-body">
-        {!scenario && <div className="empty">Select a scenario to inspect its source data.</div>}
-        {scenario && err && <div className="empty">Couldn’t load data.<br />{err}</div>}
-        {scenario && !data && !err && <Skeleton />}
-        {data && (
+        {!course && <div className="empty">Select a course to inspect its source data.</div>}
+        {course && err && (
+          <div className="empty">
+            Couldn’t load data.
+            <br />
+            {err}
+          </div>
+        )}
+        {course && !data && !err && <Skeleton />}
+        {course && data && (
           <>
             <div className="inspect-hero">
-              <div className="code">{data.course.course_code}</div>
-              <h2>{data.course.name}</h2>
+              <div className="code">{course.course_code}</div>
+              <h2>{course.name}</h2>
               <div className="sub">
-                Learner <b style={{ color: "var(--ink)" }}>{primary?.user_id}</b> · state{" "}
-                {data.course.workflow_state}
+                {course.institution || "—"} · {course.term || "—"} ·{" "}
+                <b style={{ color: "var(--ink)" }}>
+                  {course.kind === "digital_credential" ? "digital credential" : "standard"}
+                </b>
               </div>
             </div>
 
-            {data.outcome && (
-              <div className="card">
-                <header>
-                  <h3>Outcome (Skill)</h3>
-                  <span className="tag mono">{data.outcome.id}</span>
-                </header>
-                <div className="rows">
-                  <div className="row">
-                    <span className="k">Title</span>
-                    <span className="v">{data.outcome.title}</span>
-                  </div>
-                  <div className="row">
-                    <span className="k">Definition</span>
-                    <span className="v">{data.outcome.display_name}</span>
-                  </div>
-                  <div className="row">
-                    <span className="k">Mastery</span>
+            <div className="card">
+              <header>
+                <h3>Modules</h3>
+                <span className="tag">{data.modules.length}</span>
+              </header>
+              <div className="rows">
+                {data.modules.map((m) => (
+                  <div className="row" key={m.id}>
+                    <span className="k">{m.name}</span>
                     <span className="v mono">
-                      {data.outcome.mastery_points} / {data.outcome.points_possible} pts
+                      {m.items.map((i) => i.title).join(", ") || "—"}
                     </span>
                   </div>
-                  {data.results.map((r) => (
-                    <div className="row" key={r.id}>
-                      <span className="k">Result</span>
-                      <span className="v">
-                        {r.score}/{r.possible}{" "}
-                        {r.mastery && <span className="pill mastery">● mastered</span>}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                ))}
               </div>
-            )}
+            </div>
 
             <div className="card">
               <header>
@@ -116,7 +108,7 @@ export function Inspector({ scenario }: { scenario: Scenario | null }) {
               <div className="rows">
                 {data.assignments.map((a) => (
                   <div className="row" key={a.id}>
-                    <span className="k">{a.id}</span>
+                    <span className="k">{a.role}</span>
                     <span className="v">
                       {a.name} · {a.points_possible} pts
                     </span>
@@ -128,14 +120,21 @@ export function Inspector({ scenario }: { scenario: Scenario | null }) {
             <div className="card">
               <header>
                 <h3>Submissions</h3>
-                <span className="tag">{data.submissions.length}</span>
+                <span className="tag">{learnerId ? data.submissions.length : "pick learner"}</span>
               </header>
               <div className="rows">
+                {!learnerId && (
+                  <div className="row">
+                    <span className="k">—</span>
+                    <span className="v">Select a learner in the Trigger panel.</span>
+                  </div>
+                )}
                 {data.submissions.map((s) => (
                   <div className="row" key={s.id}>
-                    <span className="k">asg {s.assignment_id}</span>
+                    <span className="k mono">{s.assignment_id}</span>
                     <span className="v">
-                      {s.score ?? "—"} {s.grade && <span className="pill grade">{s.grade}</span>}{" "}
+                      {s.score ?? "—"}{" "}
+                      {s.grade && <span className="pill grade">{s.grade}</span>}{" "}
                       <span className="mono" style={{ color: "var(--ink-faint)" }}>
                         {s.workflow_state}
                       </span>
@@ -144,6 +143,25 @@ export function Inspector({ scenario }: { scenario: Scenario | null }) {
                 ))}
               </div>
             </div>
+
+            {data.rubrics.length > 0 && (
+              <div className="card">
+                <header>
+                  <h3>Rubrics</h3>
+                  <span className="tag">{data.rubrics.length}</span>
+                </header>
+                <div className="rows">
+                  {data.rubrics.flatMap((r) =>
+                    r.criteria.map((c) => (
+                      <div className="row" key={c.id}>
+                        <span className="k">{c.description}</span>
+                        <span className="v mono">{c.points} pts</span>
+                      </div>
+                    )),
+                  )}
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

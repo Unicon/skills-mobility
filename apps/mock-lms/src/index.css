@@ -247,6 +247,17 @@ button {
   font-weight: 700;
 }
 
+.select {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--line-bright);
+  border-radius: 7px;
+  padding: 6px 8px;
+  max-width: 230px;
+}
+
 /* ---------- 3-column body ---------- */
 .cols {
   display: grid;

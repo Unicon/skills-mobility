@@ -1,17 +1,16 @@
 import { motion } from "framer-motion";
-import type { Emission } from "../types";
-import { eventColor, highlightJson } from "../util";
+import type { EventEnvelope } from "../types";
+import { highlightJson } from "../util";
 
 export function EnvelopeModal({
-  emission,
+  envelope,
   onClose,
   onCopy,
 }: {
-  emission: Emission;
+  envelope: EventEnvelope;
   onClose: () => void;
   onCopy: (text: string, label: string) => void;
 }) {
-  const color = eventColor(emission.event_type);
   return (
     <div className="scrim" onClick={onClose}>
       <motion.div
@@ -23,17 +22,16 @@ export function EnvelopeModal({
       >
         <header>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span className="dot" style={{ background: color }} />
-            <span className="mono" style={{ fontWeight: 700, color }}>
-              {emission.event_name}
+            <span className="dot" style={{ background: "var(--gold)" }} />
+            <span className="mono" style={{ fontWeight: 700, color: "var(--gold)" }}>
+              {envelope.metadata.event_name}
             </span>
-            <span className="tag">{emission.event_type}</span>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button
               className="iconbtn"
               title="Copy envelope JSON"
-              onClick={() => onCopy(JSON.stringify(emission.envelope, null, 2), "envelope")}
+              onClick={() => onCopy(JSON.stringify(envelope, null, 2), "envelope")}
             >
               ⧉
             </button>
@@ -42,7 +40,7 @@ export function EnvelopeModal({
             </button>
           </div>
         </header>
-        <pre dangerouslySetInnerHTML={{ __html: highlightJson(emission.envelope) }} />
+        <pre dangerouslySetInnerHTML={{ __html: highlightJson(envelope) }} />
       </motion.div>
     </div>
   );

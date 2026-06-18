@@ -1,40 +1,48 @@
 // Mirrors the mock-lms service responses (services/mock-lms).
 
-export type Role = "instructor" | "admin";
+export type CourseKind = "standard" | "digital_credential";
 
-export interface EventSpec {
-  event_type: string;
-  user_id: string;
-  course_id: string;
-  outcome_id: string | null;
-  assignment_id: string | null;
-  badge_id?: string | null;
-  badge_name?: string | null;
-  credential_type?: string | null;
+export interface Learner {
+  id: string;
+  name: string;
+  email: string;
 }
 
-export interface Scenario {
+export interface ActionView {
   id: string;
-  title: string;
-  description: string;
-  event_count: number;
-  events: EventSpec[];
+  label: string;
+  assignment_id: string;
+  assignment_name: string | null;
+  event_type: string | null;
 }
 
 export interface Course {
   id: string;
   name: string;
   course_code: string;
+  kind: CourseKind;
+  institution: string;
+  term: string;
   workflow_state: string;
 }
 
-export interface Outcome {
+export interface CourseWithActions extends Course {
+  learners: Learner[];
+  actions: ActionView[];
+}
+
+export interface ModuleItem {
   id: string;
   title: string;
-  display_name: string;
-  description: string;
-  mastery_points: number;
-  points_possible: number;
+  type: string;
+  content_id: string | null;
+}
+
+export interface Module {
+  id: string;
+  name: string;
+  position: number;
+  items: ModuleItem[];
 }
 
 export interface Assignment {
@@ -44,6 +52,10 @@ export interface Assignment {
   description: string;
   points_possible: number;
   due_at: string | null;
+  role: string;
+  module_id: string | null;
+  outcome_id: string | null;
+  badge_id: string | null;
 }
 
 export interface Submission {
@@ -58,15 +70,17 @@ export interface Submission {
   graded_at: string | null;
 }
 
-export interface OutcomeResult {
+export interface RubricCriterion {
   id: string;
-  user_id: string;
-  outcome_id: string;
+  description: string;
+  points: number;
+}
+
+export interface Rubric {
+  id: string;
+  title: string;
   assignment_id: string | null;
-  score: number;
-  possible: number;
-  mastery: boolean;
-  submitted_or_assessed_at: string | null;
+  criteria: RubricCriterion[];
 }
 
 export interface EventEnvelope {
@@ -79,20 +93,17 @@ export interface EventEnvelope {
     context_id: string | null;
     event_id: string;
     correlation_id: string;
-    scenario_id: string | null;
+    action_id: string | null;
     [k: string]: unknown;
   };
   body: Record<string, unknown>;
 }
 
-export interface Emission {
-  seq: number;
-  emission_id: string;
+export type Scope = "one" | "all";
+
+export interface RunResult {
   correlation_id: string;
-  scenario_id: string | null;
-  event_type: string;
-  event_name: string;
-  event_time: string;
-  target: string;
-  envelope: EventEnvelope;
+  action_id: string;
+  scope: Scope;
+  emitted: EventEnvelope[];
 }
