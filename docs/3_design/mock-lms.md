@@ -122,12 +122,13 @@ This is why the endpoint set grew beyond the original sketch: rubrics and course
 
 ### Data model & repeatability
 
-The catalog is the **Mock LMS Resource / Event Data Store** (boundary matrix §7): written by the seed-capture process, read by the Event Producer, the LMS Resource APIs, and the Demo UI. Mock data follows **generate → capture → commit → replay**:
+The catalog is the **Mock LMS Resource / Event Data Store** (boundary matrix §7): read by the Event Producer, the LMS Resource APIs, and the Demo UI. It is assembled from two sources, then **captured → committed → replayed**:
 
-- A **seeded generator** builds the catalog with **logically linked ids** (course → modules → outcomes → aligned assignments → submissions → results all cross-reference), so a viewer can follow the chain, and a guaranteed primary happy path.
-- Its output is **captured to committed `fixtures/*.json`**; the runtime loads that frozen snapshot **read-only** and never runs the generator. Same seed → byte-identical data.
-- The seed includes **both course kinds** and **both variants of each event** (§2): the happy/delivering case (competency mastery, passing grade, accepted-and-fetchable badge) and the non-delivery case (sub-competency, failing grade, unaccepted badge).
-- `generated-fixtures/` (gitignored) holds larger experimental sets, selectable via `MOCK_LMS_FIXTURES_DIR`.
+- **Real roster base (PM-provided CSVs).** Canvas SIS-style exports — `course_sections.csv`, `users.csv`, `enrollments.csv` — provide realistic courses/sections, learners (with **real emails** and profile attributes), and enrollments (e.g. *Wasatch University*, *FINC-106 Introduction to Finance*). We import a **small demo subset** (a handful of courses + learners), not the full export (~143 sections / ~4k users / ~12k enrollments).
+- **Generated academic + credential layer.** The CSVs don't include the activity/credential data our events need, so a **seeded generator** builds it on top of the imported roster, with **logically linked ids**: modules, outcomes (competency *and* sub-competency, e.g. flat `1.2.3`), module + final assignments, submissions with **passing and failing** grades, outcome results, rubrics, and badges (**accepted/fetchable and unaccepted**). It also tags each course a **kind** (standard vs digital-credential-supported).
+- Together these guarantee **both course kinds** and **both variants of each event** (§2) are present.
+- The assembled catalog is **captured to committed `fixtures/*.json`**; the runtime loads that frozen snapshot **read-only** and never re-runs the assembly. Deterministic — same inputs → byte-identical fixtures.
+- Raw CSVs stay out of the repo (input artifacts); larger/bulk sets can live in gitignored `generated-fixtures/`, selectable via `MOCK_LMS_FIXTURES_DIR`.
 
 This yields two repeatability guarantees: **source data** identical every run (deterministic APIs), and **emitted events** fresh-id'd per run over stable business keys.
 
@@ -197,7 +198,7 @@ From the Mock LMS's perspective: Phase 1 needs only the **happy** event variants
 
 1. `libs/events`: envelope + 3 event-type schemas.
 2. `services/mock-lms`: catalog + generator + LMS Resource APIs + `LocalEmitter` + emission API (Actions), returning the envelope synchronously.
-3. Seed catalog: both course kinds + **both variants of each event** (happy: competency mastery / passing / accepted-fetchable badge; edge: sub-competency / failing / unaccepted badge).
+3. Assemble catalog: import a demo subset of the roster CSVs (courses/learners/enrollments) + generate the academic/credential layer — both course kinds + **both variants of each event** (happy: competency mastery / passing / accepted-fetchable badge; edge: sub-competency / failing / unaccepted badge).
 4. `apps/mock-lms`: course view → inspect (modules/submissions) → Action triggers → emitted-envelope confirmation.
 5. Phase 1 end-to-end happy path with the middle stubbed (§6): thin Context Builder → LearnCard Issuer → Delivery → wallet.
 6. `EventBridgeEmitter` + CDK infra; deploy.
@@ -205,7 +206,7 @@ From the Mock LMS's perspective: Phase 1 needs only the **happy** event variants
 
 ## 8. Open questions
 
-- **Account provisioning for delivery:** the downstream wallet may require the mock learner to already have an account before a badge can be delivered. We may need to fix a handful of test learner emails as constants and pre-create wallet accounts. To be confirmed when we wire delivery.
+- **Account provisioning for delivery:** the downstream wallet may require the mock learner to already have an account before a badge can be delivered. The roster CSVs give us concrete learner emails, so we'd fix a handful of those as the demo learners and pre-create their wallet accounts. To be confirmed when we wire delivery.
 - **Where the happy-path test lives:** this doc captures the phasing; the detailed end-to-end test steps will be a `4_operations/` doc when Phase 1 is built.
 - **Sub-competency representation:** how exactly to encode the parent/sub-competency outcome hierarchy in flat Canvas outcomes so the Workflow Actions LLM can infer structure (naming convention vs. an explicit field).
 - **Rubric fidelity:** how much rubric detail the transformation pipeline actually needs in a badge before we over-model the rubric endpoint.
