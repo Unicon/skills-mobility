@@ -55,7 +55,7 @@ The project is deployed on AWS. Amazon Bedrock was identified in earlier archite
 
 **Initial model assignments are provisional.** All services will begin with the same model to establish an end-to-end working pipeline. Per-service differentiation follows once the baseline is running and output quality can be evaluated per decision type.
 
-**The POC will capture structured per-invocation metadata for every LLM call.** Each invocation record includes at minimum: event ID, service name, loop/phase identifier, model ID, provider, temperature, input token count, output token count, latency, confidence score, and rationale. The adapter captures this metadata and returns it as part of the step result; the Orchestration Service (ADR 0011) stores it in its unified execution log alongside other step data and exposes it through the Orchestrator's read API. Admin UI access to LLM invocation data flows through the same read path as all other execution trace data, consistent with ADR 0011's "no standalone logging microservice" constraint.
+**The POC will capture structured per-invocation metadata for every LLM call.** Each invocation record includes at minimum: event ID, service name, loop/phase identifier, model ID, provider, temperature, input token count, output token count, latency, confidence score, and rationale. The adapter captures this metadata and returns it as part of the step result; the Orchestration Service (ADR 0011) stores it in the audit trace alongside other step data, per §9 (Audit and Trace Model). Admin UI access to LLM invocation data flows through the same execution trace as all other step data, rather than a parallel observability stack.
 
 Per-invocation metadata capture is non-optional: it is the primary mechanism for systematic model comparison at the end of the POC. Access controls and log retention policy for rationale strings (which may contain learner data fragments) should be addressed in the Orchestration Service execution log design, not here.
 
@@ -231,7 +231,7 @@ If fine-tuning is pursued, the provider adapter architecture supports it: a fine
 - Per-service provider adapters allow models to be swapped independently per service without cross-service changes
 - POC output provides real labeled examples that can drive targeted fine-tuning post-POC, with evidence of which services need it most
 - Per-invocation metadata logging (model ID, token counts, latency, confidence, rationale) is built in from the start, enabling systematic model comparison analysis at the end of the POC
-- LLM invocation metadata flows through the Orchestration Service's unified execution log and read API (ADR 0011), supporting the admin UI decision-review use case without a parallel observability stack
+- LLM invocation metadata flows through the Orchestration Service's audit trace (ADR 0011 §9), supporting the admin UI decision-review use case without a parallel observability stack
 - The provisional baseline (all services on one model) is immediately runnable; differentiation is optional and incremental
 
 ### Negative
