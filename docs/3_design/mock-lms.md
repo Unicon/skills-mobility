@@ -4,7 +4,7 @@
 - Date: 2026-06-18
 
 Related requirements: [Event Producer](../2_requirements/mock-lms-event-producer.md) · [LMS Resource APIs](../2_requirements/mock-lms-apis.md) · [Demo UI](../2_requirements/mock-lms-ui.md)
-Design context: **POC Component Boundary Matrix** (`poc-component-boundaries.md`, PR #10) — the source of truth for component names, ownership boundaries, and logical stores; this doc stays consistent with it.
+Design context: [**POC Component Boundary Matrix**](./poc-component-boundaries.md) — the source of truth for component names, ownership boundaries, and logical stores; this doc stays consistent with it.
 Governing ADRs: [0002](../decisions/0002-frontend-architecture.md) · [0003](../decisions/0003-programming-language.md) · [0004](../decisions/0004-lif-usage.md) · [0007](../decisions/0007-llm-decision-service-decomposition.md) · [0008](../decisions/0008-transformation-mapping-service-decomposition.md) · [0009](../decisions/0009-workflow-actions-orchestration-model.md) · [0011](../decisions/0011-orchestration-runtime-technology.md)
 
 ## 1. Overview
@@ -212,7 +212,8 @@ From the Mock LMS's perspective: Phase 1 needs only the **happy** event variants
 
 ## 9. References
 
-- **POC Component Boundary Matrix** (`poc-component-boundaries.md`, PR #10) — component names, ownership boundaries, stores
+- [POC Component Boundary Matrix](./poc-component-boundaries.md) — component names, ownership boundaries, stores
+- [ADR-0012 MCP Client Layer Deferred](../decisions/0012-mcp-client-layer-deferred.md)
 - Requirements: [Event Producer](../2_requirements/mock-lms-event-producer.md), [LMS Resource APIs](../2_requirements/mock-lms-apis.md), [Demo UI](../2_requirements/mock-lms-ui.md)
 - [ADR-0002 Frontend Architecture](../decisions/0002-frontend-architecture.md)
 - [ADR-0003 Programming Language](../decisions/0003-programming-language.md)
