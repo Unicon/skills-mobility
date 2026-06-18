@@ -38,7 +38,7 @@ def test_envelope_round_trips_to_json():
             context_id="1001",
             event_id=new_event_id(),
             correlation_id=new_correlation_id(),
-            scenario_id="skill-mastered",
+            action_id="grade-module-assignment",
         ),
         body=body.model_dump(mode="json"),
     )

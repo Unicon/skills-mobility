@@ -1,9 +1,9 @@
 """Identifier and timestamp helpers for emitted events.
 
-Each emission gets a fresh ``event_id`` and ``emission_id``; a single trigger
-(one ``/demo/emit`` call, or one scenario run) gets one ``correlation_id`` that
-is stamped onto every event it produces. This is what makes a scenario both
-repeatable (fresh ids each run) and traceable (stable correlation per trigger).
+Each emitted event gets a fresh ``event_id``; a single Action run (one
+``POST /demo/courses/{id}/actions`` call) gets one ``correlation_id`` that is
+stamped onto every event it produces. This is what makes an Action both
+repeatable (fresh ids each run) and traceable (stable correlation per run).
 """
 
 from __future__ import annotations

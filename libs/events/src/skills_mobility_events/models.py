@@ -3,11 +3,11 @@
 The Mock Event Producer is the source of truth for these schemas. Emitted
 events use a Canvas Live Events-style ``{ metadata, body }`` envelope; the
 ``metadata`` adds two POC traceability fields (``correlation_id`` and
-``scenario_id``) on top of the Canvas-standard fields. Those additions are
+``action_id``) on top of the Canvas-standard fields. Those additions are
 additive and ignored by anything expecting a vanilla Canvas event.
 
-See: docs/2_requirements/mock-event-producer.md §5.2 and
-docs/3_design/mock-event-producer.md §3.
+See: docs/2_requirements/mock-lms-event-producer.md §4 and
+docs/3_design/mock-lms.md §2.
 """
 
 from __future__ import annotations
@@ -25,7 +25,6 @@ class EventType(StrEnum):
     SKILL_MASTERED = "skill_mastered"
     COURSE_COMPLETED = "course_completed"
     BADGE_AWARDED = "badge_awarded"
-    CREDENTIAL_ELIGIBLE = "credential_eligible"
 
 
 # Maps our business event type to the Canvas Live Events ``event_name`` it is
@@ -34,7 +33,6 @@ CANVAS_EVENT_NAMES: dict[EventType, str] = {
     EventType.SKILL_MASTERED: "learning_outcome_result_created",
     EventType.COURSE_COMPLETED: "course_completed",
     EventType.BADGE_AWARDED: "badge_awarded",
-    EventType.CREDENTIAL_ELIGIBLE: "credential_eligible",
 }
 
 
@@ -56,7 +54,8 @@ class EventMetadata(BaseModel):
     event_id: str
     # POC traceability extensions:
     correlation_id: str
-    scenario_id: str | None = None
+    # Which catalog Action produced this event (stable business id).
+    action_id: str | None = None
 
 
 class LiveEventEnvelope(BaseModel):
@@ -94,6 +93,10 @@ class CourseCompletedBody(BaseModel):
     user_id: str
     completed_at: datetime
     progress_percent: float = 100.0
+    # Final course grade (design §2): passing vs failing is the happy/edge split.
+    final_grade: str | None = None
+    final_score: float | None = None
+    passed: bool = True
 
 
 class BadgeAwardedBody(BaseModel):
@@ -106,24 +109,12 @@ class BadgeAwardedBody(BaseModel):
     outcome_id: str | None = None
     awarded_at: datetime
     criteria: str | None = None
+    # Acceptance gate (design §2): accepted badges are fetchable via GET badge
+    # by id; unaccepted ones make that read error, so the planner should decline.
+    accepted: bool = True
 
 
-class CredentialEligibleBody(BaseModel):
-    """Body for ``credential_eligible`` (POC-defined)."""
-
-    user_id: str
-    course_id: str
-    credential_type: str
-    reason: str | None = None
-    eligible_at: datetime
-
-
-BodyModel = (
-    LearningOutcomeResultBody
-    | CourseCompletedBody
-    | BadgeAwardedBody
-    | CredentialEligibleBody
-)
+BodyModel = LearningOutcomeResultBody | CourseCompletedBody | BadgeAwardedBody
 
 __all__ = [
     "EventType",
@@ -134,6 +125,5 @@ __all__ = [
     "LearningOutcomeResultBody",
     "CourseCompletedBody",
     "BadgeAwardedBody",
-    "CredentialEligibleBody",
     "BodyModel",
 ]

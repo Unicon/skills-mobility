@@ -14,7 +14,6 @@ from skills_mobility_events.models import (
     CANVAS_EVENT_NAMES,
     BadgeAwardedBody,
     CourseCompletedBody,
-    CredentialEligibleBody,
     EventMetadata,
     EventType,
     LearningOutcomeResultBody,
@@ -35,5 +34,4 @@ __all__ = [
     "LearningOutcomeResultBody",
     "CourseCompletedBody",
     "BadgeAwardedBody",
-    "CredentialEligibleBody",
 ]
