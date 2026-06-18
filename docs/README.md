@@ -12,7 +12,7 @@ Docs are organized by **lifecycle phase**, with a `README.md` in each directory 
 
 ## Conventions
 
-- **Phase + component axes.** The top level is by phase. Within `2_requirements/` and `3_design/`, a component gets one file per phase named after the component (e.g. `mock-event-producer.md`), so a component's requirements and design are easy to find even though they live in different phase directories. Cross-link the two in each file's `Related:` header.
+- **Phase + component axes.** The top level is by phase. Within `2_requirements/` and `3_design/`, docs are named after the component (e.g. `mock-lms-*.md`), so a component's requirements and design are easy to find even though they live in different phase directories. A component may split into several requirements docs (e.g. Mock LMS → event-producer / apis / ui) while keeping a single design doc. Cross-link related docs via each file's `Related:` header.
 - **Status header.** Each doc starts with `Status:` (Draft / Accepted / Superseded) and `Date:`.
 - **ADRs** record decisions that cut across components; they stay in `decisions/` and are referenced from requirements/design docs rather than duplicated.
 - **Archiving.** When a doc is retired, set `Status: Superseded` (note what replaced it) and move it to an `archive/` subfolder within its phase directory (e.g. `2_requirements/archive/`). ADRs are never moved — they are immutable history; mark them `Status: Superseded by ADR-XXXX` instead.
