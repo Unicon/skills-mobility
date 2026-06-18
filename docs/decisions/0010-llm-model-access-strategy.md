@@ -55,9 +55,9 @@ The project is deployed on AWS. Amazon Bedrock was identified in earlier archite
 
 **Initial model assignments are provisional.** All services will begin with the same model to establish an end-to-end working pipeline. Per-service differentiation follows once the baseline is running and output quality can be evaluated per decision type.
 
-**The POC will capture structured per-invocation metadata for every LLM call and expose it through an admin-facing API.** Each invocation log record includes at minimum: event ID, service name, loop/phase identifier, model ID, provider, temperature, input token count, output token count, latency, confidence score, and rationale. The adapter writes each record to DynamoDB (for queryable, structured access) in addition to CloudWatch (for AWS-native monitoring). An API Gateway + Lambda endpoint exposes log records to the admin UI, queryable by event, service, and time range. For real-time log visibility as invocations happen during a workflow run, the adapter publishes invocation events to EventBridge, which the admin UI can subscribe to via a WebSocket API. CloudWatch Logs Insights is available as a built-in alternative for engineering review, but it is not appropriate for embedding in a non-technical admin UI.
+**The POC will capture structured per-invocation metadata for every LLM call.** Each invocation record includes at minimum: event ID, service name, loop/phase identifier, model ID, provider, temperature, input token count, output token count, latency, confidence score, and rationale. The adapter captures this metadata and returns it as part of the step result; the Orchestration Service (ADR 0011) stores it in its unified execution log alongside other step data and exposes it through the Orchestrator's read API. Admin UI access to LLM invocation data flows through the same read path as all other execution trace data, consistent with ADR 0011's "no standalone logging microservice" constraint.
 
-This is a non-optional part of the POC: the per-invocation log is the primary mechanism for making model comparison and quality analysis possible at the end of the POC rather than relying on impressions. The log schema is defined once and populated by the provider adapter, so no service-level changes are needed when adding new logging fields. Access controls on the API endpoint are the primary mechanism for limiting exposure of rationale strings that may contain learner data context; the log retention policy must be defined before the POC begins processing real learner data.
+Per-invocation metadata capture is non-optional: it is the primary mechanism for systematic model comparison at the end of the POC. Access controls and log retention policy for rationale strings (which may contain learner data fragments) should be addressed in the Orchestration Service execution log design, not here.
 
 **Each LLM Decision Service output schema must include confidence and rationale fields.** The POC requirements specify that LLM Decision Services produce confidence scores and decision rationale. These are not separate features — they are part of the structured output schema the model is asked to produce for every invocation. The adapter enforces a JSON schema on model responses that includes `confidence` (a 0–1 score the model assigns to its own output) and `rationale` (a brief natural-language explanation). This is a prompt engineering and structured output contract concern, not a model access concern; it applies equally regardless of which model or platform is used. Bedrock's `toolUse` feature, the Anthropic and OpenAI tool-calling APIs, and HuggingFace's structured generation all support schema-enforced JSON output.
 
@@ -231,7 +231,7 @@ If fine-tuning is pursued, the provider adapter architecture supports it: a fine
 - Per-service provider adapters allow models to be swapped independently per service without cross-service changes
 - POC output provides real labeled examples that can drive targeted fine-tuning post-POC, with evidence of which services need it most
 - Per-invocation metadata logging (model ID, token counts, latency, confidence, rationale) is built in from the start, enabling systematic model comparison analysis at the end of the POC
-- Invocation logs are queryable by event and service via API and streamable in real time via EventBridge, supporting the admin UI's decision-review use case without requiring access to CloudWatch or AWS console
+- LLM invocation metadata flows through the Orchestration Service's unified execution log and read API (ADR 0011), supporting the admin UI decision-review use case without a parallel observability stack
 - The provisional baseline (all services on one model) is immediately runnable; differentiation is optional and incremental
 
 ### Negative
@@ -240,7 +240,7 @@ If fine-tuning is pursued, the provider adapter architecture supports it: a fine
 - Per-invocation cost with frontier models (Claude Haiku, Llama 70B) is higher than with small open-source models; acceptable for a POC but potentially significant at production event volume
 - Pre-trained prompting typically exhibits higher output variance than fine-tuned models; output quality for JSONata generation in particular may be less consistent than DCC's experience with Phi-4-mini fine-tuned for that task
 - Bedrock model versioning is managed by AWS; behavior may change when AWS updates model versions
-- Invocation log records stored in DynamoDB and exposed via API will contain rationale strings that may include learner data fragments from prompt context; API access controls and DynamoDB resource policy must be scoped appropriately before the POC processes real learner data, and a log retention policy must be defined
+- Invocation log records will contain rationale strings that may include learner data fragments; access controls and retention policy for this data should be addressed in the Orchestration Service execution log design before the POC processes real learner data
 
 ### Revisit Triggers
 
@@ -259,16 +259,16 @@ This decision should be revisited if:
 - Should a local development fallback using Ollama (running Llama or another compatible model locally) be supported for development and testing without AWS credentials? This would allow contributors to run the pipeline locally without a Bedrock account, which matters for an open-source project where external contributors may not have access to the project's AWS environment.
 - What Bedrock model invocation quotas apply to the AWS account, and do any quotas need to be raised before POC work begins?
 - Should the POC include at least one systematic model comparison experiment — running the same prompts and inputs through multiple adapters (Bedrock Llama, Claude Haiku, and optionally an OpenAI or Gemini model) for one service — to produce empirical data on model quality for this specific domain? Even a small experiment on Field Mapping JSONata validity would be more informative than assumptions.
-- What is the appropriate log retention period for DynamoDB invocation records, and what should happen when it expires — archive to S3, delete, or anonymize? Rationale strings may contain learner data fragments, so the retention policy needs to account for data minimization requirements.
-- What access controls should govern the admin UI's invocation log API? Role-based access (admin-only vs. read-only reviewer) and whether rationale strings should be masked or redacted for certain roles needs to be defined before real learner data enters the system.
+- Log retention period, data minimization for rationale strings (which may contain learner data fragments), and access controls for LLM invocation data in the admin UI are deferred to the Orchestration Service execution log design.
 
 ## References
 
 - [ADR 0007: LLM Decision Service Decomposition](0007-llm-decision-service-decomposition.md)
 - [ADR 0008: Transformation Mapping Service Decomposition](0008-transformation-mapping-service-decomposition.md)
 - [ADR 0009: Workflow Actions Orchestration Model](0009-workflow-actions-orchestration-model.md)
+- [ADR 0011: Orchestration Runtime Technology](0011-orchestration-runtime-technology.md)
 - [DCC Credential Co-Writer (Live Tool)](https://co-writer.dcconsortium.org/)
-- [Skills Mobility Infrastructure POC Requirements](../SkillsMobilityInfrastructurePOCRequirements.md)
+- [Skills Mobility Infrastructure POC Requirements](../2_requirements/poc-requirements.md)
 - Kadavath et al., "Language Models (Mostly) Know What They Know", arXiv:2207.05221, 2022 — foundational verbalized confidence study; LLMs can self-assess uncertainty when prompted directly
 - Lozhkov et al., "StarCoder 2 and The Stack v2", arXiv:2402.19173, 2024 — StarCoder2-15B matches or outperforms CodeLlama-34B on code completion benchmarks; supports architecture > raw parameter count claim
 - "A Comprehensive Study of Small Language Models for Code Generation", arXiv:2507.03160 — benchmarks SLMs (0.4B–10B) on code generation; finds architecture/training quality matters more than parameter count within the SLM tier, and that frontier models retain an accuracy advantage for broader tasks
