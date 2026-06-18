@@ -1,9 +1,13 @@
-"""Canvas-style read endpoints (the "LMS Metadata APIs").
+"""LMS Resource APIs — Canvas-style read endpoints (design §3).
 
 Paths and query shapes mirror Canvas so the Context Builder integration is
 realistic; only the fields the Context Builder consumes are populated. Responses
-are deterministic per the seeded catalog (requirements §5.3). Unknown ids return
-Canvas-style 404 envelopes.
+are deterministic per the captured catalog (requirements §5.3). Unknown ids
+return Canvas-style 404 envelopes.
+
+These are the same reads the Demo UI uses to make the source data legible
+(course content + a learner's submissions) so a stakeholder can compare it to the
+badge issued downstream.
 """
 
 from __future__ import annotations
@@ -13,16 +17,20 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from mock_lms.api import get_store
-from mock_lms.scenarios import ScenarioStore
+from mock_lms.catalog import CatalogStore
 
-router = APIRouter(prefix="/api/v1", tags=["lms-metadata"])
+router = APIRouter(prefix="/api/v1", tags=["resources"])
 
-StoreDep = Annotated[ScenarioStore, Depends(get_store)]
+StoreDep = Annotated[CatalogStore, Depends(get_store)]
+
+
+def _error(status_code: int, message: str) -> HTTPException:
+    # Canvas returns {"errors": [{"message": ...}]}.
+    return HTTPException(status_code=status_code, detail={"errors": [{"message": message}]})
 
 
 def _not_found(message: str) -> HTTPException:
-    # Canvas returns {"errors": [{"message": ...}]} on 404.
-    return HTTPException(status_code=404, detail={"errors": [{"message": message}]})
+    return _error(404, message)
 
 
 @router.get("/courses/{course_id}")
@@ -84,6 +92,13 @@ def get_assignments(course_id: str, store: StoreDep) -> list[dict[str, Any]]:
     return [a.model_dump(mode="json") for a in store.assignments_for(course_id)]
 
 
+@router.get("/courses/{course_id}/rubrics")
+def get_rubrics(course_id: str, store: StoreDep) -> list[dict[str, Any]]:
+    if store.get_course(course_id) is None:
+        raise _not_found(f"course {course_id} not found")
+    return [r.model_dump(mode="json") for r in store.rubrics(course_id)]
+
+
 @router.get("/outcomes/{outcome_id}")
 def get_outcome(outcome_id: str, store: StoreDep) -> dict[str, Any]:
     outcome = store.get_outcome(outcome_id)
@@ -112,11 +127,7 @@ def get_outcome_results(
 
 
 @router.get("/courses/{course_id}/outcome_alignments")
-def get_outcome_alignments(
-    course_id: str,
-    store: StoreDep,
-    student_id: Annotated[str | None, Query()] = None,
-) -> list[dict[str, Any]]:
+def get_outcome_alignments(course_id: str, store: StoreDep) -> list[dict[str, Any]]:
     if store.get_course(course_id) is None:
         raise _not_found(f"course {course_id} not found")
     return [a.model_dump(mode="json") for a in store.outcome_alignments(course_id)]
@@ -133,3 +144,27 @@ def get_submissions(
         raise _not_found(f"course {course_id} not found")
     subs = store.submissions(course_id, student_ids=student_ids, assignment_ids=assignment_ids)
     return [s.model_dump(mode="json") for s in subs]
+
+
+@router.get("/users/{user_id}/profile")
+def get_user_profile(user_id: str, store: StoreDep) -> dict[str, Any]:
+    """Canvas-style user profile — the email is the badge recipient identity."""
+    user = store.get_user(user_id)
+    if user is None:
+        raise _not_found(f"user {user_id} not found")
+    return user.model_dump(mode="json")
+
+
+@router.get("/badges/{badge_id}")
+def get_badge(badge_id: str, store: StoreDep) -> dict[str, Any]:
+    """POC-defined GET badge by id.
+
+    An *unaccepted* badge is not fetchable — this errors (409), which is the
+    edge variant the Workflow Actions planner gates on (design §2).
+    """
+    badge = store.get_badge(badge_id)
+    if badge is None:
+        raise _not_found(f"badge {badge_id} not found")
+    if not badge.accepted:
+        raise _error(409, f"badge {badge_id} is not accepted and cannot be fetched")
+    return badge.model_dump(mode="json")

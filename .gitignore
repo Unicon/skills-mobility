@@ -92,6 +92,10 @@ temp/
 # Generated mock LMS data
 generated-fixtures/
 
+# Raw roster CSVs — input artifacts for the seed generator (design §3)
+seed-data/
+services/mock-lms/seed-data/
+
 # ==========================================
 # Jupyter
 # ==========================================

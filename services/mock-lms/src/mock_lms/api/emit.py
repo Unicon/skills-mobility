@@ -1,4 +1,11 @@
-"""Emission control endpoints (UI-facing): trigger events, run scenarios, inspect log."""
+"""Emission control API (UI-facing): courses, their Actions, and running them.
+
+The operator never emits raw events. A course offers grading **Actions**; running
+one emits 1..N events (one learner, or one per enrolled learner) and returns the
+emitted envelope(s) synchronously so the UI can show exactly what was emitted.
+There is no live feed here — the persistent, cross-system view is the Admin UI's
+(design §2/§4).
+"""
 
 from __future__ import annotations
 
@@ -6,149 +13,106 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from skills_mobility_events import new_correlation_id, new_emission_id
+from skills_mobility_events import new_correlation_id
 
-from mock_lms.api import get_emission_log, get_emitter, get_store
-from mock_lms.auth import Role, get_current_role
-from mock_lms.builders import EventBuildError, build_envelope
+from mock_lms.api import get_emitter, get_store
+from mock_lms.catalog import Action, CatalogStore, Course
 from mock_lms.config import Settings, get_settings
-from mock_lms.emission import EmissionLog, EmissionRecord, Emitter
-from mock_lms.scenarios import EventSpec, ScenarioStore
+from mock_lms.emitter import Emitter
+from mock_lms.events import EventBuildError, action_event_type, build_envelope, resolve_targets
 
 router = APIRouter(prefix="/demo", tags=["emission"])
 
-StoreDep = Annotated[ScenarioStore, Depends(get_store)]
+StoreDep = Annotated[CatalogStore, Depends(get_store)]
 EmitterDep = Annotated[Emitter, Depends(get_emitter)]
-LogDep = Annotated[EmissionLog, Depends(get_emission_log)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]
-RoleDep = Annotated[Role, Depends(get_current_role)]
 
 
-class EmitRequest(BaseModel):
-    event_type: str
-    course_id: str
-    user_id: str
-    outcome_id: str | None = None
-    assignment_id: str | None = None
-    badge_id: str | None = None
-    badge_name: str | None = None
-    credential_type: str | None = None
+class RunActionRequest(BaseModel):
+    action_id: str
+    scope: str = "one"  # "one" | "all"
+    user_id: str | None = None  # required-ish when scope == "one" (else first enrolled)
 
 
-def _emit_spec(
-    spec: EventSpec,
-    *,
-    store: ScenarioStore,
-    emitter: Emitter,
-    log: EmissionLog,
-    settings: Settings,
-    correlation_id: str,
-    scenario_id: str | None,
-) -> dict[str, Any]:
-    try:
-        envelope = build_envelope(
-            store,
-            spec,
-            correlation_id=correlation_id,
-            scenario_id=scenario_id,
-            root_account_uuid=settings.root_account_uuid,
+def _action_view(store: CatalogStore, course: Course, action: Action) -> dict[str, Any]:
+    assignment = store.get_assignment(action.assignment_id)
+    return {
+        "id": action.id,
+        "label": action.label,
+        "assignment_id": action.assignment_id,
+        "assignment_name": assignment.name if assignment else None,
+        "event_type": action_event_type(course, assignment).value if assignment else None,
+    }
+
+
+@router.get("/courses")
+def list_courses(store: StoreDep) -> list[dict[str, Any]]:
+    """Courses + the Actions each offers (and the learners, for one-learner runs)."""
+    out: list[dict[str, Any]] = []
+    for course in store.courses.values():
+        learners = [
+            {"id": u.id, "name": u.name, "email": u.email}
+            for e in store.enrollments(course.id)
+            if (u := store.get_user(e.user_id)) is not None
+        ]
+        out.append(
+            {
+                **course.model_dump(mode="json"),
+                "learners": learners,
+                "actions": [_action_view(store, course, a) for a in store.actions_for(course.id)],
+            }
         )
+    return out
+
+
+@router.post("/courses/{course_id}/actions")
+def run_action(
+    course_id: str,
+    payload: RunActionRequest,
+    store: StoreDep,
+    emitter: EmitterDep,
+    settings: SettingsDep,
+) -> dict[str, Any]:
+    course = store.get_course(course_id)
+    if course is None:
+        raise HTTPException(status_code=404, detail=f"course {course_id} not found")
+    action = store.get_action(payload.action_id)
+    if action is None or action.course_id != course_id:
+        raise HTTPException(
+            status_code=404, detail=f"action {payload.action_id} not found in course {course_id}"
+        )
+
+    correlation_id = new_correlation_id()
+    try:
+        targets = resolve_targets(store, action, payload.scope, payload.user_id)
+        envelopes = [
+            build_envelope(
+                store,
+                action,
+                user,
+                correlation_id=correlation_id,
+                root_account_uuid=settings.root_account_uuid,
+            )
+            for user in targets
+        ]
     except EventBuildError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    emitter.emit(envelope)
-    record = EmissionRecord(
-        emission_id=new_emission_id(),
-        correlation_id=correlation_id,
-        scenario_id=scenario_id,
-        event_type=spec.event_type,
-        event_name=envelope.metadata.event_name,
-        event_time=envelope.metadata.event_time,
-        target=emitter.target,
-        envelope=envelope.model_dump(mode="json"),
-    )
-    log.append(record)
-    return {"emission_id": record.emission_id, "envelope": record.envelope}
+    for envelope in envelopes:
+        emitter.emit(envelope)
 
-
-@router.post("/emit")
-def emit_event(
-    payload: EmitRequest,
-    store: StoreDep,
-    emitter: EmitterDep,
-    log: LogDep,
-    settings: SettingsDep,
-    role: RoleDep,
-) -> dict[str, Any]:
-    correlation_id = new_correlation_id()
-    spec = EventSpec(**payload.model_dump())
-    result = _emit_spec(
-        spec,
-        store=store,
-        emitter=emitter,
-        log=log,
-        settings=settings,
-        correlation_id=correlation_id,
-        scenario_id=None,
-    )
-    return {"correlation_id": correlation_id, **result}
-
-
-@router.get("/scenarios")
-def list_scenarios(store: StoreDep) -> list[dict[str, Any]]:
-    return [
-        {
-            "id": s.id,
-            "title": s.title,
-            "description": s.description,
-            "event_count": len(s.events),
-            # Events let the UI inspect exactly the context a scenario will emit.
-            "events": [e.model_dump(mode="json") for e in s.events],
-        }
-        for s in store.scenarios.values()
-    ]
-
-
-@router.post("/scenarios/{scenario_id}/run")
-def run_scenario(
-    scenario_id: str,
-    store: StoreDep,
-    emitter: EmitterDep,
-    log: LogDep,
-    settings: SettingsDep,
-    role: RoleDep,
-) -> dict[str, Any]:
-    scenario = store.scenarios.get(scenario_id)
-    if scenario is None:
-        raise HTTPException(status_code=404, detail=f"scenario {scenario_id} not found")
-    correlation_id = new_correlation_id()
-    emissions = [
-        _emit_spec(
-            spec,
-            store=store,
-            emitter=emitter,
-            log=log,
-            settings=settings,
-            correlation_id=correlation_id,
-            scenario_id=scenario_id,
-        )
-        for spec in scenario.events
-    ]
-    return {"run_id": correlation_id, "correlation_id": correlation_id, "emissions": emissions}
-
-
-@router.post("/scenarios/{scenario_id}/reset")
-def reset(scenario_id: str, store: StoreDep, log: LogDep, role: RoleDep) -> dict[str, Any]:
-    if scenario_id not in store.scenarios:
-        raise HTTPException(status_code=404, detail=f"scenario {scenario_id} not found")
-    # Seed data is read-only; reset clears the emission log so a re-run starts clean.
-    log.clear()
-    return {"ok": True, "scenario_id": scenario_id}
-
-
-@router.get("/emissions")
-def list_emissions(log: LogDep, since: int = 0) -> dict[str, Any]:
     return {
-        "cursor": log.cursor,
-        "emissions": [r.to_public_dict() for r in log.since(since)],
+        "correlation_id": correlation_id,
+        "action_id": action.id,
+        "scope": payload.scope,
+        "emitted": [e.model_dump(mode="json") for e in envelopes],
     }
+
+
+@router.post("/reset")
+def reset(emitter: EmitterDep) -> dict[str, Any]:
+    """Clear emission state so a demo can re-run cleanly. Seed data is read-only."""
+    captured = getattr(emitter, "emitted", None)
+    if captured is not None:
+        captured.clear()
+    return {"ok": True}

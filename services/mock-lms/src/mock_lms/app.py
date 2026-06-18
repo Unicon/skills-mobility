@@ -1,4 +1,4 @@
-"""FastAPI application factory for the Mock LMS / Mock Event Producer."""
+"""FastAPI application factory for the Mock LMS."""
 
 from __future__ import annotations
 
@@ -6,10 +6,10 @@ from typing import Any
 
 from fastapi import FastAPI
 
-from mock_lms.api import emit, metadata, stream
+from mock_lms.api import emit, resources
+from mock_lms.catalog import load_catalog
 from mock_lms.config import Settings, get_settings
-from mock_lms.emission import EmissionLog, EventBridgeEmitter, LocalEmitter
-from mock_lms.scenarios import load_store
+from mock_lms.emitter import EventBridgeEmitter, LocalEmitter
 
 
 def _build_emitter(settings: Settings) -> LocalEmitter | EventBridgeEmitter:
@@ -21,18 +21,16 @@ def _build_emitter(settings: Settings) -> LocalEmitter | EventBridgeEmitter:
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     app = FastAPI(
-        title="Mock LMS / Event Producer",
+        title="Mock LMS",
         version="0.1.0",
-        summary="Canvas-style mock LMS metadata APIs + credential event emission (POC)",
+        summary="Canvas-style LMS Resource APIs + credential event emission (POC)",
     )
     app.state.settings = settings
-    app.state.store = load_store(settings.fixtures_dir)
+    app.state.store = load_catalog(settings.fixtures_dir)
     app.state.emitter = _build_emitter(settings)
-    app.state.emission_log = EmissionLog(capacity=settings.emission_log_capacity)
 
-    app.include_router(metadata.router)
+    app.include_router(resources.router)
     app.include_router(emit.router)
-    app.include_router(stream.router)
 
     @app.get("/healthz", tags=["meta"])
     def healthz() -> dict[str, Any]:

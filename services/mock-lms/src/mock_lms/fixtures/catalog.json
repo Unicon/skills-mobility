@@ -1,112 +1,808 @@
 {
   "courses": [
     {
-      "id": "1001",
-      "name": "Introduction to Data Analysis",
-      "course_code": "ITD-101",
+      "id": "ACCY-111",
+      "name": "Introduction to Accounting",
+      "course_code": "ACCY-111",
+      "kind": "standard",
+      "institution": "Wasatch University",
+      "term": "Fall2017",
+      "workflow_state": "available"
+    },
+    {
+      "id": "ACCY-374",
+      "name": "Law, Governance, & Ethics",
+      "course_code": "ACCY-374",
+      "kind": "digital_credential",
+      "institution": "Wasatch University",
+      "term": "Fall2017",
       "workflow_state": "available"
     }
   ],
-  "students": [
+  "users": [
     {
-      "id": "2001",
-      "name": "Allison Hill",
-      "sortable_name": "Hill, Allison",
-      "login_id": "allison.hill"
+      "id": "WU1125875",
+      "name": "Audrey Wallace",
+      "sortable_name": "Wallace, Audrey",
+      "login_id": "audrey.wallace",
+      "email": "audrey.wallace@example.com",
+      "profile": {
+        "Gender": "Female",
+        "Ethnicity": "Caucasian",
+        "Academic Classification": "Freshman",
+        "Admission Cohort": "2017",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125893",
+      "name": "James Reid",
+      "sortable_name": "Reid, James",
+      "login_id": "james.reid",
+      "email": "james.reid@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "South Asian",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125904",
+      "name": "Richard Hart",
+      "sortable_name": "Hart, Richard",
+      "login_id": "richard.hart",
+      "email": "richard.hart@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "South Asian",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125875",
+      "name": "Audrey Wallace",
+      "sortable_name": "Wallace, Audrey",
+      "login_id": "audrey.wallace",
+      "email": "audrey.wallace@example.com",
+      "profile": {
+        "Gender": "Female",
+        "Ethnicity": "Caucasian",
+        "Academic Classification": "Freshman",
+        "Admission Cohort": "2017",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125893",
+      "name": "James Reid",
+      "sortable_name": "Reid, James",
+      "login_id": "james.reid",
+      "email": "james.reid@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "South Asian",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125904",
+      "name": "Richard Hart",
+      "sortable_name": "Hart, Richard",
+      "login_id": "richard.hart",
+      "email": "richard.hart@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "South Asian",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
     }
   ],
   "enrollments": [
     {
-      "id": "9001",
-      "course_id": "1001",
-      "user_id": "2001",
+      "id": "ACCY-111-ENR-WU1125875",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125875",
       "type": "StudentEnrollment",
-      "enrollment_state": "active"
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "ACCY-111-ENR-WU1125893",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125893",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "F",
+      "current_points": 52.0
+    },
+    {
+      "id": "ACCY-111-ENR-WU1125904",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125904",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "ACCY-374-ENR-WU1125875",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125875",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": null,
+      "current_points": null
+    },
+    {
+      "id": "ACCY-374-ENR-WU1125893",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125893",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": null,
+      "current_points": null
+    },
+    {
+      "id": "ACCY-374-ENR-WU1125904",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125904",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": null,
+      "current_points": null
     }
   ],
   "modules": [
     {
-      "id": "5001",
-      "course_id": "1001",
-      "name": "Module 1: Foundations of Data Analysis",
+      "id": "ACCY-111-MOD-1",
+      "course_id": "ACCY-111",
+      "name": "Module 1: Foundations of Accounting",
       "position": 1,
       "items": [
         {
-          "id": "500101",
-          "title": "Course Syllabus",
-          "type": "Page",
-          "content_id": "syllabus"
-        },
-        {
-          "id": "500102",
-          "title": "Final Data Analysis Project",
+          "id": "ACCY-111-MOD-1-I1",
+          "title": "Module 1 Assessment",
           "type": "Assignment",
-          "content_id": "4001"
+          "content_id": "ACCY-111-A-M1"
+        }
+      ]
+    },
+    {
+      "id": "ACCY-111-MOD-2",
+      "course_id": "ACCY-111",
+      "name": "Module 2: Applying Accounting",
+      "position": 2,
+      "items": [
+        {
+          "id": "ACCY-111-MOD-2-I1",
+          "title": "Module 2 Assessment",
+          "type": "Assignment",
+          "content_id": "ACCY-111-A-M2"
+        }
+      ]
+    },
+    {
+      "id": "ACCY-374-MOD-1",
+      "course_id": "ACCY-374",
+      "name": "Module 1",
+      "position": 1,
+      "items": [
+        {
+          "id": "ACCY-374-MOD-1-I1",
+          "title": "Module 1 Project",
+          "type": "Assignment",
+          "content_id": "ACCY-374-A-M1"
+        }
+      ]
+    },
+    {
+      "id": "ACCY-374-MOD-2",
+      "course_id": "ACCY-374",
+      "name": "Module 2",
+      "position": 2,
+      "items": [
+        {
+          "id": "ACCY-374-MOD-2-I1",
+          "title": "Module 2 Project",
+          "type": "Assignment",
+          "content_id": "ACCY-374-A-M2"
         }
       ]
     }
   ],
   "pages": [
     {
-      "course_id": "1001",
+      "course_id": "ACCY-111",
       "url": "syllabus",
       "title": "Course Syllabus",
-      "body": "This course introduces the foundations of Data Analysis, culminating in a final project assessed against the Data Analysis outcome."
+      "body": "Foundations of Accounting, assessed across two modules and a final."
+    },
+    {
+      "course_id": "ACCY-374",
+      "url": "syllabus",
+      "title": "Course Syllabus",
+      "body": "Law, Governance, & Ethics: a digital-credential course issuing badges per module."
     }
   ],
   "assignments": [
     {
-      "id": "4001",
-      "course_id": "1001",
-      "name": "Final Data Analysis Project",
-      "description": "Apply data analysis to a provided real-world dataset and present findings.",
+      "id": "ACCY-111-A-M1",
+      "course_id": "ACCY-111",
+      "name": "Module 1 Assessment",
+      "description": "Demonstrate the Accounting competency.",
       "points_possible": 100.0,
-      "due_at": "2026-02-13T00:37:51.680872Z"
+      "due_at": "2026-03-23T01:23:39.341770Z",
+      "role": "module",
+      "module_id": "ACCY-111-MOD-1",
+      "outcome_id": "ACCY-111-OUT-1",
+      "badge_id": null
+    },
+    {
+      "id": "ACCY-111-A-M2",
+      "course_id": "ACCY-111",
+      "name": "Module 2 Assessment",
+      "description": "Demonstrate a Accounting sub-skill.",
+      "points_possible": 100.0,
+      "due_at": "2026-01-15T16:49:40.359134Z",
+      "role": "module",
+      "module_id": "ACCY-111-MOD-2",
+      "outcome_id": "ACCY-111-OUT-1-2-3",
+      "badge_id": null
+    },
+    {
+      "id": "ACCY-111-A-FINAL",
+      "course_id": "ACCY-111",
+      "name": "Final Accounting Exam",
+      "description": "Comprehensive Accounting assessment.",
+      "points_possible": 100.0,
+      "due_at": "2026-02-11T16:52:33.575566Z",
+      "role": "final",
+      "module_id": null,
+      "outcome_id": null,
+      "badge_id": null
+    },
+    {
+      "id": "ACCY-374-A-M1",
+      "course_id": "ACCY-374",
+      "name": "Module 1 Project",
+      "description": "Project evidencing a Law, Governance, & Ethics competency.",
+      "points_possible": 100.0,
+      "due_at": "2026-03-29T09:34:38.322514Z",
+      "role": "module",
+      "module_id": "ACCY-374-MOD-1",
+      "outcome_id": null,
+      "badge_id": "ACCY-374-BADGE-ACCEPTED"
+    },
+    {
+      "id": "ACCY-374-A-M2",
+      "course_id": "ACCY-374",
+      "name": "Module 2 Project",
+      "description": "Project evidencing a second Law, Governance, & Ethics competency.",
+      "points_possible": 100.0,
+      "due_at": "2026-02-18T17:55:45.619733Z",
+      "role": "module",
+      "module_id": "ACCY-374-MOD-2",
+      "outcome_id": null,
+      "badge_id": "ACCY-374-BADGE-UNACCEPTED"
+    },
+    {
+      "id": "ACCY-374-A-FINAL",
+      "course_id": "ACCY-374",
+      "name": "Law, Governance, & Ethics Capstone",
+      "description": "Capstone for the Law, Governance, & Ethics credential.",
+      "points_possible": 100.0,
+      "due_at": "2026-01-29T19:00:10.308644Z",
+      "role": "final",
+      "module_id": null,
+      "outcome_id": null,
+      "badge_id": "ACCY-374-BADGE-COURSE"
     }
   ],
   "outcomes": [
     {
-      "id": "3001",
-      "title": "Data Analysis",
-      "display_name": "Apply core concepts and techniques in data analysis",
-      "description": "Learner can independently apply data analysis to analyze a problem and draw valid, well-supported conclusions.",
+      "id": "ACCY-111-OUT-1",
+      "title": "Accounting Principles",
+      "display_name": "Apply core principles of accounting",
+      "description": "Learner can independently apply accounting to analyze a problem.",
+      "code": "1",
+      "is_competency": true,
+      "mastery_points": 3.0,
+      "points_possible": 5.0
+    },
+    {
+      "id": "ACCY-111-OUT-1-2-3",
+      "title": "Prepare a accounting work product",
+      "display_name": "Complete a discrete accounting task",
+      "description": "Learner can complete a single bounded accounting task accurately.",
+      "code": "1.2.3",
+      "is_competency": false,
+      "mastery_points": 3.0,
+      "points_possible": 5.0
+    },
+    {
+      "id": "ACCY-374-OUT-1",
+      "title": "Law, Governance, & Ethics Competency",
+      "display_name": "Demonstrate law, governance, & ethics competency",
+      "description": "Learner demonstrates law, governance, & ethics competency to a credential standard.",
+      "code": "1",
+      "is_competency": true,
       "mastery_points": 3.0,
       "points_possible": 5.0
     }
   ],
   "outcome_results": [
     {
-      "id": "7001",
-      "course_id": "1001",
-      "user_id": "2001",
-      "outcome_id": "3001",
-      "assignment_id": "4001",
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-WU1125875",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125875",
+      "outcome_id": "ACCY-111-OUT-1",
+      "assignment_id": "ACCY-111-A-M1",
       "score": 5.0,
       "possible": 5.0,
       "mastery": true,
-      "submitted_or_assessed_at": "2026-04-24T10:46:01.998203Z"
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-2-3-WU1125875",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125875",
+      "outcome_id": "ACCY-111-OUT-1-2-3",
+      "assignment_id": "ACCY-111-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-WU1125893",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125893",
+      "outcome_id": "ACCY-111-OUT-1",
+      "assignment_id": "ACCY-111-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-2-3-WU1125893",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125893",
+      "outcome_id": "ACCY-111-OUT-1-2-3",
+      "assignment_id": "ACCY-111-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-WU1125904",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125904",
+      "outcome_id": "ACCY-111-OUT-1",
+      "assignment_id": "ACCY-111-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-2-3-WU1125904",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125904",
+      "outcome_id": "ACCY-111-OUT-1-2-3",
+      "assignment_id": "ACCY-111-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
     }
   ],
   "outcome_alignments": [
     {
-      "id": "8001",
-      "course_id": "1001",
-      "outcome_id": "3001",
-      "assignment_id": "4001",
-      "name": "Final Data Analysis Project"
+      "id": "ACCY-111-AL-1",
+      "course_id": "ACCY-111",
+      "outcome_id": "ACCY-111-OUT-1",
+      "assignment_id": "ACCY-111-A-M1",
+      "name": "Module 1 Assessment"
+    },
+    {
+      "id": "ACCY-111-AL-2",
+      "course_id": "ACCY-111",
+      "outcome_id": "ACCY-111-OUT-1-2-3",
+      "assignment_id": "ACCY-111-A-M2",
+      "name": "Module 2 Assessment"
     }
   ],
   "submissions": [
     {
-      "id": "6001",
-      "course_id": "1001",
-      "assignment_id": "4001",
-      "user_id": "2001",
-      "score": 95.0,
-      "grade": "A",
+      "id": "ACCY-111-SUB-ACCY-111-A-M1-WU1125875",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M1",
+      "user_id": "WU1125875",
+      "score": 92.0,
+      "grade": "A-",
       "workflow_state": "graded",
-      "submitted_at": "2026-02-04T20:23:57.026144Z",
-      "graded_at": "2026-04-24T10:46:01.998203Z"
+      "submitted_at": "2026-02-06T02:33:44.039814Z",
+      "graded_at": "2026-04-08T21:24:04.273437Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M2-WU1125875",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M2",
+      "user_id": "WU1125875",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-27T02:00:18.257041Z",
+      "graded_at": "2026-04-27T05:38:49.260620Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-FINAL-WU1125875",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-FINAL",
+      "user_id": "WU1125875",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-22T09:20:43.635032Z",
+      "graded_at": "2026-03-04T23:53:18.761080Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M1-WU1125893",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M1",
+      "user_id": "WU1125893",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-16T05:14:03.814021Z",
+      "graded_at": "2026-02-08T03:03:26.912059Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M2-WU1125893",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M2",
+      "user_id": "WU1125893",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-08T13:52:51.264350Z",
+      "graded_at": "2026-03-09T23:54:11.191216Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-FINAL-WU1125893",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-FINAL",
+      "user_id": "WU1125893",
+      "score": 52.0,
+      "grade": "F",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-03T11:23:13.886087Z",
+      "graded_at": "2026-03-31T16:56:43.629143Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M1-WU1125904",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M1",
+      "user_id": "WU1125904",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-12T20:29:17.943805Z",
+      "graded_at": "2026-03-23T16:30:01.448256Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M2-WU1125904",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M2",
+      "user_id": "WU1125904",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-17T15:22:35.949383Z",
+      "graded_at": "2026-04-22T13:06:54.592634Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-FINAL-WU1125904",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-FINAL",
+      "user_id": "WU1125904",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-13T16:50:41.226308Z",
+      "graded_at": "2026-04-10T03:57:15.917452Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M1-WU1125875",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M1",
+      "user_id": "WU1125875",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-26T09:05:46.619376Z",
+      "graded_at": "2026-04-27T22:25:32.718514Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M1-WU1125893",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M1",
+      "user_id": "WU1125893",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-23T00:23:50.013749Z",
+      "graded_at": "2026-02-01T11:50:08.601506Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M1-WU1125904",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M1",
+      "user_id": "WU1125904",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-14T12:42:19.431261Z",
+      "graded_at": "2026-04-24T11:21:17.969923Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M2-WU1125875",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M2",
+      "user_id": "WU1125875",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-10T04:04:35.343578Z",
+      "graded_at": "2026-04-25T08:53:11.539808Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M2-WU1125893",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M2",
+      "user_id": "WU1125893",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-11T21:54:11.566982Z",
+      "graded_at": "2026-04-29T15:40:57.151293Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M2-WU1125904",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M2",
+      "user_id": "WU1125904",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-22T21:09:39.980607Z",
+      "graded_at": "2026-03-31T22:24:34.213607Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-FINAL-WU1125875",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-FINAL",
+      "user_id": "WU1125875",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-12T13:49:00.803077Z",
+      "graded_at": "2026-04-23T23:18:56.852998Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-FINAL-WU1125893",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-FINAL",
+      "user_id": "WU1125893",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-16T01:32:39.428180Z",
+      "graded_at": "2026-04-24T16:29:57.879677Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-FINAL-WU1125904",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-FINAL",
+      "user_id": "WU1125904",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-30T02:15:00.718089Z",
+      "graded_at": "2026-03-31T13:20:24.078424Z"
+    }
+  ],
+  "rubrics": [
+    {
+      "id": "ACCY-111-RUB-ACCY-111-A-FINAL",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-FINAL",
+      "title": "Final Accounting Exam Rubric",
+      "criteria": [
+        {
+          "id": "ACCY-111-A-FINAL-C1",
+          "description": "Demonstrates understanding of core concepts",
+          "points": 5.0,
+          "ratings": [
+            {
+              "description": "Exceeds",
+              "points": 5.0
+            },
+            {
+              "description": "Meets",
+              "points": 3.0
+            },
+            {
+              "description": "Approaching",
+              "points": 1.0
+            }
+          ]
+        },
+        {
+          "id": "ACCY-111-A-FINAL-C2",
+          "description": "Applies concepts to a realistic problem",
+          "points": 5.0,
+          "ratings": [
+            {
+              "description": "Exceeds",
+              "points": 5.0
+            },
+            {
+              "description": "Meets",
+              "points": 3.0
+            },
+            {
+              "description": "Approaching",
+              "points": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ACCY-374-RUB-ACCY-374-A-FINAL",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-FINAL",
+      "title": "Law, Governance, & Ethics Capstone Rubric",
+      "criteria": [
+        {
+          "id": "ACCY-374-A-FINAL-C1",
+          "description": "Demonstrates understanding of core concepts",
+          "points": 5.0,
+          "ratings": [
+            {
+              "description": "Exceeds",
+              "points": 5.0
+            },
+            {
+              "description": "Meets",
+              "points": 3.0
+            },
+            {
+              "description": "Approaching",
+              "points": 1.0
+            }
+          ]
+        },
+        {
+          "id": "ACCY-374-A-FINAL-C2",
+          "description": "Applies concepts to a realistic problem",
+          "points": 5.0,
+          "ratings": [
+            {
+              "description": "Exceeds",
+              "points": 5.0
+            },
+            {
+              "description": "Meets",
+              "points": 3.0
+            },
+            {
+              "description": "Approaching",
+              "points": 1.0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "badges": [
+    {
+      "id": "ACCY-374-BADGE-ACCEPTED",
+      "course_id": "ACCY-374",
+      "name": "Law, Governance, & Ethics Module Badge",
+      "description": "Awarded for demonstrating a law, governance, & ethics competency.",
+      "outcome_id": "ACCY-374-OUT-1",
+      "criteria": "Pass the Law, Governance, & Ethics module assessment.",
+      "image_url": null,
+      "accepted": true
+    },
+    {
+      "id": "ACCY-374-BADGE-UNACCEPTED",
+      "course_id": "ACCY-374",
+      "name": "Law, Governance, & Ethics Provisional Badge",
+      "description": "Issued by a provider not yet accepted by the wallet.",
+      "outcome_id": null,
+      "criteria": "Pass the second Law, Governance, & Ethics module assessment.",
+      "image_url": null,
+      "accepted": false
+    },
+    {
+      "id": "ACCY-374-BADGE-COURSE",
+      "course_id": "ACCY-374",
+      "name": "Law, Governance, & Ethics Course Credential",
+      "description": "Awarded for completing the Law, Governance, & Ethics course.",
+      "outcome_id": "ACCY-374-OUT-1",
+      "criteria": "Complete the Law, Governance, & Ethics capstone.",
+      "image_url": null,
+      "accepted": true
+    }
+  ],
+  "actions": [
+    {
+      "id": "ACCY-111-grade-m1",
+      "course_id": "ACCY-111",
+      "label": "Grade Module 1 (competency outcome)",
+      "assignment_id": "ACCY-111-A-M1"
+    },
+    {
+      "id": "ACCY-111-grade-m2",
+      "course_id": "ACCY-111",
+      "label": "Grade Module 2 (sub-competency outcome)",
+      "assignment_id": "ACCY-111-A-M2"
+    },
+    {
+      "id": "ACCY-111-grade-final",
+      "course_id": "ACCY-111",
+      "label": "Grade Final Exam (passing / failing learner)",
+      "assignment_id": "ACCY-111-A-FINAL"
+    },
+    {
+      "id": "ACCY-374-grade-m1",
+      "course_id": "ACCY-374",
+      "label": "Grade Module 1 (accepted/fetchable badge)",
+      "assignment_id": "ACCY-374-A-M1"
+    },
+    {
+      "id": "ACCY-374-grade-m2",
+      "course_id": "ACCY-374",
+      "label": "Grade Module 2 (unaccepted badge)",
+      "assignment_id": "ACCY-374-A-M2"
+    },
+    {
+      "id": "ACCY-374-grade-final",
+      "course_id": "ACCY-374",
+      "label": "Grade Capstone (course credential)",
+      "assignment_id": "ACCY-374-A-FINAL"
     }
   ]
 }

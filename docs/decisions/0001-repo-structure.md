@@ -150,7 +150,7 @@ occupants:
 skills-mobility/
   apps/mock-lms/        # mock-lms-ui: React + TS + Vite demo console
   libs/events/          # skills-mobility-events: shared event contracts (Pydantic)
-  services/mock-lms/    # mock-lms: Canvas-style mock LMS APIs + event emission + SSE
+  services/mock-lms/    # mock-lms: Canvas-style LMS Resource APIs + event emission
   pyproject.toml        # uv workspace root (virtual; not a package)
   .python-version       # 3.12 (per ADR-0003)
 ```
