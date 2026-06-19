@@ -2,7 +2,7 @@
 
 Status: Draft
 Date: 2026-06-19
-Related: [POC Requirements](./poc-requirements.md) · [POC Component Boundary Matrix](../3_design/poc-component-boundaries.md) · [Mock LMS Event Producer](./mock-lms-event-producer.md) · [Mock LMS APIs](./mock-lms-apis.md) · [Mock LMS UI](./mock-lms-ui.md) · [Mock LMS Design](../3_design/mock-lms.md) · [ADR-0002](../decisions/0002-frontend-architecture.md) · [ADR-0008](../decisions/0008-transformation-mapping-service-decomposition.md) · [ADR-0011](../decisions/0011-orchestration-runtime-technology.md) · [ADR-0012](../decisions/0012-mcp-client-layer-deferred.md)
+Related: [POC Requirements](./poc-requirements.md) · [Target POC Requirements](./target-poc-requirements.md) · [POC Component Boundary Matrix](../3_design/poc-component-boundaries.md) · [Mock LMS Event Producer](./mock-lms-event-producer.md) · [Mock LMS APIs](./mock-lms-apis.md) · [Mock LMS UI](./mock-lms-ui.md) · [Mock LMS Design](../3_design/mock-lms.md) · [ADR-0002](../decisions/0002-frontend-architecture.md) · [ADR-0008](../decisions/0008-transformation-mapping-service-decomposition.md) · [ADR-0011](../decisions/0011-orchestration-runtime-technology.md) · [ADR-0012](../decisions/0012-mcp-client-layer-deferred.md)
 
 ## 1. Purpose
 
