@@ -17,7 +17,11 @@ import argparse
 import json
 from pathlib import Path
 
-from mock_lms.generators.catalog import generate
+from mock_lms.generators.catalog import (
+    _DEFAULT_COURSES,
+    _DEFAULT_LEARNERS_PER_COURSE,
+    generate,
+)
 
 _DEFAULT_OUT = Path(__file__).resolve().parents[1] / "fixtures"
 
@@ -41,9 +45,28 @@ def main() -> None:
         default=_DEFAULT_OUT,
         help="where to write catalog.json (default: committed fixtures/)",
     )
+    parser.add_argument(
+        "--courses",
+        type=int,
+        default=_DEFAULT_COURSES,
+        help="max courses to pull from the roster, split ~2:1 standard:"
+        f"digital-credential (default: {_DEFAULT_COURSES}; capped by the roster)",
+    )
+    parser.add_argument(
+        "--learners-per-course",
+        type=int,
+        default=_DEFAULT_LEARNERS_PER_COURSE,
+        help="max enrolled learners per course "
+        f"(default: {_DEFAULT_LEARNERS_PER_COURSE}; capped by the section's enrollment)",
+    )
     args = parser.parse_args()
 
-    result = generate(seed=args.seed, csv_dir=args.csv_dir)
+    result = generate(
+        seed=args.seed,
+        csv_dir=args.csv_dir,
+        n_courses=args.courses,
+        learners_per_course=args.learners_per_course,
+    )
     args.out_dir.mkdir(parents=True, exist_ok=True)
     _write_json(args.out_dir / "catalog.json", result.catalog.model_dump(mode="json"))
 

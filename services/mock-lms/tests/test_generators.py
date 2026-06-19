@@ -6,6 +6,7 @@ the real PM roster CSVs are gitignored input artifacts (design §3).
 
 from pathlib import Path
 
+import pytest
 from mock_lms.catalog import CatalogStore, CourseKind
 from mock_lms.generators import generate
 
@@ -43,6 +44,39 @@ def test_seed_carries_both_variants_of_each_event():
     final_scores = [s.score for s in catalog.submissions if s.assignment_id in finals]
     assert any(s is not None and s >= 60 for s in final_scores)
     assert any(s is not None and s < 60 for s in final_scores)
+
+
+def test_outcome_title_follows_competency_convention():
+    catalog = generate(seed=42, csv_dir=DATA).catalog
+    assert catalog.outcomes  # sanity
+    for o in catalog.outcomes:
+        # Title is prefixed with its dotted code (so the emitted event carries it).
+        assert o.title.startswith(o.code + " ")
+        segments = o.code.split(".")
+        if o.is_competency:
+            # competency: "N.0.0" — an integer then all zeros.
+            assert segments[1:] == ["0", "0"]
+        else:
+            # sub-competency: a non-zero second segment, e.g. "1.2.0".
+            assert segments[1] != "0"
+
+
+def test_course_count_and_kind_split_are_configurable():
+    # The synthetic roster has exactly two courses; both are selected and the
+    # ~2:1 split still guarantees one of each kind.
+    catalog = generate(seed=42, csv_dir=DATA, n_courses=2, learners_per_course=2).catalog
+    kinds = [c.kind for c in catalog.courses]
+    assert kinds.count(CourseKind.STANDARD) == 1
+    assert kinds.count(CourseKind.DIGITAL_CREDENTIAL) == 1
+    # learners_per_course caps enrollment per course.
+    for course in catalog.courses:
+        enrolled = [e for e in catalog.enrollments if e.course_id == course.id]
+        assert 1 <= len(enrolled) <= 2
+
+
+def test_requires_at_least_two_courses():
+    with pytest.raises(ValueError):
+        generate(seed=42, csv_dir=DATA, n_courses=1)
 
 
 def test_store_resolves_generated_entities():

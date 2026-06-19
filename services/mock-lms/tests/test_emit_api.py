@@ -40,6 +40,23 @@ def test_run_skill_mastered_happy_path(client: TestClient):
     assert env["body"]["mastery"] is True
 
 
+def test_skill_mastered_competency_vs_sub_competency(client: TestClient):
+    std = _by_kind(_courses(client), "standard")
+    happy = client.post(
+        f"/demo/courses/{std['id']}/actions",
+        json={"action_id": f"{std['id']}-grade-m1", "scope": "one"},
+    ).json()
+    edge = client.post(
+        f"/demo/courses/{std['id']}/actions",
+        json={"action_id": f"{std['id']}-grade-m2", "scope": "one"},
+    ).json()
+    # Happy path = competency outcome (title "N.0.0"); edge = sub-competency
+    # (title "N.M.0"). The title is the signal carried on the event.
+    assert happy["emitted"][0]["body"]["title"].startswith("1.0.0 ")
+    assert edge["emitted"][0]["body"]["title"].startswith("1.2.0 ")
+    assert edge["emitted"][0]["metadata"]["event_name"] == "learning_outcome_result_created"
+
+
 def test_reruns_produce_fresh_ids_over_stable_correlation(client: TestClient):
     std = _by_kind(_courses(client), "standard")
     payload = {"action_id": f"{std['id']}-grade-m1", "scope": "one"}

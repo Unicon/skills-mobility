@@ -102,10 +102,12 @@ class Outcome(BaseModel):
     title: str
     display_name: str = ""
     description: str = ""
-    # Flat Canvas outcome code, e.g. "1" (competency) or "1.2.3" (sub-competency).
+    # Flat Canvas outcome code following the title convention: "N.0.0" is a
+    # competency (e.g. "1.0.0"); "N.M.0" with a non-zero second segment is a
+    # sub-competency (e.g. "1.2.0"). The title is prefixed with this code.
     code: str = ""
-    # Explicit competency flag (design open question: convention vs field — POC
-    # uses an explicit field for clarity).
+    # Explicit competency flag — redundant with the code convention above, kept
+    # for clarity (design open question: convention vs field — POC carries both).
     is_competency: bool = True
     mastery_points: float = 3.0
     points_possible: float = 5.0

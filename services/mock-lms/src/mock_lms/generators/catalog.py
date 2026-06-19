@@ -53,8 +53,11 @@ from mock_lms.catalog import (
 _WINDOW_START = datetime(2026, 1, 13, tzinfo=UTC)
 _WINDOW_END = datetime(2026, 5, 1, tzinfo=UTC)
 
-# How many enrolled learners (from the roster) to pull into the demo per course.
-_LEARNERS_PER_COURSE = 3
+# Defaults for how much of the roster to pull into the demo. Both are adjustable
+# via the generator CLI (``--courses`` / ``--learners-per-course``) and are capped
+# by what the roster actually contains.
+_DEFAULT_COURSES = 6
+_DEFAULT_LEARNERS_PER_COURSE = 6
 
 # Passing / failing final scores for the seeded course_completed variants.
 _PASS_SCORE = 92.0
@@ -107,12 +110,60 @@ def _profile(row: dict[str, str]) -> dict[str, str]:
     return out
 
 
-def _select_roster(csv_dir: Path) -> list[tuple[CourseKind, _RosterCourse]]:
-    """Pick the demo courses + their learners deterministically from the roster.
+def _roster_course(
+    course_id: str,
+    sections: list[dict[str, str]],
+    users: dict[str, dict[str, str]],
+    enrollments: list[dict[str, str]],
+    learners_per_course: int,
+) -> _RosterCourse | None:
+    """Build one ``_RosterCourse`` from its first section, or ``None`` if no
+    enrolled student rows resolve (so such courses are skipped, not fatal)."""
+    section = min(r["section_id"] for r in sections if r["course_id"] == course_id)
+    row = next(r for r in sections if r["section_id"] == section)
+    student_ids = sorted(
+        e["user_id"]
+        for e in enrollments
+        if e["section_id"] == section and e["role"] == "student"
+    )
+    learners: list[User] = []
+    for uid in student_ids:
+        urow = users.get(uid)
+        if urow is None:
+            continue
+        learners.append(
+            User(
+                id=uid,
+                name=urow["full_name"],
+                sortable_name=_sortable(urow["full_name"]),
+                login_id=urow["login_id"],
+                email=urow["email"],
+                profile=_profile(urow),
+            )
+        )
+        if len(learners) >= learners_per_course:
+            break
+    if not learners:
+        return None
+    return _RosterCourse(
+        course_id=course_id,
+        section_id=section,
+        name=row["name"],
+        institution=row.get("property:Institution", ""),
+        term=row.get("property:Term", ""),
+        learners=learners,
+    )
 
-    First two distinct course ids (sorted) become the standard and the
-    digital-credential course; each takes its first section and that section's
-    first few enrolled students.
+
+def _select_roster(
+    csv_dir: Path, n_courses: int, learners_per_course: int
+) -> list[tuple[CourseKind, _RosterCourse]]:
+    """Pick demo courses + their learners deterministically from the roster.
+
+    Up to ``n_courses`` distinct course ids (sorted) are selected, each with up
+    to ``learners_per_course`` enrolled students from its first section. Kinds
+    are split ~2:1 standard:digital-credential with at least one of each, so the
+    demo always carries both course kinds (and therefore every event variant).
     """
     sections = _read_csv(csv_dir / "course_sections.csv")
     users = {r["user_id"]: r for r in _read_csv(csv_dir / "users.csv")}
@@ -121,62 +172,39 @@ def _select_roster(csv_dir: Path) -> list[tuple[CourseKind, _RosterCourse]]:
     course_ids = sorted({r["course_id"] for r in sections})
     if len(course_ids) < 2:
         raise ValueError("roster needs at least two distinct courses")
-    kinds = [CourseKind.STANDARD, CourseKind.DIGITAL_CREDENTIAL]
 
-    selected: list[tuple[CourseKind, _RosterCourse]] = []
-    for kind, course_id in zip(kinds, course_ids[:2], strict=True):
-        section = min(r["section_id"] for r in sections if r["course_id"] == course_id)
-        row = next(r for r in sections if r["section_id"] == section)
-        student_ids = sorted(
-            e["user_id"]
-            for e in enrollments
-            if e["section_id"] == section and e["role"] == "student"
-        )
-        learners: list[User] = []
-        for uid in student_ids:
-            urow = users.get(uid)
-            if urow is None:
-                continue
-            learners.append(
-                User(
-                    id=uid,
-                    name=urow["full_name"],
-                    sortable_name=_sortable(urow["full_name"]),
-                    login_id=urow["login_id"],
-                    email=urow["email"],
-                    profile=_profile(urow),
-                )
-            )
-            if len(learners) >= _LEARNERS_PER_COURSE:
-                break
-        if not learners:
-            raise ValueError(f"course {course_id} has no resolvable enrolled learners")
-        selected.append(
-            (
-                kind,
-                _RosterCourse(
-                    course_id=course_id,
-                    section_id=section,
-                    name=row["name"],
-                    institution=row.get("property:Institution", ""),
-                    term=row.get("property:Term", ""),
-                    learners=learners,
-                ),
-            )
-        )
-    return selected
+    rosters: list[_RosterCourse] = []
+    for course_id in course_ids:
+        if len(rosters) >= n_courses:
+            break
+        rc = _roster_course(course_id, sections, users, enrollments, learners_per_course)
+        if rc is not None:
+            rosters.append(rc)
+    if len(rosters) < 2:
+        raise ValueError("roster yielded fewer than two courses with enrolled learners")
+
+    # ~2:1 standard:digital-credential, guaranteeing at least one of each.
+    n_digital = max(1, len(rosters) // 3)
+    n_standard = len(rosters) - n_digital
+    kinds = [CourseKind.STANDARD] * n_standard + [CourseKind.DIGITAL_CREDENTIAL] * n_digital
+    return list(zip(kinds, rosters, strict=True))
 
 
 # --- Generation -------------------------------------------------------------
 
 
-def generate(seed: int = 42, csv_dir: Path | None = None) -> GenerationResult:
+def generate(
+    seed: int = 42,
+    csv_dir: Path | None = None,
+    n_courses: int = _DEFAULT_COURSES,
+    learners_per_course: int = _DEFAULT_LEARNERS_PER_COURSE,
+) -> GenerationResult:
     csv_dir = csv_dir or _default_csv_dir()
     fake = Faker("en_US")
     fake.seed_instance(seed)
 
     catalog = Catalog()
-    for kind, rc in _select_roster(csv_dir):
+    for kind, rc in _select_roster(csv_dir, n_courses, learners_per_course):
         course = Course(
             id=rc.course_id,
             name=rc.name,
@@ -260,20 +288,24 @@ def _generate_standard(catalog: Catalog, course: Course, rc: _RosterCourse, fake
     cid = course.id
     subject = course.name.removeprefix("Introduction to ").strip() or course.name
 
+    # Outcome-title convention: a competency is "N.0.0" (an integer then all
+    # zeros); a sub-competency is "N.M.0" (a second non-zero segment). The
+    # skill_mastered event carries the title, so the happy (competency) vs edge
+    # (sub-competency) split is inferable from the event alone.
     competency = Outcome(
         id=f"{cid}-OUT-1",
-        title=f"{subject} Principles",
+        title=f"1.0.0 {subject} Principles",
         display_name=f"Apply core principles of {subject.lower()}",
         description=f"Learner can independently apply {subject.lower()} to analyze a problem.",
-        code="1",
+        code="1.0.0",
         is_competency=True,
     )
     sub_competency = Outcome(
-        id=f"{cid}-OUT-1-2-3",
-        title=f"Prepare a {subject.lower()} work product",
+        id=f"{cid}-OUT-1-2",
+        title=f"1.2.0 Prepare a {subject.lower()} work product",
         display_name=f"Complete a discrete {subject.lower()} task",
         description=f"Learner can complete a single bounded {subject.lower()} task accurately.",
-        code="1.2.3",
+        code="1.2.0",
         is_competency=False,
     )
     catalog.outcomes.extend([competency, sub_competency])
@@ -390,10 +422,10 @@ def _generate_digital_credential(
 
     competency = Outcome(
         id=f"{cid}-OUT-1",
-        title=f"{subject} Competency",
+        title=f"1.0.0 {subject} Competency",
         display_name=f"Demonstrate {subject.lower()} competency",
         description=f"Learner demonstrates {subject.lower()} competency to a credential standard.",
-        code="1",
+        code="1.0.0",
         is_competency=True,
     )
     catalog.outcomes.append(competency)
