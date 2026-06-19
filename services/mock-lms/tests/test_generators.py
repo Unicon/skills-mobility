@@ -13,6 +13,11 @@ from mock_lms.generators import generate
 DATA = Path(__file__).parent / "data"
 
 
+def _is_competency(code: str) -> bool:
+    """Competency convention: "N.0.0" — every segment after the first is zero."""
+    return all(seg == "0" for seg in code.split(".")[1:])
+
+
 def test_same_inputs_are_byte_for_byte_reproducible():
     a = generate(seed=42, csv_dir=DATA)
     b = generate(seed=42, csv_dir=DATA)
@@ -31,9 +36,9 @@ def test_imports_two_course_kinds_from_roster():
 def test_seed_carries_both_variants_of_each_event():
     catalog = generate(seed=42, csv_dir=DATA).catalog
 
-    # skill_mastered: a competency and a sub-competency outcome.
-    assert any(o.is_competency for o in catalog.outcomes)
-    assert any(not o.is_competency for o in catalog.outcomes)
+    # skill_mastered: a competency ("N.0.0") and a sub-competency ("N.M.0") outcome.
+    assert any(_is_competency(o.code) for o in catalog.outcomes)
+    assert any(not _is_competency(o.code) for o in catalog.outcomes)
 
     # badge_awarded: an accepted/fetchable and an unaccepted badge.
     assert any(b.accepted for b in catalog.badges)
@@ -49,16 +54,13 @@ def test_seed_carries_both_variants_of_each_event():
 def test_outcome_title_follows_competency_convention():
     catalog = generate(seed=42, csv_dir=DATA).catalog
     assert catalog.outcomes  # sanity
+    # Every outcome title is prefixed with its dotted code, so competency-vs-sub
+    # is readable from the title/code alone (no separate flag).
     for o in catalog.outcomes:
-        # Title is prefixed with its dotted code (so the emitted event carries it).
         assert o.title.startswith(o.code + " ")
-        segments = o.code.split(".")
-        if o.is_competency:
-            # competency: "N.0.0" — an integer then all zeros.
-            assert segments[1:] == ["0", "0"]
-        else:
-            # sub-competency: a non-zero second segment, e.g. "1.2.0".
-            assert segments[1] != "0"
+    codes = [o.code for o in catalog.outcomes]
+    assert any(_is_competency(c) for c in codes)  # e.g. "1.0.0"
+    assert any(not _is_competency(c) for c in codes)  # e.g. "1.2.0"
 
 
 def test_course_count_and_kind_split_are_configurable():

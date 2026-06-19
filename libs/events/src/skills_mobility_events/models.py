@@ -93,10 +93,10 @@ class CourseCompletedBody(BaseModel):
     user_id: str
     completed_at: datetime
     progress_percent: float = 100.0
-    # Final course grade (design §2): passing vs failing is the happy/edge split.
+    # Final course grade/score. Whether that's passing or failing is a downstream
+    # judgment (a grading-policy concern), not baked into the event as a boolean.
     final_grade: str | None = None
     final_score: float | None = None
-    passed: bool = True
 
 
 class BadgeAwardedBody(BaseModel):

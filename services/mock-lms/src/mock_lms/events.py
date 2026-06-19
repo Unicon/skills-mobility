@@ -37,9 +37,6 @@ from mock_lms.catalog import (
     User,
 )
 
-# A final score at or above this is a passing course completion.
-_PASS_THRESHOLD = 60.0
-
 
 class EventBuildError(ValueError):
     """Raised when an Action references data not present in the store."""
@@ -147,7 +144,6 @@ def _course_completed_body(
     grade = (submission.grade if submission else None) or (
         enrollment.current_grade if enrollment else None
     )
-    passed = score is None or score >= _PASS_THRESHOLD
     return CourseCompletedBody(
         course_id=assignment.course_id,
         user_id=user.id,
@@ -155,7 +151,6 @@ def _course_completed_body(
         progress_percent=100.0,
         final_grade=grade,
         final_score=score,
-        passed=passed,
     ).model_dump(mode="json")
 
 

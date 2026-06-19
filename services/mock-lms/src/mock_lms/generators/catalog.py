@@ -298,7 +298,6 @@ def _generate_standard(catalog: Catalog, course: Course, rc: _RosterCourse, fake
         display_name=f"Apply core principles of {subject.lower()}",
         description=f"Learner can independently apply {subject.lower()} to analyze a problem.",
         code="1.0.0",
-        is_competency=True,
     )
     sub_competency = Outcome(
         id=f"{cid}-OUT-1-2",
@@ -306,7 +305,6 @@ def _generate_standard(catalog: Catalog, course: Course, rc: _RosterCourse, fake
         display_name=f"Complete a discrete {subject.lower()} task",
         description=f"Learner can complete a single bounded {subject.lower()} task accurately.",
         code="1.2.0",
-        is_competency=False,
     )
     catalog.outcomes.extend([competency, sub_competency])
 
@@ -426,7 +424,6 @@ def _generate_digital_credential(
         display_name=f"Demonstrate {subject.lower()} competency",
         description=f"Learner demonstrates {subject.lower()} competency to a credential standard.",
         code="1.0.0",
-        is_competency=True,
     )
     catalog.outcomes.append(competency)
 

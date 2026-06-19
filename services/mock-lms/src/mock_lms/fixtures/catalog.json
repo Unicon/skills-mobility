@@ -1431,7 +1431,6 @@
       "display_name": "Apply core principles of accounting",
       "description": "Learner can independently apply accounting to analyze a problem.",
       "code": "1.0.0",
-      "is_competency": true,
       "mastery_points": 3.0,
       "points_possible": 5.0
     },
@@ -1441,7 +1440,6 @@
       "display_name": "Complete a discrete accounting task",
       "description": "Learner can complete a single bounded accounting task accurately.",
       "code": "1.2.0",
-      "is_competency": false,
       "mastery_points": 3.0,
       "points_possible": 5.0
     },
@@ -1451,7 +1449,6 @@
       "display_name": "Apply core principles of law, governance, & ethics",
       "description": "Learner can independently apply law, governance, & ethics to analyze a problem.",
       "code": "1.0.0",
-      "is_competency": true,
       "mastery_points": 3.0,
       "points_possible": 5.0
     },
@@ -1461,7 +1458,6 @@
       "display_name": "Complete a discrete law, governance, & ethics task",
       "description": "Learner can complete a single bounded law, governance, & ethics task accurately.",
       "code": "1.2.0",
-      "is_competency": false,
       "mastery_points": 3.0,
       "points_possible": 5.0
     },
@@ -1471,7 +1467,6 @@
       "display_name": "Apply core principles of the financial audit",
       "description": "Learner can independently apply the financial audit to analyze a problem.",
       "code": "1.0.0",
-      "is_competency": true,
       "mastery_points": 3.0,
       "points_possible": 5.0
     },
@@ -1481,7 +1476,6 @@
       "display_name": "Complete a discrete the financial audit task",
       "description": "Learner can complete a single bounded the financial audit task accurately.",
       "code": "1.2.0",
-      "is_competency": false,
       "mastery_points": 3.0,
       "points_possible": 5.0
     },
@@ -1491,7 +1485,6 @@
       "display_name": "Apply core principles of finance",
       "description": "Learner can independently apply finance to analyze a problem.",
       "code": "1.0.0",
-      "is_competency": true,
       "mastery_points": 3.0,
       "points_possible": 5.0
     },
@@ -1501,7 +1494,6 @@
       "display_name": "Complete a discrete finance task",
       "description": "Learner can complete a single bounded finance task accurately.",
       "code": "1.2.0",
-      "is_competency": false,
       "mastery_points": 3.0,
       "points_possible": 5.0
     },
@@ -1511,7 +1503,6 @@
       "display_name": "Demonstrate capital markets competency",
       "description": "Learner demonstrates capital markets competency to a credential standard.",
       "code": "1.0.0",
-      "is_competency": true,
       "mastery_points": 3.0,
       "points_possible": 5.0
     },
@@ -1521,7 +1512,6 @@
       "display_name": "Demonstrate applied securities analysis competency",
       "description": "Learner demonstrates applied securities analysis competency to a credential standard.",
       "code": "1.0.0",
-      "is_competency": true,
       "mastery_points": 3.0,
       "points_possible": 5.0
     }

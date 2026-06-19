@@ -81,8 +81,10 @@ def test_course_completed_passing_vs_failing_learner(client: TestClient):
         f"/demo/courses/{std['id']}/actions",
         json={"action_id": action, "scope": "one", "user_id": failing},
     ).json()
-    assert p["emitted"][0]["body"]["passed"] is True
-    assert f["emitted"][0]["body"]["passed"] is False
+    # The event carries the final score; passing vs failing is a downstream
+    # judgment, not a boolean on the event.
+    assert p["emitted"][0]["body"]["final_score"] >= 60
+    assert f["emitted"][0]["body"]["final_score"] < 60
     assert f["emitted"][0]["metadata"]["event_name"] == "course_completed"
 
 
