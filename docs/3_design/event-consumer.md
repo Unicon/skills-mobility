@@ -29,6 +29,8 @@ This aligns with ADR-0011's ingress responsibility split: event idempotency and 
 
 ## 3. Logical Modules
 
+The Event Consumer lives at `services/event-consumer/` in the monorepo. It runs as a FastAPI service locally and deploys as a Lambda function triggered by EventBridge in AWS (see ADR-0015).
+
 The initial implementation should stay small. The useful logical parts are:
 
 - **Ingress adapter**: receives messages from the bus and converts them into the service's internal event-envelope shape
@@ -50,14 +52,7 @@ It does not own long-running workflow state progression after handoff.
 
 The `workflow_execution` record is needed even though the Event Consumer is thin. The idempotency record answers "have we already started a workflow for this event?" The workflow execution record answers "what workflow run did we create, and what is its initial state?" Keeping them separate makes duplicate suppression and workflow state inspection easier to reason about, and it gives developers something concrete to inspect even before the full Orchestrator exists.
 
-The minimum useful workflow start payload to the Orchestrator should include:
-
-- execution identifier
-- source event identifier
-- correlation identifier
-- event name/type
-- raw event envelope or a stable reference to it
-- initial workflow status
+The workflow start request to the Orchestrator contains the raw event envelope exactly as received, plus the execution identifier and initial workflow status created by the Event Consumer. The Event Consumer adds no interpretation or transformation to the event data; the Orchestrator reads what it needs directly from the envelope.
 
 The minimum useful `workflow_execution` fields are:
 
@@ -72,9 +67,19 @@ The minimum useful `workflow_execution` fields are:
 
 Ingress idempotency should be event-focused rather than step-focused.
 
+The stable event identity key is derived deterministically from envelope fields:
+
+| Event type | Identity key components |
+|---|---|
+| `skill_mastered` | `event_name` + `user_id` + `learning_outcome_id` |
+| `course_completed` | `event_name` + `user_id` + `context_id` (course) |
+| `badge_awarded` | `event_name` + `user_id` + `badge_id` |
+
+The key is a deterministic canonical string combining these values. It is stable across repeated event delivery because it is derived from business keys, not from the per-delivery `event_id`.
+
 The Event Consumer should:
 
-- derive or read the stable event identity deterministically
+- derive the stable event identity key from the envelope
 - check whether that identity has already produced a workflow execution
 - suppress duplicate workflow creation when a prior execution already exists
 - write the new idempotency record and initial workflow record together closely enough that duplicate creation is avoided
@@ -107,8 +112,8 @@ The Event Consumer should preserve the same ingress contract in both environment
 
 For local development:
 
-- the input side can use a lightweight local event path standing in for EventBridge
-- the Event Consumer may run in-process or as a small local service
+- the Event Consumer runs as a FastAPI service at `services/event-consumer/`, exposing `POST /ingest`
+- the Mock LMS `LocalEmitter` delivers events to this endpoint when `EVENT_CONSUMER_URL` is configured; without it, `LocalEmitter` captures in-process without forwarding (existing test behavior is unchanged)
 - idempotency records and initial workflow records should be written to a local inspectable SQLite database
 - if the Orchestrator does not exist yet, the handoff layer should run in **capture mode** rather than failing silently
 
@@ -124,13 +129,9 @@ The local store should preserve the same logical split as AWS:
 - one SQLite table for ingress idempotency decisions
 - one SQLite table for workflow execution records
 
-`Capture mode` means the Event Consumer writes the exact workflow start request it would have sent to the Orchestrator into a local inspectable artifact such as:
+`Capture mode` means the Event Consumer writes the workflow start request it would have sent to the Orchestrator into a local SQLite `orchestrator_outbox` table. Each row holds the execution identifier, the raw event envelope as JSON, a created timestamp, and a `captured` flag. A developer inspects this table to confirm the correct handoff payload was produced.
 
-- a local outbox table
-- a local JSON record
-- or a structured log record with the serialized handoff payload
-
-The important design point is not the exact local storage mechanism. The important point is that a developer can prove:
+The important point is that a developer can prove:
 
 1. the event reached the Event Consumer,
 2. the idempotency decision was made,
@@ -193,7 +194,20 @@ In the AWS-shaped environment, a developer or operator should verify:
 - durable idempotency and initial execution records were written
 - the real Orchestrator handoff occurred
 
-## 8. Boundary Rules
+## 8. Failure Behavior
+
+Envelope validation failures are permanent — retrying a malformed event will never succeed — so the Event Consumer must not propagate them as retry-eligible exceptions.
+
+When an event fails envelope validation:
+
+1. Log a structured error containing the raw envelope and the validation details.
+2. Write a rejection record to the idempotency store with status `rejected`. This makes the failure inspectable and prevents the same malformed event from being re-processed if it is redelivered.
+3. Ack the event to the caller without raising an exception. For AWS Lambda + SQS, this means returning normally so the message is not returned to the queue.
+4. For local HTTP (`POST /ingest`), return 422 Unprocessable Entity with the structured error body.
+
+If writing the rejection record fails due to a transient infrastructure error, propagate that error so the delivery mechanism can retry. The distinction is: malformed payload → ack; infrastructure unavailability → retry.
+
+## 9. Boundary Rules
 
 - Do not fetch LMS source data here.
 - Do not generate workflow plans here.

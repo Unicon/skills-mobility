@@ -19,6 +19,7 @@
 | [0011](./0011-orchestration-runtime-technology.md) | Orchestration Runtime Technology | Accepted |
 | [0012](./0012-mcp-client-layer-deferred.md) | MCP Client Layer Deferred from Initial POC Scope | Accepted |
 | [0014](./0014-poc-storage-strategy.md) | POC Storage Strategy | Accepted |
+| [0015](./0015-orchestrator-execution-model.md) | Event Consumer and Orchestrator Worker Execution Model (Lambda + SQS) | Accepted |
 
 ## Conventions
 

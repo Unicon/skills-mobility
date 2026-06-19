@@ -53,10 +53,15 @@ The Event Consumer is not responsible for:
 - **FR-EC-6** The Event Consumer SHALL hand new workflow runs to the Orchestrator using a deterministic, machine-readable start request.
 - **FR-EC-7** The Event Consumer SHALL record enough information to correlate the incoming event with the created workflow execution.
 - **FR-EC-8** The Event Consumer SHALL remain independent of context-building, plan-generation, policy, transformation, and delivery logic.
+- **FR-EC-21** The minimum required envelope fields for ingress are `metadata.event_name`, `metadata.event_id`, `metadata.correlation_id`, and `metadata.user_id`. For `course_completed` events, `metadata.context_id` is also required. For `skill_mastered` events, `body.learning_outcome_id` is also required. For `badge_awarded` events, `body.badge_id` is also required.
+- **FR-EC-22** When envelope validation fails, the Event Consumer SHALL log a structured error including the raw envelope and validation details, write a rejection record to the idempotency store with status `rejected`, and not propagate the error as a retry-eligible exception.
 
 ## 5. Idempotency Requirements
 
-- **FR-EC-9** The Event Consumer SHALL use stable event identity inputs from the received envelope plus any required deterministic derivation rules to decide whether the event has already produced a workflow execution.
+- **FR-EC-9** The Event Consumer SHALL use stable event identity inputs from the received envelope plus any required deterministic derivation rules to decide whether the event has already produced a workflow execution. The stable event identity key is derived as follows:
+  - `skill_mastered`: `event_name` + `user_id` + `learning_outcome_id`
+  - `course_completed`: `event_name` + `user_id` + `context_id` (course)
+  - `badge_awarded`: `event_name` + `user_id` + `badge_id`
 - **FR-EC-10** The Event Consumer SHALL use a persistent idempotency record rather than in-memory process state as the source of truth for duplicate suppression.
 - **FR-EC-11** The Event Consumer SHALL create the initial workflow state only after the event passes the idempotency check.
 
@@ -68,7 +73,7 @@ The Event Consumer is not responsible for:
 
 ## 7. Local vs AWS Requirements
 
-- **FR-EC-12** For local development, the Event Consumer SHALL be able to consume events from the local development event flow that stands in for the AWS bus.
+- **FR-EC-12** For local development, the Event Consumer SHALL expose an HTTP ingress endpoint (`POST /ingest`) that accepts the raw event envelope. The Mock LMS `LocalEmitter` delivers events to this endpoint when `EVENT_CONSUMER_URL` is configured, standing in for the EventBridge trigger.
 - **FR-EC-13** For local development, the Event Consumer SHALL persist its idempotency decision and initial workflow record to a local inspectable store rather than relying only on transient process memory.
 - **FR-EC-14** For local development before the Orchestrator exists, the Event Consumer SHALL support a stub or capture-mode Orchestrator handoff that records the exact workflow start request it would have sent downstream.
 - **FR-EC-15** For the AWS-shaped deployment target, the Event Consumer SHALL consume events from the AWS event path and write its idempotency and initial workflow state to durable AWS-backed persistence.
