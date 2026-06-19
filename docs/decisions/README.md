@@ -15,7 +15,10 @@
 | [0007](./0007-llm-decision-service-decomposition.md) | LLM Decision Service Decomposition (delivery targets / transformation mappings / workflow actions) | Accepted |
 | [0008](./0008-transformation-mapping-service-decomposition.md) | Transformation Mapping Service Decomposition | Accepted |
 | [0009](./0009-workflow-actions-orchestration-model.md) | Workflow Actions Orchestration Model: Peer vs. Hierarchical | Accepted |
+| [0010](./0010-llm-model-access-strategy.md) | LLM Model Access Strategy | Accepted |
+| [0011](./0011-orchestration-runtime-technology.md) | Orchestration Runtime Technology | Accepted |
 | [0012](./0012-mcp-client-layer-deferred.md) | MCP Client Layer Deferred from Initial POC Scope | Accepted |
+| [0014](./0014-poc-storage-strategy.md) | POC Storage Strategy | Accepted |
 
 ## Conventions
 
