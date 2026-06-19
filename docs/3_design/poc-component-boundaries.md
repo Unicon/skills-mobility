@@ -2,7 +2,7 @@
 
 Status: Draft
 Date: 2026-06-17
-Related: [POC Requirements](../2_requirements/poc-requirements.md) · [ADR-0002](../decisions/0002-frontend-architecture.md) · [ADR-0004](../decisions/0004-lif-usage.md) · [ADR-0005](../decisions/0005-schema-mapping-langauge.md) · [ADR-0007](../decisions/0007-llm-decision-service-decomposition.md) · [ADR-0008](../decisions/0008-transformation-mapping-service-decomposition.md) · [ADR-0009](../decisions/0009-workflow-actions-orchestration-model.md) · [ADR-0012](../decisions/0012-mcp-client-layer-deferred.md)
+Related: [Stakeholder POC Requirements](../2_requirements/poc-requirements.md) · [Target POC Requirements](../2_requirements/target-poc-requirements.md) · [Target POC Architecture](./architecture/target-poc-architecture.md) · [ADR-0002](../decisions/0002-frontend-architecture.md) · [ADR-0004](../decisions/0004-lif-usage.md) · [ADR-0005](../decisions/0005-schema-mapping-langauge.md) · [ADR-0007](../decisions/0007-llm-decision-service-decomposition.md) · [ADR-0008](../decisions/0008-transformation-mapping-service-decomposition.md) · [ADR-0009](../decisions/0009-workflow-actions-orchestration-model.md) · [ADR-0012](../decisions/0012-mcp-client-layer-deferred.md)
 
 ## 1. Purpose
 
@@ -10,7 +10,7 @@ This document defines the **target component boundaries** for the POC: what each
 
 This matrix reflects the accepted decomposition in ADRs 0007, 0008, and 0009. In particular, the original single **LLM Decision Service** from the POC requirements is treated here as multiple specialized components plus a deterministic transformation executor.
 
-For this revision, the previously-mentioned **MCP Client Layer** is treated as **deferred / out of current POC scope**. This explicitly supersedes the "Utilize MCP as a standardized interface layer" objective from the POC Requirements; the rationale and consequences are captured in [ADR-0012](../decisions/0012-mcp-client-layer-deferred.md). If the team later identifies a concrete MCP use case, it can be reintroduced as a support dependency of the Context Builder rather than as a top-level planning component.
+For this revision, the previously-mentioned **MCP Client Layer** is treated as **deferred / out of current POC scope**. This explicitly supersedes the "Utilize MCP as a standardized interface layer" objective from the stakeholder baseline in [POC Requirements](../2_requirements/poc-requirements.md); the current working expectation is captured in [Target POC Requirements](../2_requirements/target-poc-requirements.md), and the rationale and consequences are captured in [ADR-0012](../decisions/0012-mcp-client-layer-deferred.md). If the team later identifies a concrete MCP use case, it can be reintroduced as a support dependency of the Context Builder rather than as a top-level planning component.
 
 ## 2. Boundary Matrix
 
