@@ -4,7 +4,7 @@
 - Date: 2026-06-18
 
 Related requirements: [Event Producer](../2_requirements/mock-lms-event-producer.md) · [LMS Resource APIs](../2_requirements/mock-lms-apis.md) · [Demo UI](../2_requirements/mock-lms-ui.md)
-Design context: [**POC Component Boundary Matrix**](./poc-component-boundaries.md) — the source of truth for component names, ownership boundaries, and logical stores; this doc stays consistent with it.
+Design context: [**POC Component Boundary Matrix**](./poc-component-boundaries.md) — the source of truth for component names, ownership boundaries, and logical stores; this doc stays consistent with it. Aligns to the current working requirements in [Target POC Requirements](../2_requirements/target-poc-requirements.md) and the [Target POC Architecture](./architecture/target-poc-architecture.md).
 Governing ADRs: [0002](../decisions/0002-frontend-architecture.md) · [0003](../decisions/0003-programming-language.md) · [0004](../decisions/0004-lif-usage.md) · [0007](../decisions/0007-llm-decision-service-decomposition.md) · [0008](../decisions/0008-transformation-mapping-service-decomposition.md) · [0009](../decisions/0009-workflow-actions-orchestration-model.md) · [0011](../decisions/0011-orchestration-runtime-technology.md)
 
 ## 1. Overview
@@ -186,7 +186,15 @@ Every emission carries `correlation_id` + `action_id` + a unique `event_id`, pro
 
 We will **not** stand up all the LLM Decision Services before anything runs end-to-end. The first milestone is a working pipe; the AI decisioning is layered in afterward.
 
-**Phase 1 — end-to-end happy path, middle stubbed.** Drive one happy event (e.g. competency mastery / passing grade / accepted badge) from the Mock LMS through to a delivered badge, **bypassing** the Workflow Actions, Delivery Targets, Field Mapping, Field Synthesis, and Transformation services. A thin Context Builder fills the **required OBv3 fields with placeholder data**, the LearnCard Issuer issues the credential, and the Delivery Service sends it to the LearnCloud wallet. Goal: prove the end-to-end pipe and the demo comparison (source data ↔ wallet badge) before any LLM decisioning exists.
+**Phase 1 — end-to-end happy path, middle stubbed.** Drive one happy event (e.g. competency mastery / passing grade / accepted badge) from the Mock LMS through to a delivered badge, **bypassing** the Workflow Actions, Delivery Targets, Field Mapping, Field Synthesis, and Transformation services. The slice runs as:
+
+1. The **Context Builder** deterministically fetches the source data for the event from the LMS Resource APIs (its real job — unchanged in Phase 1).
+2. The **Orchestrator** fills the **required OBv3 fields with placeholder data** and sends that record to the **Delivery Router**. (The offloaded LLM Decision Service jobs are stubbed *in the Orchestrator* so they all sit in one place, rather than in the Context Builder.)
+3. The **Delivery Router** invokes the **LearnCard Issuer Adapter**, which issues the credential and returns the signed record to the Orchestrator.
+4. The **Orchestrator** skips the Decision Services and stubs whatever updates the issued OBv3 record needs to be valid input for the wallet, then sends it back to the **Delivery Router**.
+5. The **Delivery Router** invokes the **LearnCard Wallet Adapter**, delivering the badge to the LearnCloud wallet.
+
+Goal: prove the end-to-end pipe and the demo comparison (source data ↔ wallet badge) before any LLM decisioning exists.
 
 **Phase 2+ — replace the stubs.** Incrementally swap the stubbed middle for the real LLM Decision Services and the two-loop transformation pipeline, and add the **edge-variant** events (sub-competency, failing grade, unaccepted badge) so the Workflow Actions planner's non-delivery branches and the other services become testable.
 
@@ -200,7 +208,12 @@ From the Mock LMS's perspective: Phase 1 needs only the **happy** event variants
 2. `services/mock-lms`: catalog + generator + LMS Resource APIs + `LocalEmitter` + emission API (Actions), returning the envelope synchronously.
 3. Assemble catalog: import a demo subset of the roster CSVs (courses/learners/enrollments) + generate the academic/credential layer — both course kinds + **both variants of each event** (happy: competency mastery / passing / accepted-fetchable badge; edge: sub-competency / failing / unaccepted badge).
 4. `apps/mock-lms`: course view → inspect (modules/submissions) → Action triggers → emitted-envelope confirmation.
-5. Phase 1 end-to-end happy path with the middle stubbed (§6): thin Context Builder → LearnCard Issuer → Delivery → wallet.
+5. Phase 1 end-to-end happy path with the middle stubbed (§6). This spans the downstream components the slice needs, in order:
+   1. **Event Consumer** — ingress + idempotency, starts a workflow run.
+   2. **Orchestrator** — runs the slice; fills the required OBv3 fields with placeholder data and stubs the wallet-input updates (the offloaded Decision Service jobs).
+   3. **Context Builder** — deterministic source-data fetch from the LMS Resource APIs.
+   4. **Delivery Router — LearnCard Issuer Adapter** — issues the credential and returns it to the Orchestrator.
+   5. **Delivery Router — LearnCard Wallet Adapter** — delivers the badge to the wallet.
 6. `EventBridgeEmitter` + CDK infra; deploy.
 7. CloudFront-layer auth (ADR-0002).
 
@@ -214,6 +227,7 @@ From the Mock LMS's perspective: Phase 1 needs only the **happy** event variants
 ## 9. References
 
 - [POC Component Boundary Matrix](./poc-component-boundaries.md) — component names, ownership boundaries, stores
+- [Target POC Requirements](../2_requirements/target-poc-requirements.md) · [Target POC Architecture](./architecture/target-poc-architecture.md) — current working system-level requirements & architecture this design aligns to
 - [ADR-0012 MCP Client Layer Deferred](../decisions/0012-mcp-client-layer-deferred.md)
 - Requirements: [Event Producer](../2_requirements/mock-lms-event-producer.md), [LMS Resource APIs](../2_requirements/mock-lms-apis.md), [Demo UI](../2_requirements/mock-lms-ui.md)
 - [ADR-0002 Frontend Architecture](../decisions/0002-frontend-architecture.md)
