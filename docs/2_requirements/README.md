@@ -7,6 +7,7 @@
 | Doc | Scope |
 |---|---|
 | [`poc-requirements.md`](./poc-requirements.md) | **Master** POC requirements — scope/definitions, objectives, the full component breakdown, success criteria |
+| [`phase-1-poc-slice.md`](./phase-1-poc-slice.md) | First implementation slice across components: a fast end-to-end pipeline for `skill_mastered` and `course_completed` that later phases can build on |
 | **Mock LMS** (source-system component, three parts ↓) | |
 | [`mock-lms-event-producer.md`](./mock-lms-event-producer.md) | Emits credential events (skill mastered, course completed, badge awarded); Actions, payloads, repeatability |
 | [`mock-lms-apis.md`](./mock-lms-apis.md) | Canvas-style **LMS Resource APIs** the Context Builder reads; seeded data model |
@@ -27,6 +28,7 @@ The **Mock LMS** stands in for a real LMS (Open edX in production; modeled on **
 ## Conventions
 
 - One requirements doc per component, named after the component. The Mock LMS currently spans three (`mock-lms-event-producer.md`, `mock-lms-apis.md`, `mock-lms-ui.md`); the `mock-lms-` prefix is specific to those — other components (Context Builder, Policy Rules, the LLM Decision Services, etc.) won't carry it. Each doc references the master `poc-requirements.md` and relevant ADRs in [`../decisions/`](../decisions/) rather than restating them. Design lives in [`../3_design/`](../3_design/).
+- Phase-scoped requirements docs are acceptable when defining a concrete implementation slice that spans multiple components; [`phase-1-poc-slice.md`](./phase-1-poc-slice.md) is the current example.
 
 ## Workflows
 
