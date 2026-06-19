@@ -221,6 +221,7 @@ From the Mock LMS's perspective: Phase 1 needs only the **happy** event variants
 
 - **Account provisioning for delivery:** the downstream wallet may require the mock learner to already have an account before a badge can be delivered. The roster CSVs give us concrete learner emails, so we'd fix a handful of those as the demo learners and pre-create their wallet accounts. To be confirmed when we wire delivery.
 - **Where the happy-path test lives:** this doc captures the phasing; the detailed end-to-end test steps will be a `4_operations/` doc when Phase 1 is built.
+- **Phasing ownership (avoid duplication):** the in-flight **Phase 1 POC slice requirements** (PR #15) is becoming the authoritative definition of the Phase 1 slice. Once it merges, §6 here should be trimmed to a one-line pointer to that doc rather than restating the slice, so the phasing isn't documented in two places.
 - **Sub-competency representation:** how exactly to encode the parent/sub-competency outcome hierarchy in flat Canvas outcomes so the Workflow Actions LLM can infer structure (naming convention vs. an explicit field).
 - **Rubric fidelity:** how much rubric detail the transformation pipeline actually needs in a badge before we over-model the rubric endpoint.
 
