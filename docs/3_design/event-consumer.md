@@ -201,7 +201,7 @@ Envelope validation failures are permanent — retrying a malformed event will n
 When an event fails envelope validation:
 
 1. Log a structured error containing the raw envelope and the validation details.
-2. Write a rejection record to the idempotency store with status `rejected`. This makes the failure inspectable and prevents the same malformed event from being re-processed if it is redelivered.
+2. Write a rejection record to the idempotency store with status `rejected`. This makes the failure inspectable and prevents the same malformed event from being re-processed if it is redelivered. The record is normally keyed by the stable business key; when validation fails because identity fields are missing and the business key cannot be derived, use the raw `event_id` from the envelope as the store key instead. If `event_id` is also absent, generate a UUID for the key.
 3. Ack the event to the caller without raising an exception. For AWS Lambda + SQS, this means returning normally so the message is not returned to the queue.
 4. For local HTTP (`POST /ingest`), return 422 Unprocessable Entity with the structured error body.
 
