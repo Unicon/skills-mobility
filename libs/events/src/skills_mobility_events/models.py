@@ -109,9 +109,9 @@ class BadgeAwardedBody(BaseModel):
     outcome_id: str | None = None
     awarded_at: datetime
     criteria: str | None = None
-    # Acceptance gate (design §2): accepted badges are fetchable via GET badge
-    # by id; unaccepted ones make that read error, so the planner should decline.
-    accepted: bool = True
+    # Acceptance is deliberately NOT on the event: as in the real world, a
+    # consumer learns it by fetching the badge (GET badge by id), which errors
+    # for an unaccepted badge. The planner's acceptance gate keys off that read.
 
 
 BodyModel = LearningOutcomeResultBody | CourseCompletedBody | BadgeAwardedBody

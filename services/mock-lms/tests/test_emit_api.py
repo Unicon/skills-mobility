@@ -69,7 +69,7 @@ def test_course_completed_passing_vs_failing_learner(client: TestClient):
     assert f["emitted"][0]["metadata"]["event_name"] == "course_completed"
 
 
-def test_badge_awarded_accepted_vs_unaccepted(client: TestClient):
+def test_badge_awarded_omits_acceptance_discovered_via_get(client: TestClient):
     dc = _by_kind(_courses(client), "digital_credential")
     happy = client.post(
         f"/demo/courses/{dc['id']}/actions",
@@ -79,9 +79,17 @@ def test_badge_awarded_accepted_vs_unaccepted(client: TestClient):
         f"/demo/courses/{dc['id']}/actions",
         json={"action_id": f"{dc['id']}-grade-m2", "scope": "one"},
     ).json()
-    assert happy["emitted"][0]["body"]["accepted"] is True
-    assert edge["emitted"][0]["body"]["accepted"] is False
+    # Acceptance is NOT carried on the event — a consumer must discover it by
+    # fetching the badge (GET badge by id), which 200s for an accepted badge
+    # and 409s for an unaccepted one.
+    assert "accepted" not in happy["emitted"][0]["body"]
+    assert "accepted" not in edge["emitted"][0]["body"]
     assert edge["emitted"][0]["metadata"]["event_name"] == "badge_awarded"
+
+    happy_badge = happy["emitted"][0]["body"]["badge_id"]
+    edge_badge = edge["emitted"][0]["body"]["badge_id"]
+    assert client.get(f"/api/v1/badges/{happy_badge}").status_code == 200
+    assert client.get(f"/api/v1/badges/{edge_badge}").status_code == 409
 
 
 def test_scope_all_emits_one_event_per_enrolled_learner(client: TestClient):

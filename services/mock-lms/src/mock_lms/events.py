@@ -173,5 +173,4 @@ def _badge_awarded_body(store: CatalogStore, assignment: Assignment, user: User)
         outcome_id=badge.outcome_id,
         awarded_at=now_utc(),
         criteria=badge.criteria or None,
-        accepted=badge.accepted,
     ).model_dump(mode="json")
