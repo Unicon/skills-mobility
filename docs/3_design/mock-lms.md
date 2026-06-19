@@ -33,7 +33,7 @@ The **Event Producer** is the only component that writes to the bus. The **UI** 
 
 ## 2. Service modules
 
-- `api/resources/` — Canvas-style read routers (one per resource: courses, enrollments, modules, pages, assignments, outcomes, outcome_results, outcome_alignments, submissions, **users/profile**, **rubrics**, **badges**).
+- `api/resources/` — Canvas-style read routers (one per resource: courses, enrollments, modules, pages, assignments, outcomes, submissions, **account users**, **users/profile**, **rubrics**, **badges**).
 - `api/emit/` — emission control: take an Action, run it (one or all learners), reset.
 - `api/stream/` — SSE endpoint for the live feed.
 - `catalog/` — the Mock LMS catalog: data models, in-memory store, fixture loader.
@@ -46,7 +46,7 @@ The **Event Producer** is the only component that writes to the bus. The **UI** 
 
 ## 3. Event model (`libs/events`)
 
-Canvas Live Events–style `{ metadata, body }` envelope; `metadata` adds `correlation_id` (one per Action run) and `action_id` as additive POC traceability fields. Three event types — `skill_mastered` (`learning_outcome_result_created`), `course_completed` (incl. final grade), `badge_awarded`. No `credential_eligible`. Bodies mirror Canvas where one exists, POC-defined for `badge_awarded`. Every body id resolves against the LMS Resource APIs; the builder fails fast on an unresolvable id. The producer owns these schemas (source of truth); TS types, if needed, generate into `packages/event-contracts/`.
+Canvas Live Events–style `{ metadata, body }` envelope; `metadata` adds `correlation_id` (one per Action run) and `action_id` as additive POC traceability fields. Three event types — `skill_mastered` (`learning_outcome_result_created`), `course_completed` (incl. final grade), `badge_awarded`. No `credential_eligible`. Bodies mirror Canvas where one exists, POC-defined for `badge_awarded`. Every emitted identifier the Context Builder depends on must resolve through the LMS Resource APIs or the related account-user lookup path; the builder fails fast on an unresolvable reference. The producer owns these schemas (source of truth); TS types, if needed, generate into `packages/event-contracts/`.
 
 ## 4. Actions & bulk emission
 

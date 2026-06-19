@@ -8,13 +8,14 @@
 |---|---|
 | [`poc-component-boundaries.md`](./poc-component-boundaries.md) | Top-level boundary matrix for the target POC architecture: component ownership, non-ownership, inputs/outputs, dependencies, observability model, and supporting stores |
 | [`mock-lms.md`](./mock-lms.md) | Design for the **Mock LMS** (Event Producer + LMS Resource APIs + Demo UI) — modules, event model, Actions, real-time feed, data model, local-vs-AWS, build order |
+| [`context-builder.md`](./context-builder.md) | Design for the **Context Builder** — deterministic fetch profiles, chained LMS lookups, bundle assembly, and local-vs-AWS behavior |
 | [`architecture/`](./architecture/) | Architecture diagrams (below) |
 
 [`poc-component-boundaries.md`](./poc-component-boundaries.md) is the current top-level design reference for the POC component model. It is the place to align terminology such as **Orchestrator**, **LMS Resource APIs**, **Admin UI**, and the specialized LLM decision services before writing more detailed per-component design docs.
 
 The stakeholder baseline in [`../2_requirements/poc-requirements.md`](../2_requirements/poc-requirements.md) is intentionally preserved. Current design docs should align to [`../2_requirements/target-poc-requirements.md`](../2_requirements/target-poc-requirements.md) and the ADRs rather than assuming the stakeholder baseline must be rewritten.
 
-[`mock-lms.md`](./mock-lms.md) is currently the only component-specific design doc in this directory. Follow-up component docs should stay consistent with the boundary matrix as they are added. The Mock LMS *requirements* are split across three docs in [`../2_requirements/`](../2_requirements/) (event-producer / apis / ui); design is kept as one document because the parts interact closely.
+Component-specific design docs currently cover the **Mock LMS** and the **Context Builder**. Follow-up component docs should stay consistent with the boundary matrix as they are added. The Mock LMS *requirements* are split across three docs in [`../2_requirements/`](../2_requirements/) (event-producer / apis / ui); design is kept as one document because the parts interact closely.
 
 ### `architecture/`
 
