@@ -3,7 +3,7 @@
 - Status: Draft
 - Date: 2026-06-18
 
-Related requirements: [Event Producer](../2_requirements/mock-lms-event-producer.md) · [LMS Resource APIs](../2_requirements/mock-lms-apis.md) · [Demo UI](../2_requirements/mock-lms-ui.md)
+Related requirements: [Event Producer](../2_requirements/mock-lms-event-producer.md) · [LMS Resource APIs](../2_requirements/mock-lms-apis.md) · [Demo UI](../2_requirements/mock-lms-ui.md) · [Phase 1 POC Slice](../2_requirements/phase-1-poc-slice.md)
 Design context: [**POC Component Boundary Matrix**](./poc-component-boundaries.md) — the source of truth for component names, ownership boundaries, and logical stores; this doc stays consistent with it. Aligns to the current working requirements in [Target POC Requirements](../2_requirements/target-poc-requirements.md) and the [Target POC Architecture](./architecture/target-poc-architecture.md).
 Governing ADRs: [0002](../decisions/0002-frontend-architecture.md) · [0003](../decisions/0003-programming-language.md) · [0004](../decisions/0004-lif-usage.md) · [0007](../decisions/0007-llm-decision-service-decomposition.md) · [0008](../decisions/0008-transformation-mapping-service-decomposition.md) · [0009](../decisions/0009-workflow-actions-orchestration-model.md) · [0011](../decisions/0011-orchestration-runtime-technology.md)
 
@@ -184,21 +184,11 @@ Every emission carries `correlation_id` + `action_id` + a unique `event_id`, pro
 
 ## 6. Phasing — MVP happy path first
 
-We will **not** stand up all the LLM Decision Services before anything runs end-to-end. The first milestone is a working pipe; the AI decisioning is layered in afterward.
+The Phase 1 slice — a working end-to-end pipe with the LLM Decision Services and transformation loops stubbed — is defined authoritatively in [Phase 1 POC Slice Requirements](../2_requirements/phase-1-poc-slice.md). In short: drive one happy event from the Mock LMS through Event Consumer → Orchestrator (which fills the required OBv3 fields and stubs the offloaded Decision Service work) → Delivery Router → LearnCard Issuer → wallet, before any LLM decisioning exists.
 
-**Phase 1 — end-to-end happy path, middle stubbed.** Drive one happy event (e.g. competency mastery / passing grade / accepted badge) from the Mock LMS through to a delivered badge, **bypassing** the Workflow Actions, Delivery Targets, Field Mapping, Field Synthesis, and Transformation services. The slice runs as:
+From the **Mock LMS's** perspective specifically: Phase 1 needs only the **happy** event variants (competency mastery / passing grade / accepted badge) plus the LMS Resource APIs the Context Builder reads. The **edge** variants (sub-competency, failing grade, unaccepted badge) and the full event matrix (§2) come online in Phase 2+, when the real LLM Decision Services and the two-loop transformation pipeline replace the stubs and the Workflow Actions planner's non-delivery branches become testable.
 
-1. The **Context Builder** deterministically fetches the source data for the event from the LMS Resource APIs (its real job — unchanged in Phase 1).
-2. The **Orchestrator** fills the **required OBv3 fields with placeholder data** and sends that record to the **Delivery Router**. (The offloaded LLM Decision Service jobs are stubbed *in the Orchestrator* so they all sit in one place, rather than in the Context Builder.)
-3. The **Delivery Router** invokes the **LearnCard Issuer Adapter**, which issues the credential and returns the signed record to the Orchestrator.
-4. The **Orchestrator** skips the Decision Services and stubs whatever updates the issued OBv3 record needs to be valid input for the wallet, then sends it back to the **Delivery Router**.
-5. The **Delivery Router** invokes the **LearnCard Wallet Adapter**, delivering the badge to the LearnCloud wallet.
-
-Goal: prove the end-to-end pipe and the demo comparison (source data ↔ wallet badge) before any LLM decisioning exists.
-
-**Phase 2+ — replace the stubs.** Incrementally swap the stubbed middle for the real LLM Decision Services and the two-loop transformation pipeline, and add the **edge-variant** events (sub-competency, failing grade, unaccepted badge) so the Workflow Actions planner's non-delivery branches and the other services become testable.
-
-From the Mock LMS's perspective: Phase 1 needs only the **happy** event variants plus the LMS Resource APIs the Context Builder reads; the edge variants and the full event matrix (§2) come online with Phase 2. Detailed, step-by-step **happy-path test procedures** will live under `4_operations/` once we build them; this section captures the phasing intent so the build is sequenced correctly.
+Detailed, step-by-step happy-path test procedures will live under `4_operations/` once Phase 1 is built.
 
 ---
 
@@ -220,8 +210,7 @@ From the Mock LMS's perspective: Phase 1 needs only the **happy** event variants
 ## 8. Open questions
 
 - **Account provisioning for delivery:** the downstream wallet may require the mock learner to already have an account before a badge can be delivered. The roster CSVs give us concrete learner emails, so we'd fix a handful of those as the demo learners and pre-create their wallet accounts. To be confirmed when we wire delivery.
-- **Where the happy-path test lives:** this doc captures the phasing; the detailed end-to-end test steps will be a `4_operations/` doc when Phase 1 is built.
-- **Phasing ownership (avoid duplication):** the in-flight **Phase 1 POC slice requirements** (PR #15) is becoming the authoritative definition of the Phase 1 slice. Once it merges, §6 here should be trimmed to a one-line pointer to that doc rather than restating the slice, so the phasing isn't documented in two places.
+- **Where the happy-path test lives:** §6 points at [`phase-1-poc-slice.md`](../2_requirements/phase-1-poc-slice.md) for the slice definition; the detailed end-to-end test steps will be a `4_operations/` doc when Phase 1 is built.
 - **Sub-competency representation:** how exactly to encode the parent/sub-competency outcome hierarchy in flat Canvas outcomes so the Workflow Actions LLM can infer structure (naming convention vs. an explicit field).
 - **Rubric fidelity:** how much rubric detail the transformation pipeline actually needs in a badge before we over-model the rubric endpoint.
 
