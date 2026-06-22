@@ -46,8 +46,12 @@ class EventMetadata(BaseModel):
     event_name: str
     event_time: datetime
     producer: str = "mock-lms"
+    # Canvas carries both; the Context Builder's account-user lookup keys on the
+    # id. user_id is always present (the Event Consumer's ingress idempotency and
+    # FR-EC-9 require it on every event).
+    root_account_id: str | None = None
     root_account_uuid: str | None = None
-    user_id: str | None = None
+    user_id: str
     context_type: str | None = None
     context_id: str | None = None
     # Unique per emission.
@@ -71,26 +75,40 @@ class LiveEventEnvelope(BaseModel):
 
 
 class LearningOutcomeResultBody(BaseModel):
-    """Body for ``skill_mastered`` (Canvas ``learning_outcome_result_created``)."""
+    """Body for ``skill_mastered`` (Canvas ``learning_outcome_result_created``).
+
+    Canvas-shaped: the course and assignment are carried as ``*_context`` /
+    ``associated_asset`` references, and the learner by ``user_uuid`` (the Canvas
+    ``user_id`` is resolved downstream via the account-users lookup; it is also
+    present in ``metadata.user_id``).
+    """
 
     learning_outcome_result_id: str
     learning_outcome_id: str
-    user_id: str
-    course_id: str
     result_id: str | None = None
     score: float
     possible: float
     mastery: bool
     title: str | None = None
-    assignment_id: str | None = None
+    result_context_type: str = "Course"
+    result_context_id: str
+    associated_asset_type: str = "Assignment"
+    associated_asset_id: str
+    user_uuid: str
     submitted_or_assessed_at: datetime | None = None
+
+
+class CourseRef(BaseModel):
+    """Nested course reference (Canvas nests the course object in this body)."""
+
+    id: str
+    name: str | None = None
 
 
 class CourseCompletedBody(BaseModel):
     """Body for ``course_completed`` (Canvas ``course_completed``)."""
 
-    course_id: str
-    user_id: str
+    course: CourseRef
     completed_at: datetime
     progress_percent: float = 100.0
     # Final course grade/score. Whether that's passing or failing is a downstream
@@ -123,6 +141,7 @@ __all__ = [
     "EventMetadata",
     "LiveEventEnvelope",
     "LearningOutcomeResultBody",
+    "CourseRef",
     "CourseCompletedBody",
     "BadgeAwardedBody",
     "BodyModel",

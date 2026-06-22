@@ -20,13 +20,15 @@ def test_envelope_round_trips_to_json():
     body = LearningOutcomeResultBody(
         learning_outcome_result_id="lor-1",
         learning_outcome_id="3001",
-        user_id="2001",
-        course_id="1001",
+        result_context_type="Course",
+        result_context_id="1001",
+        associated_asset_type="Assignment",
+        associated_asset_id="4001",
+        user_uuid="uuid-2001",
         score=4.0,
         possible=5.0,
         mastery=True,
-        title="Data Analysis",
-        assignment_id="4001",
+        title="1.0.0 Data Analysis",
         submitted_or_assessed_at=datetime(2026, 6, 10, tzinfo=UTC),
     )
     env = LiveEventEnvelope(
