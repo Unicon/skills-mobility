@@ -114,3 +114,8 @@ generated-fixtures/
 # Coverage
 # ==========================================
 coverage.xml
+
+# ==========================================
+# Claude Code — personal local settings
+# ==========================================
+.claude/settings.local.json
