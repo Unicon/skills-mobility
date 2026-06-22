@@ -7,6 +7,7 @@
 | Doc | Scope |
 |---|---|
 | [`poc-component-boundaries.md`](./poc-component-boundaries.md) | Top-level boundary matrix for the target POC architecture: component ownership, non-ownership, inputs/outputs, dependencies, observability model, and supporting stores |
+| [`event-consumer.md`](./event-consumer.md) | Design for the **Event Consumer** ingress boundary — runtime shape, logical modules, idempotency behavior, and Orchestrator handoff |
 | [`mock-lms.md`](./mock-lms.md) | Design for the **Mock LMS** (Event Producer + LMS Resource APIs + Demo UI) — modules, event model, Actions, data model (CSV roster + generated layer), phasing, local-vs-AWS, build order |
 | [`architecture/`](./architecture/) | Architecture diagrams (below) |
 
