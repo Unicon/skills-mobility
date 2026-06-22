@@ -18,6 +18,7 @@ from typing import Any
 from skills_mobility_events import (
     BadgeAwardedBody,
     CourseCompletedBody,
+    CourseRef,
     EventMetadata,
     EventType,
     LearningOutcomeResultBody,
@@ -28,6 +29,7 @@ from skills_mobility_events import (
 )
 
 from mock_lms.catalog import (
+    ROOT_ACCOUNT_ID,
     Action,
     Assignment,
     AssignmentRole,
@@ -102,6 +104,7 @@ def build_envelope(
     metadata = EventMetadata(
         event_name=canvas_event_name(event_type),
         event_time=now_utc(),
+        root_account_id=ROOT_ACCOUNT_ID,
         root_account_uuid=root_account_uuid,
         user_id=user.id,
         context_type="Course",
@@ -124,13 +127,16 @@ def _skill_mastered_body(store: CatalogStore, assignment: Assignment, user: User
     return LearningOutcomeResultBody(
         learning_outcome_result_id=(result.id if result else f"lor-{outcome.id}-{user.id}"),
         learning_outcome_id=outcome.id,
-        user_id=user.id,
-        course_id=assignment.course_id,
+        result_id=result.id if result else None,
         score=result.score if result else outcome.mastery_points,
         possible=result.possible if result else outcome.points_possible,
         mastery=result.mastery if result else True,
         title=outcome.title,
-        assignment_id=assignment.id,
+        result_context_type="Course",
+        result_context_id=assignment.course_id,
+        associated_asset_type="Assignment",
+        associated_asset_id=assignment.id,
+        user_uuid=user.uuid,
         submitted_or_assessed_at=(result.submitted_or_assessed_at if result else now_utc()),
     ).model_dump(mode="json")
 
@@ -144,9 +150,9 @@ def _course_completed_body(
     grade = (submission.grade if submission else None) or (
         enrollment.current_grade if enrollment else None
     )
+    course = store.get_course(assignment.course_id)
     return CourseCompletedBody(
-        course_id=assignment.course_id,
-        user_id=user.id,
+        course=CourseRef(id=assignment.course_id, name=course.name if course else None),
         completed_at=now_utc(),
         progress_percent=100.0,
         final_grade=grade,

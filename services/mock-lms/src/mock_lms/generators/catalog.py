@@ -21,6 +21,7 @@ The raw CSVs are input artifacts (kept out of the repo); only the captured
 from __future__ import annotations
 
 import csv
+import uuid as uuidlib
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -71,6 +72,12 @@ def _grade(score: float) -> str:
         if score >= threshold:
             return letter
     return "F"
+
+
+def _user_uuid(user_id: str) -> str:
+    """Deterministic Canvas-style UUID derived from the user id (no wall clock,
+    no RNG — keeps fixtures byte-identical)."""
+    return str(uuidlib.uuid5(uuidlib.NAMESPACE_URL, f"mock-lms/user/{user_id}"))
 
 
 def _sortable(name: str) -> str:
@@ -134,6 +141,7 @@ def _roster_course(
         learners.append(
             User(
                 id=uid,
+                uuid=_user_uuid(uid),
                 name=urow["full_name"],
                 sortable_name=_sortable(urow["full_name"]),
                 login_id=urow["login_id"],
@@ -358,7 +366,7 @@ def _generate_standard(catalog: Catalog, course: Course, rc: _RosterCourse, fake
         ]
     )
     catalog.pages.append(
-        Page(course_id=cid, url="syllabus", title="Course Syllabus",
+        Page(id=f"{cid}-PAGE-syllabus", course_id=cid, url="syllabus", title="Course Syllabus",
              body=f"Foundations of {subject}, assessed across two modules and a final.")
     )
     catalog.outcome_alignments.extend(
@@ -369,7 +377,9 @@ def _generate_standard(catalog: Catalog, course: Course, rc: _RosterCourse, fake
                              assignment_id=a_m2.id, name=a_m2.name),
         ]
     )
-    catalog.rubrics.append(_rubric(cid, a_final.id, a_final.name))
+    final_rubric = _rubric(cid, a_final.id, a_final.name)
+    a_final.rubric_id = final_rubric.id
+    catalog.rubrics.append(final_rubric)
 
     # Learner work: first learner passes, second fails, rest pass — so the final
     # Action can demonstrate both the passing and failing course_completed variant.
@@ -496,10 +506,12 @@ def _generate_digital_credential(
         ]
     )
     catalog.pages.append(
-        Page(course_id=cid, url="syllabus", title="Course Syllabus",
+        Page(id=f"{cid}-PAGE-syllabus", course_id=cid, url="syllabus", title="Course Syllabus",
              body=f"{course.name}: a digital-credential course issuing badges per module.")
     )
-    catalog.rubrics.append(_rubric(cid, a_final.id, a_final.name))
+    final_rubric = _rubric(cid, a_final.id, a_final.name)
+    a_final.rubric_id = final_rubric.id
+    catalog.rubrics.append(final_rubric)
 
     for assignment in (a_m1, a_m2, a_final):
         for learner in rc.learners:

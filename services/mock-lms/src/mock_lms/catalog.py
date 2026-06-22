@@ -23,6 +23,10 @@ from typing import Any
 
 from pydantic import BaseModel
 
+# Single demo root account. Carried in event ``metadata.root_account_id`` and is
+# the account the Context Builder's user-by-UUID lookup runs against.
+ROOT_ACCOUNT_ID = "1"
+
 # --- Enums ------------------------------------------------------------------
 
 
@@ -55,6 +59,9 @@ class Course(BaseModel):
 
 class User(BaseModel):
     id: str
+    # Canvas user UUID — carried in skill_mastered events; the Context Builder
+    # resolves it back to ``id`` via the account-users lookup.
+    uuid: str = ""
     name: str
     sortable_name: str
     login_id: str
@@ -91,6 +98,7 @@ class Module(BaseModel):
 
 
 class Page(BaseModel):
+    id: str = ""
     course_id: str
     url: str
     title: str
@@ -144,6 +152,10 @@ class Assignment(BaseModel):
     # a badge (digital-credential courses). Drives the emitted event body.
     outcome_id: str | None = None
     badge_id: str | None = None
+    # Present when a rubric is associated; the Context Builder fetches the rubric
+    # by this id (skill_mastered profile). The Mock LMS uses the rubric_id form
+    # consistently (it does not embed the rubric schema on the assignment).
+    rubric_id: str | None = None
 
 
 class Submission(BaseModel):
@@ -232,6 +244,8 @@ class CatalogStore:
         self.outcomes = {o.id: o for o in catalog.outcomes}
         self.assignments = {a.id: a for a in catalog.assignments}
         self.badges = {b.id: b for b in catalog.badges}
+        self.rubrics_by_id = {r.id: r for r in catalog.rubrics}
+        self.users_by_uuid = {u.uuid: u for u in catalog.users if u.uuid}
         self._enrollments = list(catalog.enrollments)
         self._modules = list(catalog.modules)
         self._pages = list(catalog.pages)
@@ -263,11 +277,17 @@ class CatalogStore:
                 return a
         return None
 
-    def get_page(self, course_id: str, url: str) -> Page | None:
+    def get_page(self, course_id: str, page_id: str) -> Page | None:
         for p in self._pages:
-            if p.course_id == course_id and p.url == url:
+            if p.course_id == course_id and p.id == page_id:
                 return p
         return None
+
+    def get_rubric(self, rubric_id: str) -> Rubric | None:
+        return self.rubrics_by_id.get(rubric_id)
+
+    def users_for_uuids(self, uuids: list[str]) -> list[User]:
+        return [u for uid in uuids if (u := self.users_by_uuid.get(uid)) is not None]
 
     # Collection lookups (filtered, Canvas-style).
     def enrollments(self, course_id: str, user_id: str | None = None) -> list[Enrollment]:

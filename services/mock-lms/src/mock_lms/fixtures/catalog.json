@@ -58,6 +58,7 @@
   "users": [
     {
       "id": "WU1125875",
+      "uuid": "7c4f820d-d890-536a-849d-b8ff726fdaa7",
       "name": "Audrey Wallace",
       "sortable_name": "Wallace, Audrey",
       "login_id": "audrey.wallace",
@@ -75,6 +76,7 @@
     },
     {
       "id": "WU1125893",
+      "uuid": "d5ad321d-2691-5f34-aa26-e1832354e879",
       "name": "James Reid",
       "sortable_name": "Reid, James",
       "login_id": "james.reid",
@@ -92,6 +94,7 @@
     },
     {
       "id": "WU1125904",
+      "uuid": "42eee06c-a0c1-5476-86c5-95797c643f2e",
       "name": "Richard Hart",
       "sortable_name": "Hart, Richard",
       "login_id": "richard.hart",
@@ -109,6 +112,7 @@
     },
     {
       "id": "WU1125907",
+      "uuid": "6e0401a7-5ab9-5a28-b0fe-ba9b8bfcb6af",
       "name": "Rebecca Hill",
       "sortable_name": "Hill, Rebecca",
       "login_id": "rebecca.hill",
@@ -126,6 +130,7 @@
     },
     {
       "id": "WU1125912",
+      "uuid": "fb41c4e2-33d1-52a3-bafe-bec2a290a375",
       "name": "Lucas Walker",
       "sortable_name": "Walker, Lucas",
       "login_id": "lucas.walker",
@@ -143,6 +148,7 @@
     },
     {
       "id": "WU1125919",
+      "uuid": "cf573e03-5fcf-5352-9564-24c2079c1fbc",
       "name": "Sam Young",
       "sortable_name": "Young, Sam",
       "login_id": "sam.young",
@@ -161,6 +167,7 @@
     },
     {
       "id": "WU1125875",
+      "uuid": "7c4f820d-d890-536a-849d-b8ff726fdaa7",
       "name": "Audrey Wallace",
       "sortable_name": "Wallace, Audrey",
       "login_id": "audrey.wallace",
@@ -178,6 +185,7 @@
     },
     {
       "id": "WU1125893",
+      "uuid": "d5ad321d-2691-5f34-aa26-e1832354e879",
       "name": "James Reid",
       "sortable_name": "Reid, James",
       "login_id": "james.reid",
@@ -195,6 +203,7 @@
     },
     {
       "id": "WU1125904",
+      "uuid": "42eee06c-a0c1-5476-86c5-95797c643f2e",
       "name": "Richard Hart",
       "sortable_name": "Hart, Richard",
       "login_id": "richard.hart",
@@ -212,6 +221,7 @@
     },
     {
       "id": "WU1125907",
+      "uuid": "6e0401a7-5ab9-5a28-b0fe-ba9b8bfcb6af",
       "name": "Rebecca Hill",
       "sortable_name": "Hill, Rebecca",
       "login_id": "rebecca.hill",
@@ -229,6 +239,7 @@
     },
     {
       "id": "WU1125912",
+      "uuid": "fb41c4e2-33d1-52a3-bafe-bec2a290a375",
       "name": "Lucas Walker",
       "sortable_name": "Walker, Lucas",
       "login_id": "lucas.walker",
@@ -246,6 +257,7 @@
     },
     {
       "id": "WU1125919",
+      "uuid": "cf573e03-5fcf-5352-9564-24c2079c1fbc",
       "name": "Sam Young",
       "sortable_name": "Young, Sam",
       "login_id": "sam.young",
@@ -264,6 +276,7 @@
     },
     {
       "id": "WU1125875",
+      "uuid": "7c4f820d-d890-536a-849d-b8ff726fdaa7",
       "name": "Audrey Wallace",
       "sortable_name": "Wallace, Audrey",
       "login_id": "audrey.wallace",
@@ -281,6 +294,7 @@
     },
     {
       "id": "WU1125893",
+      "uuid": "d5ad321d-2691-5f34-aa26-e1832354e879",
       "name": "James Reid",
       "sortable_name": "Reid, James",
       "login_id": "james.reid",
@@ -298,6 +312,7 @@
     },
     {
       "id": "WU1125904",
+      "uuid": "42eee06c-a0c1-5476-86c5-95797c643f2e",
       "name": "Richard Hart",
       "sortable_name": "Hart, Richard",
       "login_id": "richard.hart",
@@ -315,6 +330,7 @@
     },
     {
       "id": "WU1125907",
+      "uuid": "6e0401a7-5ab9-5a28-b0fe-ba9b8bfcb6af",
       "name": "Rebecca Hill",
       "sortable_name": "Hill, Rebecca",
       "login_id": "rebecca.hill",
@@ -332,6 +348,7 @@
     },
     {
       "id": "WU1125912",
+      "uuid": "fb41c4e2-33d1-52a3-bafe-bec2a290a375",
       "name": "Lucas Walker",
       "sortable_name": "Walker, Lucas",
       "login_id": "lucas.walker",
@@ -349,6 +366,7 @@
     },
     {
       "id": "WU1125919",
+      "uuid": "cf573e03-5fcf-5352-9564-24c2079c1fbc",
       "name": "Sam Young",
       "sortable_name": "Young, Sam",
       "login_id": "sam.young",
@@ -367,6 +385,7 @@
     },
     {
       "id": "WU1125879",
+      "uuid": "055e1dfd-b7a3-5e9d-b157-539a03d683fb",
       "name": "Luke Henderson",
       "sortable_name": "Henderson, Luke",
       "login_id": "luke.henderson",
@@ -384,6 +403,7 @@
     },
     {
       "id": "WU1125880",
+      "uuid": "aa482dc4-624f-58c2-80f2-00b369f2d181",
       "name": "Robert Russell",
       "sortable_name": "Russell, Robert",
       "login_id": "robert.russell",
@@ -401,6 +421,7 @@
     },
     {
       "id": "WU1125881",
+      "uuid": "169e0a39-acca-5784-9b07-831dd2f20d9a",
       "name": "Steven Black",
       "sortable_name": "Black, Steven",
       "login_id": "steven.black",
@@ -418,6 +439,7 @@
     },
     {
       "id": "WU1125888",
+      "uuid": "e348c48e-10eb-5433-89b8-b47e5e224051",
       "name": "Mary Alsop",
       "sortable_name": "Alsop, Mary",
       "login_id": "mary.alsop",
@@ -435,6 +457,7 @@
     },
     {
       "id": "WU1125889",
+      "uuid": "b541ae36-ecdf-5690-8b7f-7e7a1941bccf",
       "name": "Jan Davidson",
       "sortable_name": "Davidson, Jan",
       "login_id": "jan.davidson",
@@ -452,6 +475,7 @@
     },
     {
       "id": "WU1125896",
+      "uuid": "c75a8753-5e9a-54b6-b0bb-0544e955ada1",
       "name": "Nicholas Edmunds",
       "sortable_name": "Edmunds, Nicholas",
       "login_id": "nicholas.edmunds",
@@ -469,6 +493,7 @@
     },
     {
       "id": "WU1125879",
+      "uuid": "055e1dfd-b7a3-5e9d-b157-539a03d683fb",
       "name": "Luke Henderson",
       "sortable_name": "Henderson, Luke",
       "login_id": "luke.henderson",
@@ -486,6 +511,7 @@
     },
     {
       "id": "WU1125880",
+      "uuid": "aa482dc4-624f-58c2-80f2-00b369f2d181",
       "name": "Robert Russell",
       "sortable_name": "Russell, Robert",
       "login_id": "robert.russell",
@@ -503,6 +529,7 @@
     },
     {
       "id": "WU1125881",
+      "uuid": "169e0a39-acca-5784-9b07-831dd2f20d9a",
       "name": "Steven Black",
       "sortable_name": "Black, Steven",
       "login_id": "steven.black",
@@ -520,6 +547,7 @@
     },
     {
       "id": "WU1125888",
+      "uuid": "e348c48e-10eb-5433-89b8-b47e5e224051",
       "name": "Mary Alsop",
       "sortable_name": "Alsop, Mary",
       "login_id": "mary.alsop",
@@ -537,6 +565,7 @@
     },
     {
       "id": "WU1125889",
+      "uuid": "b541ae36-ecdf-5690-8b7f-7e7a1941bccf",
       "name": "Jan Davidson",
       "sortable_name": "Davidson, Jan",
       "login_id": "jan.davidson",
@@ -554,6 +583,7 @@
     },
     {
       "id": "WU1125896",
+      "uuid": "c75a8753-5e9a-54b6-b0bb-0544e955ada1",
       "name": "Nicholas Edmunds",
       "sortable_name": "Edmunds, Nicholas",
       "login_id": "nicholas.edmunds",
@@ -571,6 +601,7 @@
     },
     {
       "id": "WU1125879",
+      "uuid": "055e1dfd-b7a3-5e9d-b157-539a03d683fb",
       "name": "Luke Henderson",
       "sortable_name": "Henderson, Luke",
       "login_id": "luke.henderson",
@@ -588,6 +619,7 @@
     },
     {
       "id": "WU1125880",
+      "uuid": "aa482dc4-624f-58c2-80f2-00b369f2d181",
       "name": "Robert Russell",
       "sortable_name": "Russell, Robert",
       "login_id": "robert.russell",
@@ -605,6 +637,7 @@
     },
     {
       "id": "WU1125881",
+      "uuid": "169e0a39-acca-5784-9b07-831dd2f20d9a",
       "name": "Steven Black",
       "sortable_name": "Black, Steven",
       "login_id": "steven.black",
@@ -622,6 +655,7 @@
     },
     {
       "id": "WU1125888",
+      "uuid": "e348c48e-10eb-5433-89b8-b47e5e224051",
       "name": "Mary Alsop",
       "sortable_name": "Alsop, Mary",
       "login_id": "mary.alsop",
@@ -639,6 +673,7 @@
     },
     {
       "id": "WU1125889",
+      "uuid": "b541ae36-ecdf-5690-8b7f-7e7a1941bccf",
       "name": "Jan Davidson",
       "sortable_name": "Davidson, Jan",
       "login_id": "jan.davidson",
@@ -656,6 +691,7 @@
     },
     {
       "id": "WU1125896",
+      "uuid": "c75a8753-5e9a-54b6-b0bb-0544e955ada1",
       "name": "Nicholas Edmunds",
       "sortable_name": "Edmunds, Nicholas",
       "login_id": "nicholas.edmunds",
@@ -1170,36 +1206,42 @@
   ],
   "pages": [
     {
+      "id": "ACCY-111-PAGE-syllabus",
       "course_id": "ACCY-111",
       "url": "syllabus",
       "title": "Course Syllabus",
       "body": "Foundations of Accounting, assessed across two modules and a final."
     },
     {
+      "id": "ACCY-374-PAGE-syllabus",
       "course_id": "ACCY-374",
       "url": "syllabus",
       "title": "Course Syllabus",
       "body": "Foundations of Law, Governance, & Ethics, assessed across two modules and a final."
     },
     {
+      "id": "ACCY-491-PAGE-syllabus",
       "course_id": "ACCY-491",
       "url": "syllabus",
       "title": "Course Syllabus",
       "body": "Foundations of The Financial Audit, assessed across two modules and a final."
     },
     {
+      "id": "FINC-106-PAGE-syllabus",
       "course_id": "FINC-106",
       "url": "syllabus",
       "title": "Course Syllabus",
       "body": "Foundations of Finance, assessed across two modules and a final."
     },
     {
+      "id": "FINC-321-PAGE-syllabus",
       "course_id": "FINC-321",
       "url": "syllabus",
       "title": "Course Syllabus",
       "body": "Capital Markets: a digital-credential course issuing badges per module."
     },
     {
+      "id": "FINC-439-PAGE-syllabus",
       "course_id": "FINC-439",
       "url": "syllabus",
       "title": "Course Syllabus",
@@ -1217,7 +1259,8 @@
       "role": "module",
       "module_id": "ACCY-111-MOD-1",
       "outcome_id": "ACCY-111-OUT-1",
-      "badge_id": null
+      "badge_id": null,
+      "rubric_id": null
     },
     {
       "id": "ACCY-111-A-M2",
@@ -1229,7 +1272,8 @@
       "role": "module",
       "module_id": "ACCY-111-MOD-2",
       "outcome_id": "ACCY-111-OUT-1-2",
-      "badge_id": null
+      "badge_id": null,
+      "rubric_id": null
     },
     {
       "id": "ACCY-111-A-FINAL",
@@ -1241,7 +1285,8 @@
       "role": "final",
       "module_id": null,
       "outcome_id": null,
-      "badge_id": null
+      "badge_id": null,
+      "rubric_id": "ACCY-111-RUB-ACCY-111-A-FINAL"
     },
     {
       "id": "ACCY-374-A-M1",
@@ -1253,7 +1298,8 @@
       "role": "module",
       "module_id": "ACCY-374-MOD-1",
       "outcome_id": "ACCY-374-OUT-1",
-      "badge_id": null
+      "badge_id": null,
+      "rubric_id": null
     },
     {
       "id": "ACCY-374-A-M2",
@@ -1265,7 +1311,8 @@
       "role": "module",
       "module_id": "ACCY-374-MOD-2",
       "outcome_id": "ACCY-374-OUT-1-2",
-      "badge_id": null
+      "badge_id": null,
+      "rubric_id": null
     },
     {
       "id": "ACCY-374-A-FINAL",
@@ -1277,7 +1324,8 @@
       "role": "final",
       "module_id": null,
       "outcome_id": null,
-      "badge_id": null
+      "badge_id": null,
+      "rubric_id": "ACCY-374-RUB-ACCY-374-A-FINAL"
     },
     {
       "id": "ACCY-491-A-M1",
@@ -1289,7 +1337,8 @@
       "role": "module",
       "module_id": "ACCY-491-MOD-1",
       "outcome_id": "ACCY-491-OUT-1",
-      "badge_id": null
+      "badge_id": null,
+      "rubric_id": null
     },
     {
       "id": "ACCY-491-A-M2",
@@ -1301,7 +1350,8 @@
       "role": "module",
       "module_id": "ACCY-491-MOD-2",
       "outcome_id": "ACCY-491-OUT-1-2",
-      "badge_id": null
+      "badge_id": null,
+      "rubric_id": null
     },
     {
       "id": "ACCY-491-A-FINAL",
@@ -1313,7 +1363,8 @@
       "role": "final",
       "module_id": null,
       "outcome_id": null,
-      "badge_id": null
+      "badge_id": null,
+      "rubric_id": "ACCY-491-RUB-ACCY-491-A-FINAL"
     },
     {
       "id": "FINC-106-A-M1",
@@ -1325,7 +1376,8 @@
       "role": "module",
       "module_id": "FINC-106-MOD-1",
       "outcome_id": "FINC-106-OUT-1",
-      "badge_id": null
+      "badge_id": null,
+      "rubric_id": null
     },
     {
       "id": "FINC-106-A-M2",
@@ -1337,7 +1389,8 @@
       "role": "module",
       "module_id": "FINC-106-MOD-2",
       "outcome_id": "FINC-106-OUT-1-2",
-      "badge_id": null
+      "badge_id": null,
+      "rubric_id": null
     },
     {
       "id": "FINC-106-A-FINAL",
@@ -1349,7 +1402,8 @@
       "role": "final",
       "module_id": null,
       "outcome_id": null,
-      "badge_id": null
+      "badge_id": null,
+      "rubric_id": "FINC-106-RUB-FINC-106-A-FINAL"
     },
     {
       "id": "FINC-321-A-M1",
@@ -1361,7 +1415,8 @@
       "role": "module",
       "module_id": "FINC-321-MOD-1",
       "outcome_id": null,
-      "badge_id": "FINC-321-BADGE-ACCEPTED"
+      "badge_id": "FINC-321-BADGE-ACCEPTED",
+      "rubric_id": null
     },
     {
       "id": "FINC-321-A-M2",
@@ -1373,7 +1428,8 @@
       "role": "module",
       "module_id": "FINC-321-MOD-2",
       "outcome_id": null,
-      "badge_id": "FINC-321-BADGE-UNACCEPTED"
+      "badge_id": "FINC-321-BADGE-UNACCEPTED",
+      "rubric_id": null
     },
     {
       "id": "FINC-321-A-FINAL",
@@ -1385,7 +1441,8 @@
       "role": "final",
       "module_id": null,
       "outcome_id": null,
-      "badge_id": "FINC-321-BADGE-COURSE"
+      "badge_id": "FINC-321-BADGE-COURSE",
+      "rubric_id": "FINC-321-RUB-FINC-321-A-FINAL"
     },
     {
       "id": "FINC-439-A-M1",
@@ -1397,7 +1454,8 @@
       "role": "module",
       "module_id": "FINC-439-MOD-1",
       "outcome_id": null,
-      "badge_id": "FINC-439-BADGE-ACCEPTED"
+      "badge_id": "FINC-439-BADGE-ACCEPTED",
+      "rubric_id": null
     },
     {
       "id": "FINC-439-A-M2",
@@ -1409,7 +1467,8 @@
       "role": "module",
       "module_id": "FINC-439-MOD-2",
       "outcome_id": null,
-      "badge_id": "FINC-439-BADGE-UNACCEPTED"
+      "badge_id": "FINC-439-BADGE-UNACCEPTED",
+      "rubric_id": null
     },
     {
       "id": "FINC-439-A-FINAL",
@@ -1421,7 +1480,8 @@
       "role": "final",
       "module_id": null,
       "outcome_id": null,
-      "badge_id": "FINC-439-BADGE-COURSE"
+      "badge_id": "FINC-439-BADGE-COURSE",
+      "rubric_id": "FINC-439-RUB-FINC-439-A-FINAL"
     }
   ],
   "outcomes": [

@@ -99,11 +99,51 @@ def test_get_badge_accepted_vs_unaccepted(client: TestClient):
     assert unknown.status_code == 404
 
 
-def test_page_lookup(client: TestClient):
+def test_page_lookup_by_id(client: TestClient):
     course = _standard_course(client)
-    r = client.get(f"/api/v1/courses/{course['id']}/pages/syllabus")
+    r = client.get(f"/api/v1/courses/{course['id']}/pages/{course['id']}-PAGE-syllabus")
     assert r.status_code == 200
     assert r.json()["title"] == "Course Syllabus"
+
+
+def test_single_assignment_by_id(client: TestClient):
+    course = _standard_course(client)
+    cid = course["id"]
+    r = client.get(f"/api/v1/courses/{cid}/assignments/{cid}-A-M1")
+    assert r.status_code == 200
+    assert r.json()["id"] == f"{cid}-A-M1"
+    # Wrong course for a real assignment id → 404.
+    assert client.get(f"/api/v1/courses/NOPE-000/assignments/{cid}-A-M1").status_code == 404
+
+
+def test_rubric_by_id(client: TestClient):
+    course = _standard_course(client)
+    cid = course["id"]
+    final = client.get(f"/api/v1/courses/{cid}/assignments/{cid}-A-FINAL").json()
+    rubric_id = final["rubric_id"]
+    assert rubric_id  # the final assignment carries a rubric_id
+    r = client.get(f"/api/v1/courses/{cid}/rubrics/{rubric_id}")
+    assert r.status_code == 200 and r.json()["criteria"]
+
+
+def test_assignment_submission_by_user(client: TestClient):
+    course = _standard_course(client)
+    cid, uid = course["id"], course["learners"][0]["id"]
+    r = client.get(f"/api/v1/courses/{cid}/assignments/{cid}-A-FINAL/submissions/{uid}")
+    assert r.status_code == 200 and r.json()["user_id"] == uid
+
+
+def test_account_users_resolve_by_uuid(client: TestClient):
+    course = _standard_course(client)
+    uid = course["learners"][0]["id"]
+    uuid = client.get(f"/api/v1/users/{uid}/profile").json()["uuid"]
+    assert uuid
+    r = client.get("/api/v1/accounts/1/users", params={"uuids[]": uuid})
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body) == 1 and body[0]["id"] == uid
+    # Unknown account → 404.
+    assert client.get("/api/v1/accounts/999/users", params={"uuids[]": uuid}).status_code == 404
 
 
 def test_deterministic_responses(client: TestClient):

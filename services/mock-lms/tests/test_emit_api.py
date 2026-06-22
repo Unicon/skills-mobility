@@ -40,6 +40,33 @@ def test_run_skill_mastered_happy_path(client: TestClient):
     assert env["body"]["mastery"] is True
 
 
+def test_skill_mastered_emits_canvas_envelope(client: TestClient):
+    """The reconciled (Option A) Canvas-shaped contract: course/assignment as
+    *_context / associated_asset refs, learner by user_uuid, plus metadata
+    user_id + root_account_id for the Event Consumer / Context Builder."""
+    std = _by_kind(_courses(client), "standard")
+    env = client.post(
+        f"/demo/courses/{std['id']}/actions",
+        json={"action_id": f"{std['id']}-grade-m1", "scope": "one"},
+    ).json()["emitted"][0]
+    b, m = env["body"], env["metadata"]
+    assert b["result_context_type"] == "Course" and b["result_context_id"] == std["id"]
+    assert b["associated_asset_type"] == "Assignment"
+    assert b["associated_asset_id"] == f"{std['id']}-A-M1"
+    assert b["user_uuid"] and "user_id" not in b  # user is in metadata, not the body
+    assert m["user_id"] and m["root_account_id"] == "1"
+
+
+def test_course_completed_nests_course(client: TestClient):
+    std = _by_kind(_courses(client), "standard")
+    env = client.post(
+        f"/demo/courses/{std['id']}/actions",
+        json={"action_id": f"{std['id']}-grade-final", "scope": "one"},
+    ).json()["emitted"][0]
+    assert env["body"]["course"]["id"] == std["id"]
+    assert "course_id" not in env["body"]  # course is nested now
+
+
 def test_skill_mastered_competency_vs_sub_competency(client: TestClient):
     std = _by_kind(_courses(client), "standard")
     happy = client.post(
