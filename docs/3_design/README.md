@@ -8,6 +8,10 @@
 |---|---|
 | [`poc-component-boundaries.md`](./poc-component-boundaries.md) | Top-level boundary matrix for the target POC architecture: component ownership, non-ownership, inputs/outputs, dependencies, observability model, and supporting stores |
 | [`mock-lms.md`](./mock-lms.md) | Design for the **Mock LMS** (Event Producer + LMS Resource APIs + Demo UI) — modules, event model, Actions, real-time feed, data model, local-vs-AWS, build order |
+| [`delivery-router-service.md`](./delivery-router-service.md) | Design for the Delivery Router Service — internal contract, dispatch model, shared delivery mechanics, and adapter integration points |
+| [`learncard-profile-resolver.md`](./learncard-profile-resolver.md) | Design for the LearnCard Profile Resolver — standalone Python Lambda for learner profile resolution before issuance or delivery |
+| [`learncard-issuer-adapter.md`](./learncard-issuer-adapter.md) | Design for the LearnCard Issuer Adapter — Node/TypeScript SDK boundary for issuance |
+| [`learncard-wallet-adapter.md`](./learncard-wallet-adapter.md) | Design for the LearnCard Wallet Adapter — Python API boundary for wallet delivery |
 | [`architecture/`](./architecture/) | Architecture diagrams (below) |
 
 [`poc-component-boundaries.md`](./poc-component-boundaries.md) is the current top-level design reference for the POC component model. It is the place to align terminology such as **Orchestrator**, **LMS Resource APIs**, **Admin UI**, and the specialized LLM decision services before writing more detailed per-component design docs.
