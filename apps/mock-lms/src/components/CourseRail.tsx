@@ -28,9 +28,6 @@ export function CourseRail({
             onClick={() => onSelect(c.id)}
           >
             <h4>{c.name}</h4>
-            <p>
-              {c.institution || "—"} · {c.term || "—"}
-            </p>
             <div className="meta">
               <span className="tag mono">{c.course_code}</span>
               <span className="tag">{KIND_LABEL[c.kind] ?? c.kind}</span>

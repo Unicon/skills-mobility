@@ -254,8 +254,55 @@ button {
   color: var(--ink);
   border: 1px solid var(--line-bright);
   border-radius: 7px;
-  padding: 6px 8px;
-  max-width: 230px;
+  /* extra right padding so the long "name (email)" label never overlaps the
+     native dropdown arrow (legibility fix) */
+  padding: 6px 30px 6px 8px;
+  width: 100%;
+  max-width: 100%;
+  text-overflow: ellipsis;
+}
+
+/* ---------- inspector: module → assignment hierarchy ---------- */
+.asg-list {
+  display: flex;
+  flex-direction: column;
+}
+.asg {
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+}
+.asg:first-child {
+  border-top: none;
+  padding-top: 2px;
+}
+.asg-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.asg-name {
+  font-weight: 600;
+}
+.asg-desc {
+  margin: 5px 0 0;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+.asg-kv {
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.asg-kv b {
+  display: inline-block;
+  min-width: 76px;
+  color: var(--ink-faint);
+  font-weight: 600;
+  margin-right: 6px;
+}
+.dim {
+  color: var(--ink-faint);
 }
 
 /* ---------- 3-column body ---------- */

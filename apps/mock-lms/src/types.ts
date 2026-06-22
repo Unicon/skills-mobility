@@ -83,6 +83,14 @@ export interface Rubric {
   criteria: RubricCriterion[];
 }
 
+export interface Outcome {
+  id: string;
+  title: string;
+  display_name: string;
+  description: string;
+  code: string;
+}
+
 export interface EventEnvelope {
   metadata: {
     event_name: string;

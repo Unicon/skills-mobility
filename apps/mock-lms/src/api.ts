@@ -3,6 +3,7 @@ import type {
   Course,
   CourseWithActions,
   Module,
+  Outcome,
   Rubric,
   RunResult,
   Scope,
@@ -38,6 +39,8 @@ export const api = {
   assignments: (courseId: string) =>
     req<Assignment[]>(`/api/v1/courses/${courseId}/assignments`),
   rubrics: (courseId: string) => req<Rubric[]>(`/api/v1/courses/${courseId}/rubrics`),
+  outcome: (outcomeId: string) =>
+    req<Outcome>(`/api/v1/outcomes/${encodeURIComponent(outcomeId)}`),
   submissions: (courseId: string, userId: string) =>
     req<Submission[]>(
       `/api/v1/courses/${courseId}/students/submissions?student_ids[]=${encodeURIComponent(userId)}`,
