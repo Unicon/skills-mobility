@@ -7,6 +7,7 @@
 | Doc | Scope |
 |---|---|
 | [`poc-component-boundaries.md`](./poc-component-boundaries.md) | Top-level boundary matrix for the target POC architecture: component ownership, non-ownership, inputs/outputs, dependencies, observability model, and supporting stores |
+| [`event-consumer.md`](./event-consumer.md) | Design for the **Event Consumer** ingress boundary — runtime shape, logical modules, idempotency behavior, and Orchestrator handoff |
 | [`mock-lms.md`](./mock-lms.md) | Design for the **Mock LMS** (Event Producer + LMS Resource APIs + Demo UI) — modules, event model, Actions, real-time feed, data model, local-vs-AWS, build order |
 | [`delivery-router-service.md`](./delivery-router-service.md) | Design for the Delivery Router Service — internal contract, dispatch model, shared delivery mechanics, and adapter integration points |
 | [`learncard-profile-resolver.md`](./learncard-profile-resolver.md) | Design for the LearnCard Profile Resolver — standalone Python Lambda for learner profile resolution before issuance or delivery |
