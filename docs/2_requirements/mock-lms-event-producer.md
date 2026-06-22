@@ -75,7 +75,7 @@ For each Action, this documents the event payload, the LMS endpoints the Context
 ## 6. Repeatability
 
 - **FR-EP9** Actions and their data SHALL be reproducible: the underlying data is a committed, seeded snapshot (see [LMS APIs §data model](./mock-lms-apis.md)), and Actions are re-runnable any number of times within a demo, each run producing fresh correlation/event ids over stable business keys.
-- **FR-EP10** The UI SHALL let the operator **reset** emission state between runs (see [Demo UI](./mock-lms-ui.md)).
+- **FR-EP10** The UI SHALL let the operator **reset** between runs; the reset SHALL clear emission state and SHALL call the Event Consumer to clear the relevant idempotency records (see [FR-EC-23](./event-consumer.md)) so that re-triggering the same scenario starts a new end-to-end workflow.
 
 ## 7. Where emission fits
 
