@@ -266,6 +266,9 @@ button {
 .asg-list {
   display: flex;
   flex-direction: column;
+  /* inset the assignment details from the card edge (match .rows) so they
+     don't sit flush against the module card's left border */
+  padding: 4px 15px 12px;
 }
 .asg {
   padding: 9px 0;

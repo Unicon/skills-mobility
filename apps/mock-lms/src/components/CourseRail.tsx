@@ -31,7 +31,6 @@ export function CourseRail({
             <div className="meta">
               <span className="tag mono">{c.course_code}</span>
               <span className="tag">{KIND_LABEL[c.kind] ?? c.kind}</span>
-              <span className="tag">{c.actions.length} actions</span>
             </div>
           </button>
         ))}
