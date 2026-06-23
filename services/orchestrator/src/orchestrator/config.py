@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     db_path: str = "orchestrator.db"
     # Issuer identity stamped into the stubbed OBv3 credential.
     issuer_id: str = "did:web:poc.skills-mobility.example"
+    # When set, the Context Builder seam calls the real service over HTTP; else stub.
+    context_builder_url: str | None = None
 
 
 @lru_cache

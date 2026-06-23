@@ -12,7 +12,13 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 
 from orchestrator import runner
-from orchestrator.clients import StubContextBuilder, StubDeliveryRouter, StubProfileResolver
+from orchestrator.clients import (
+    ContextBuilderClient,
+    HttpContextBuilderClient,
+    StubContextBuilder,
+    StubDeliveryRouter,
+    StubProfileResolver,
+)
 from orchestrator.config import Settings, get_settings
 from orchestrator.schemas import RunRequest
 from orchestrator.store import ExecutionStore
@@ -27,8 +33,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.state.store = ExecutionStore(settings.db_path)
-    # Phase-1 stub seams; real HTTP clients swap in when #19's services are built.
-    app.state.context_builder = StubContextBuilder()
+    # Context Builder is built (#20): use the real HTTP client when its URL is set.
+    context_builder: ContextBuilderClient = (
+        HttpContextBuilderClient(settings.context_builder_url)
+        if settings.context_builder_url
+        else StubContextBuilder()
+    )
+    app.state.context_builder = context_builder
+    # Profile Resolver + Delivery Router are unbuilt (#19) — Phase-1 stubs for now.
     app.state.profile_resolver = StubProfileResolver()
     app.state.delivery_router = StubDeliveryRouter()
 
