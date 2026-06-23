@@ -10,6 +10,7 @@
 | [`poc-requirements.md`](./poc-requirements.md) | Original stakeholder-provided POC requirements, preserved as the starting-point brief even where later ADRs and design docs diverge |
 | [`target-poc-requirements.md`](./target-poc-requirements.md) | Current working system-level requirements for the target POC, reconciled with accepted ADRs and current design docs |
 | [`phase-1-poc-slice.md`](./phase-1-poc-slice.md) | First implementation slice across components: a fast end-to-end pipeline for `skill_mastered` and `course_completed` that later phases can build on |
+| [`context-builder.md`](./context-builder.md) | Deterministic source-data aggregation for the Orchestrator: event-type-based fetch profiles, chained LMS lookups, and the returned context bundle |
 | **Mock LMS** (source-system component, three parts ↓) | |
 | [`mock-lms-event-producer.md`](./mock-lms-event-producer.md) | Emits credential events (skill mastered, course completed, badge awarded); Actions, payloads, repeatability |
 | [`mock-lms-apis.md`](./mock-lms-apis.md) | Canvas-style **LMS Resource APIs** the Context Builder reads; seeded data model |
