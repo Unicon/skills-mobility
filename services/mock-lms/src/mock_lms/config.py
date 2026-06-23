@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     event_bus_name: str = "skills-mobility-poc"
     aws_region: str = "us-east-1"
 
+    # When set, the LocalEmitter also forwards each envelope to the Event
+    # Consumer's /ingest (the local stand-in for EventBridge → Lambda).
+    event_consumer_url: str | None = None
+
     # POC identity stamped into event metadata (ADR-0002: CloudFront-layer auth,
     # single demo user — no role split).
     root_account_uuid: str = "mock-root-account"
