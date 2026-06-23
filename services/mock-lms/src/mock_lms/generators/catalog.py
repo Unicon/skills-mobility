@@ -40,7 +40,6 @@ from mock_lms.catalog import (
     Module,
     ModuleItem,
     Outcome,
-    OutcomeAlignment,
     OutcomeResult,
     Page,
     Rubric,
@@ -368,14 +367,6 @@ def _generate_standard(catalog: Catalog, course: Course, rc: _RosterCourse, fake
     catalog.pages.append(
         Page(id=f"{cid}-PAGE-syllabus", course_id=cid, url="syllabus", title="Course Syllabus",
              body=f"Foundations of {subject}, assessed across two modules and a final.")
-    )
-    catalog.outcome_alignments.extend(
-        [
-            OutcomeAlignment(id=f"{cid}-AL-1", course_id=cid, outcome_id=competency.id,
-                             assignment_id=a_m1.id, name=a_m1.name),
-            OutcomeAlignment(id=f"{cid}-AL-2", course_id=cid, outcome_id=sub_competency.id,
-                             assignment_id=a_m2.id, name=a_m2.name),
-        ]
     )
     final_rubric = _rubric(cid, a_final.id, a_final.name)
     a_final.rubric_id = final_rubric.id

@@ -2106,64 +2106,6 @@
       "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
     }
   ],
-  "outcome_alignments": [
-    {
-      "id": "ACCY-111-AL-1",
-      "course_id": "ACCY-111",
-      "outcome_id": "ACCY-111-OUT-1",
-      "assignment_id": "ACCY-111-A-M1",
-      "name": "Module 1 Assessment"
-    },
-    {
-      "id": "ACCY-111-AL-2",
-      "course_id": "ACCY-111",
-      "outcome_id": "ACCY-111-OUT-1-2",
-      "assignment_id": "ACCY-111-A-M2",
-      "name": "Module 2 Assessment"
-    },
-    {
-      "id": "ACCY-374-AL-1",
-      "course_id": "ACCY-374",
-      "outcome_id": "ACCY-374-OUT-1",
-      "assignment_id": "ACCY-374-A-M1",
-      "name": "Module 1 Assessment"
-    },
-    {
-      "id": "ACCY-374-AL-2",
-      "course_id": "ACCY-374",
-      "outcome_id": "ACCY-374-OUT-1-2",
-      "assignment_id": "ACCY-374-A-M2",
-      "name": "Module 2 Assessment"
-    },
-    {
-      "id": "ACCY-491-AL-1",
-      "course_id": "ACCY-491",
-      "outcome_id": "ACCY-491-OUT-1",
-      "assignment_id": "ACCY-491-A-M1",
-      "name": "Module 1 Assessment"
-    },
-    {
-      "id": "ACCY-491-AL-2",
-      "course_id": "ACCY-491",
-      "outcome_id": "ACCY-491-OUT-1-2",
-      "assignment_id": "ACCY-491-A-M2",
-      "name": "Module 2 Assessment"
-    },
-    {
-      "id": "FINC-106-AL-1",
-      "course_id": "FINC-106",
-      "outcome_id": "FINC-106-OUT-1",
-      "assignment_id": "FINC-106-A-M1",
-      "name": "Module 1 Assessment"
-    },
-    {
-      "id": "FINC-106-AL-2",
-      "course_id": "FINC-106",
-      "outcome_id": "FINC-106-OUT-1-2",
-      "assignment_id": "FINC-106-A-M2",
-      "name": "Module 2 Assessment"
-    }
-  ],
   "submissions": [
     {
       "id": "ACCY-111-SUB-ACCY-111-A-M1-WU1125875",

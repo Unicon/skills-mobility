@@ -47,20 +47,6 @@ def test_modules_include_items_toggle(client: TestClient):
     assert with_items[0]["items"]
 
 
-def test_outcome_results_with_alignments(client: TestClient):
-    course = _standard_course(client)
-    cid, uid = course["id"], course["learners"][0]["id"]
-    outcome_id = f"{cid}-OUT-1"  # the competency outcome
-    r = client.get(
-        f"/api/v1/courses/{cid}/outcome_results",
-        params={"user_ids[]": uid, "outcome_ids[]": outcome_id, "include[]": "alignments"},
-    )
-    assert r.status_code == 200
-    body = r.json()
-    assert body["outcome_results"][0]["mastery"] is True
-    assert body["linked"]["alignments"]
-
-
 def test_submissions_filter(client: TestClient):
     course = _standard_course(client)
     cid, uid = course["id"], course["learners"][0]["id"]

@@ -123,32 +123,6 @@ def get_outcome(outcome_id: str, store: StoreDep) -> dict[str, Any]:
     return outcome.model_dump(mode="json")
 
 
-@router.get("/courses/{course_id}/outcome_results")
-def get_outcome_results(
-    course_id: str,
-    store: StoreDep,
-    user_ids: Annotated[list[str] | None, Query(alias="user_ids[]")] = None,
-    outcome_ids: Annotated[list[str] | None, Query(alias="outcome_ids[]")] = None,
-    include: Annotated[list[str] | None, Query(alias="include[]")] = None,
-) -> dict[str, Any]:
-    if store.get_course(course_id) is None:
-        raise _not_found(f"course {course_id} not found")
-    results = store.outcome_results(course_id, user_ids=user_ids, outcome_ids=outcome_ids)
-    payload: dict[str, Any] = {"outcome_results": [r.model_dump(mode="json") for r in results]}
-    if include and "alignments" in include:
-        payload["linked"] = {
-            "alignments": [a.model_dump(mode="json") for a in store.outcome_alignments(course_id)]
-        }
-    return payload
-
-
-@router.get("/courses/{course_id}/outcome_alignments")
-def get_outcome_alignments(course_id: str, store: StoreDep) -> list[dict[str, Any]]:
-    if store.get_course(course_id) is None:
-        raise _not_found(f"course {course_id} not found")
-    return [a.model_dump(mode="json") for a in store.outcome_alignments(course_id)]
-
-
 @router.get("/courses/{course_id}/students/submissions")
 def get_submissions(
     course_id: str,

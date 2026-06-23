@@ -131,14 +131,6 @@ class OutcomeResult(BaseModel):
     submitted_or_assessed_at: datetime | None = None
 
 
-class OutcomeAlignment(BaseModel):
-    id: str
-    course_id: str
-    outcome_id: str
-    assignment_id: str
-    name: str
-
-
 class Assignment(BaseModel):
     id: str
     course_id: str
@@ -227,7 +219,6 @@ class Catalog(BaseModel):
     assignments: list[Assignment] = []
     outcomes: list[Outcome] = []
     outcome_results: list[OutcomeResult] = []
-    outcome_alignments: list[OutcomeAlignment] = []
     submissions: list[Submission] = []
     rubrics: list[Rubric] = []
     badges: list[Badge] = []
@@ -250,7 +241,6 @@ class CatalogStore:
         self._modules = list(catalog.modules)
         self._pages = list(catalog.pages)
         self._outcome_results = list(catalog.outcome_results)
-        self._outcome_alignments = list(catalog.outcome_alignments)
         self._submissions = list(catalog.submissions)
         self._rubrics = list(catalog.rubrics)
         self._actions = list(catalog.actions)
@@ -312,20 +302,6 @@ class CatalogStore:
     def assignments_for(self, course_id: str) -> list[Assignment]:
         return [a for a in self.assignments.values() if a.course_id == course_id]
 
-    def outcome_results(
-        self,
-        course_id: str,
-        user_ids: list[str] | None = None,
-        outcome_ids: list[str] | None = None,
-    ) -> list[OutcomeResult]:
-        return [
-            r
-            for r in self._outcome_results
-            if r.course_id == course_id
-            and (not user_ids or r.user_id in user_ids)
-            and (not outcome_ids or r.outcome_id in outcome_ids)
-        ]
-
     def outcome_result(
         self, course_id: str, user_id: str, outcome_id: str
     ) -> OutcomeResult | None:
@@ -333,9 +309,6 @@ class CatalogStore:
             if r.course_id == course_id and r.user_id == user_id and r.outcome_id == outcome_id:
                 return r
         return None
-
-    def outcome_alignments(self, course_id: str) -> list[OutcomeAlignment]:
-        return [a for a in self._outcome_alignments if a.course_id == course_id]
 
     def submissions(
         self,
