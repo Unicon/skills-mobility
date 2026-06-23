@@ -21,6 +21,7 @@
 | [0013](./0013-llm-decision-service-testing-approach.md) | LLM Decision Service Testing Approach | Proposed |
 | [0014](./0014-poc-storage-strategy.md) | POC Storage Strategy | Accepted |
 | [0015](./0015-orchestrator-execution-model.md) | Event Consumer and Orchestrator Worker Execution Model (Lambda + SQS) | Accepted |
+| [0016](./0016-delivery-routing-topology.md) | Delivery Routing Topology and Adapter Boundaries | Proposed |
 
 ## Conventions
 
