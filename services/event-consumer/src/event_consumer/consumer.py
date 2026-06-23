@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from event_consumer import identity
+from event_consumer.handoff import CaptureHandoff, Handoff
 from event_consumer.store import SqliteStore
 
 
@@ -22,7 +23,9 @@ def _new_execution_id() -> str:
     return "exec_" + uuid.uuid4().hex[:12]
 
 
-def process(event: dict[str, Any], store: SqliteStore) -> IngestResult:
+def process(
+    event: dict[str, Any], store: SqliteStore, handoff: Handoff | None = None
+) -> IngestResult:
     errors = identity.validate(event)
     if errors:
         store.record_rejection(identity.rejection_key(event), errors)
@@ -39,5 +42,5 @@ def process(event: dict[str, Any], store: SqliteStore) -> IngestResult:
         return IngestResult(status="duplicate", execution_id=existing)
 
     store.create_execution(execution_id, metadata.get("event_id", ""), correlation_id, etype)
-    store.capture_handoff(execution_id, event)
+    (handoff or CaptureHandoff(store)).hand_off(execution_id, event)
     return IngestResult(status="created", execution_id=execution_id)

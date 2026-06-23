@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 
 from event_consumer import consumer
 from event_consumer.config import Settings, get_settings
+from event_consumer.handoff import CaptureHandoff, Handoff, HttpHandoff
 from event_consumer.store import SqliteStore
 
 
@@ -27,10 +28,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.state.store = SqliteStore(settings.db_path)
+    handoff: Handoff = (
+        HttpHandoff(settings.orchestrator_url)
+        if settings.orchestrator_url
+        else CaptureHandoff(app.state.store)
+    )
+    app.state.handoff = handoff
 
     @app.post("/ingest")
     def ingest(event: dict[str, Any]) -> JSONResponse:
-        result = consumer.process(event, app.state.store)
+        result = consumer.process(event, app.state.store, app.state.handoff)
         if result.status == "rejected":
             return JSONResponse(
                 status_code=422, content={"status": "rejected", "errors": result.errors}
