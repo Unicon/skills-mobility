@@ -24,6 +24,7 @@ dev = [
     "mypy>=1.11",
     "coverage>=7",
     "faker>=30",
+    "types-pyyaml>=6",
 ]
 
 [tool.ruff]

@@ -1,0 +1,13 @@
+id: badge_awarded.v1
+event_type: badge_awarded
+version: 1
+steps:
+  - output_key: badge
+    endpoint: "/api/v1/badges/{badge_id}"
+    params:
+      badge_id: { source: event, path: body.badge_id }
+
+  - output_key: user_profile
+    endpoint: "/api/v1/users/{user_id}/profile"
+    params:
+      user_id: { source: event, path: body.user_id }
