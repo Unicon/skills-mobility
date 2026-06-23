@@ -1,0 +1,3749 @@
+{
+  "courses": [
+    {
+      "id": "ACCY-111",
+      "name": "Introduction to Accounting",
+      "course_code": "ACCY-111",
+      "kind": "standard",
+      "institution": "Wasatch University",
+      "term": "Fall2017",
+      "workflow_state": "available"
+    },
+    {
+      "id": "ACCY-374",
+      "name": "Law, Governance, & Ethics",
+      "course_code": "ACCY-374",
+      "kind": "standard",
+      "institution": "Wasatch University",
+      "term": "Fall2017",
+      "workflow_state": "available"
+    },
+    {
+      "id": "ACCY-491",
+      "name": "The Financial Audit",
+      "course_code": "ACCY-491",
+      "kind": "standard",
+      "institution": "Wasatch University",
+      "term": "Spring2018",
+      "workflow_state": "available"
+    },
+    {
+      "id": "FINC-106",
+      "name": "Introduction to Finance",
+      "course_code": "FINC-106",
+      "kind": "standard",
+      "institution": "Wasatch University",
+      "term": "Fall2017",
+      "workflow_state": "available"
+    },
+    {
+      "id": "FINC-321",
+      "name": "Capital Markets",
+      "course_code": "FINC-321",
+      "kind": "digital_credential",
+      "institution": "Wasatch University",
+      "term": "Fall2017",
+      "workflow_state": "available"
+    },
+    {
+      "id": "FINC-439",
+      "name": "Applied Securities Analysis",
+      "course_code": "FINC-439",
+      "kind": "digital_credential",
+      "institution": "Wasatch University",
+      "term": "Spring2018",
+      "workflow_state": "available"
+    }
+  ],
+  "users": [
+    {
+      "id": "WU1125875",
+      "uuid": "7c4f820d-d890-536a-849d-b8ff726fdaa7",
+      "name": "Audrey Wallace",
+      "sortable_name": "Wallace, Audrey",
+      "login_id": "audrey.wallace",
+      "email": "audrey.wallace@example.com",
+      "profile": {
+        "Gender": "Female",
+        "Ethnicity": "Caucasian",
+        "Academic Classification": "Freshman",
+        "Admission Cohort": "2017",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125893",
+      "uuid": "d5ad321d-2691-5f34-aa26-e1832354e879",
+      "name": "James Reid",
+      "sortable_name": "Reid, James",
+      "login_id": "james.reid",
+      "email": "james.reid@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "South Asian",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125904",
+      "uuid": "42eee06c-a0c1-5476-86c5-95797c643f2e",
+      "name": "Richard Hart",
+      "sortable_name": "Hart, Richard",
+      "login_id": "richard.hart",
+      "email": "richard.hart@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "South Asian",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125907",
+      "uuid": "6e0401a7-5ab9-5a28-b0fe-ba9b8bfcb6af",
+      "name": "Rebecca Hill",
+      "sortable_name": "Hill, Rebecca",
+      "login_id": "rebecca.hill",
+      "email": "rebecca.hill@example.com",
+      "profile": {
+        "Gender": "Female",
+        "Ethnicity": "Hispanic",
+        "Academic Classification": "Junior",
+        "Admission Cohort": "2015",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125912",
+      "uuid": "fb41c4e2-33d1-52a3-bafe-bec2a290a375",
+      "name": "Lucas Walker",
+      "sortable_name": "Walker, Lucas",
+      "login_id": "lucas.walker",
+      "email": "lucas.walker@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "Pacific Islander",
+        "Academic Classification": "Sophomore",
+        "Admission Cohort": "2016",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125919",
+      "uuid": "cf573e03-5fcf-5352-9564-24c2079c1fbc",
+      "name": "Sam Young",
+      "sortable_name": "Young, Sam",
+      "login_id": "sam.young",
+      "email": "sam.young@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "Caucasian",
+        "Academic Classification": "Freshman",
+        "Admission Cohort": "2017",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None",
+        "Student Athlete": "Football"
+      }
+    },
+    {
+      "id": "WU1125875",
+      "uuid": "7c4f820d-d890-536a-849d-b8ff726fdaa7",
+      "name": "Audrey Wallace",
+      "sortable_name": "Wallace, Audrey",
+      "login_id": "audrey.wallace",
+      "email": "audrey.wallace@example.com",
+      "profile": {
+        "Gender": "Female",
+        "Ethnicity": "Caucasian",
+        "Academic Classification": "Freshman",
+        "Admission Cohort": "2017",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125893",
+      "uuid": "d5ad321d-2691-5f34-aa26-e1832354e879",
+      "name": "James Reid",
+      "sortable_name": "Reid, James",
+      "login_id": "james.reid",
+      "email": "james.reid@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "South Asian",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125904",
+      "uuid": "42eee06c-a0c1-5476-86c5-95797c643f2e",
+      "name": "Richard Hart",
+      "sortable_name": "Hart, Richard",
+      "login_id": "richard.hart",
+      "email": "richard.hart@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "South Asian",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125907",
+      "uuid": "6e0401a7-5ab9-5a28-b0fe-ba9b8bfcb6af",
+      "name": "Rebecca Hill",
+      "sortable_name": "Hill, Rebecca",
+      "login_id": "rebecca.hill",
+      "email": "rebecca.hill@example.com",
+      "profile": {
+        "Gender": "Female",
+        "Ethnicity": "Hispanic",
+        "Academic Classification": "Junior",
+        "Admission Cohort": "2015",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125912",
+      "uuid": "fb41c4e2-33d1-52a3-bafe-bec2a290a375",
+      "name": "Lucas Walker",
+      "sortable_name": "Walker, Lucas",
+      "login_id": "lucas.walker",
+      "email": "lucas.walker@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "Pacific Islander",
+        "Academic Classification": "Sophomore",
+        "Admission Cohort": "2016",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125919",
+      "uuid": "cf573e03-5fcf-5352-9564-24c2079c1fbc",
+      "name": "Sam Young",
+      "sortable_name": "Young, Sam",
+      "login_id": "sam.young",
+      "email": "sam.young@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "Caucasian",
+        "Academic Classification": "Freshman",
+        "Admission Cohort": "2017",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None",
+        "Student Athlete": "Football"
+      }
+    },
+    {
+      "id": "WU1125875",
+      "uuid": "7c4f820d-d890-536a-849d-b8ff726fdaa7",
+      "name": "Audrey Wallace",
+      "sortable_name": "Wallace, Audrey",
+      "login_id": "audrey.wallace",
+      "email": "audrey.wallace@example.com",
+      "profile": {
+        "Gender": "Female",
+        "Ethnicity": "Caucasian",
+        "Academic Classification": "Freshman",
+        "Admission Cohort": "2017",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125893",
+      "uuid": "d5ad321d-2691-5f34-aa26-e1832354e879",
+      "name": "James Reid",
+      "sortable_name": "Reid, James",
+      "login_id": "james.reid",
+      "email": "james.reid@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "South Asian",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125904",
+      "uuid": "42eee06c-a0c1-5476-86c5-95797c643f2e",
+      "name": "Richard Hart",
+      "sortable_name": "Hart, Richard",
+      "login_id": "richard.hart",
+      "email": "richard.hart@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "South Asian",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125907",
+      "uuid": "6e0401a7-5ab9-5a28-b0fe-ba9b8bfcb6af",
+      "name": "Rebecca Hill",
+      "sortable_name": "Hill, Rebecca",
+      "login_id": "rebecca.hill",
+      "email": "rebecca.hill@example.com",
+      "profile": {
+        "Gender": "Female",
+        "Ethnicity": "Hispanic",
+        "Academic Classification": "Junior",
+        "Admission Cohort": "2015",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125912",
+      "uuid": "fb41c4e2-33d1-52a3-bafe-bec2a290a375",
+      "name": "Lucas Walker",
+      "sortable_name": "Walker, Lucas",
+      "login_id": "lucas.walker",
+      "email": "lucas.walker@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "Pacific Islander",
+        "Academic Classification": "Sophomore",
+        "Admission Cohort": "2016",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None"
+      }
+    },
+    {
+      "id": "WU1125919",
+      "uuid": "cf573e03-5fcf-5352-9564-24c2079c1fbc",
+      "name": "Sam Young",
+      "sortable_name": "Young, Sam",
+      "login_id": "sam.young",
+      "email": "sam.young@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "Caucasian",
+        "Academic Classification": "Freshman",
+        "Admission Cohort": "2017",
+        "Academic Standing": "Good",
+        "Degree Program": "BAccy",
+        "Major": "Accountancy",
+        "Minor": "None",
+        "Student Athlete": "Football"
+      }
+    },
+    {
+      "id": "WU1125879",
+      "uuid": "055e1dfd-b7a3-5e9d-b157-539a03d683fb",
+      "name": "Luke Henderson",
+      "sortable_name": "Henderson, Luke",
+      "login_id": "luke.henderson",
+      "email": "luke.henderson@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "Native Hawaiian",
+        "Academic Classification": "Junior",
+        "Admission Cohort": "2015",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "International Business"
+      }
+    },
+    {
+      "id": "WU1125880",
+      "uuid": "aa482dc4-624f-58c2-80f2-00b369f2d181",
+      "name": "Robert Russell",
+      "sortable_name": "Russell, Robert",
+      "login_id": "robert.russell",
+      "email": "robert.russell@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "Asian",
+        "Academic Classification": "Freshman",
+        "Admission Cohort": "2017",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "Economics"
+      }
+    },
+    {
+      "id": "WU1125881",
+      "uuid": "169e0a39-acca-5784-9b07-831dd2f20d9a",
+      "name": "Steven Black",
+      "sortable_name": "Black, Steven",
+      "login_id": "steven.black",
+      "email": "steven.black@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "African American",
+        "Academic Classification": "Freshman",
+        "Admission Cohort": "2017",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "Public Policy"
+      }
+    },
+    {
+      "id": "WU1125888",
+      "uuid": "e348c48e-10eb-5433-89b8-b47e5e224051",
+      "name": "Mary Alsop",
+      "sortable_name": "Alsop, Mary",
+      "login_id": "mary.alsop",
+      "email": "mary.alsop@example.com",
+      "profile": {
+        "Gender": "Female",
+        "Ethnicity": "First Nation",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "Information Systems"
+      }
+    },
+    {
+      "id": "WU1125889",
+      "uuid": "b541ae36-ecdf-5690-8b7f-7e7a1941bccf",
+      "name": "Jan Davidson",
+      "sortable_name": "Davidson, Jan",
+      "login_id": "jan.davidson",
+      "email": "jan.davidson@example.com",
+      "profile": {
+        "Gender": "Female",
+        "Ethnicity": "Asian",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "English"
+      }
+    },
+    {
+      "id": "WU1125896",
+      "uuid": "c75a8753-5e9a-54b6-b0bb-0544e955ada1",
+      "name": "Nicholas Edmunds",
+      "sortable_name": "Edmunds, Nicholas",
+      "login_id": "nicholas.edmunds",
+      "email": "nicholas.edmunds@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "First Nation",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "Management"
+      }
+    },
+    {
+      "id": "WU1125879",
+      "uuid": "055e1dfd-b7a3-5e9d-b157-539a03d683fb",
+      "name": "Luke Henderson",
+      "sortable_name": "Henderson, Luke",
+      "login_id": "luke.henderson",
+      "email": "luke.henderson@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "Native Hawaiian",
+        "Academic Classification": "Junior",
+        "Admission Cohort": "2015",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "International Business"
+      }
+    },
+    {
+      "id": "WU1125880",
+      "uuid": "aa482dc4-624f-58c2-80f2-00b369f2d181",
+      "name": "Robert Russell",
+      "sortable_name": "Russell, Robert",
+      "login_id": "robert.russell",
+      "email": "robert.russell@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "Asian",
+        "Academic Classification": "Freshman",
+        "Admission Cohort": "2017",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "Economics"
+      }
+    },
+    {
+      "id": "WU1125881",
+      "uuid": "169e0a39-acca-5784-9b07-831dd2f20d9a",
+      "name": "Steven Black",
+      "sortable_name": "Black, Steven",
+      "login_id": "steven.black",
+      "email": "steven.black@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "African American",
+        "Academic Classification": "Freshman",
+        "Admission Cohort": "2017",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "Public Policy"
+      }
+    },
+    {
+      "id": "WU1125888",
+      "uuid": "e348c48e-10eb-5433-89b8-b47e5e224051",
+      "name": "Mary Alsop",
+      "sortable_name": "Alsop, Mary",
+      "login_id": "mary.alsop",
+      "email": "mary.alsop@example.com",
+      "profile": {
+        "Gender": "Female",
+        "Ethnicity": "First Nation",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "Information Systems"
+      }
+    },
+    {
+      "id": "WU1125889",
+      "uuid": "b541ae36-ecdf-5690-8b7f-7e7a1941bccf",
+      "name": "Jan Davidson",
+      "sortable_name": "Davidson, Jan",
+      "login_id": "jan.davidson",
+      "email": "jan.davidson@example.com",
+      "profile": {
+        "Gender": "Female",
+        "Ethnicity": "Asian",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "English"
+      }
+    },
+    {
+      "id": "WU1125896",
+      "uuid": "c75a8753-5e9a-54b6-b0bb-0544e955ada1",
+      "name": "Nicholas Edmunds",
+      "sortable_name": "Edmunds, Nicholas",
+      "login_id": "nicholas.edmunds",
+      "email": "nicholas.edmunds@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "First Nation",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "Management"
+      }
+    },
+    {
+      "id": "WU1125879",
+      "uuid": "055e1dfd-b7a3-5e9d-b157-539a03d683fb",
+      "name": "Luke Henderson",
+      "sortable_name": "Henderson, Luke",
+      "login_id": "luke.henderson",
+      "email": "luke.henderson@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "Native Hawaiian",
+        "Academic Classification": "Junior",
+        "Admission Cohort": "2015",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "International Business"
+      }
+    },
+    {
+      "id": "WU1125880",
+      "uuid": "aa482dc4-624f-58c2-80f2-00b369f2d181",
+      "name": "Robert Russell",
+      "sortable_name": "Russell, Robert",
+      "login_id": "robert.russell",
+      "email": "robert.russell@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "Asian",
+        "Academic Classification": "Freshman",
+        "Admission Cohort": "2017",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "Economics"
+      }
+    },
+    {
+      "id": "WU1125881",
+      "uuid": "169e0a39-acca-5784-9b07-831dd2f20d9a",
+      "name": "Steven Black",
+      "sortable_name": "Black, Steven",
+      "login_id": "steven.black",
+      "email": "steven.black@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "African American",
+        "Academic Classification": "Freshman",
+        "Admission Cohort": "2017",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "Public Policy"
+      }
+    },
+    {
+      "id": "WU1125888",
+      "uuid": "e348c48e-10eb-5433-89b8-b47e5e224051",
+      "name": "Mary Alsop",
+      "sortable_name": "Alsop, Mary",
+      "login_id": "mary.alsop",
+      "email": "mary.alsop@example.com",
+      "profile": {
+        "Gender": "Female",
+        "Ethnicity": "First Nation",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "Information Systems"
+      }
+    },
+    {
+      "id": "WU1125889",
+      "uuid": "b541ae36-ecdf-5690-8b7f-7e7a1941bccf",
+      "name": "Jan Davidson",
+      "sortable_name": "Davidson, Jan",
+      "login_id": "jan.davidson",
+      "email": "jan.davidson@example.com",
+      "profile": {
+        "Gender": "Female",
+        "Ethnicity": "Asian",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "English"
+      }
+    },
+    {
+      "id": "WU1125896",
+      "uuid": "c75a8753-5e9a-54b6-b0bb-0544e955ada1",
+      "name": "Nicholas Edmunds",
+      "sortable_name": "Edmunds, Nicholas",
+      "login_id": "nicholas.edmunds",
+      "email": "nicholas.edmunds@example.com",
+      "profile": {
+        "Gender": "Male",
+        "Ethnicity": "First Nation",
+        "Academic Classification": "Senior",
+        "Admission Cohort": "2014",
+        "Academic Standing": "Good",
+        "Degree Program": "BS",
+        "Major": "Finance",
+        "Minor": "Management"
+      }
+    }
+  ],
+  "enrollments": [
+    {
+      "id": "ACCY-111-ENR-WU1125875",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125875",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "ACCY-111-ENR-WU1125893",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125893",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "F",
+      "current_points": 52.0
+    },
+    {
+      "id": "ACCY-111-ENR-WU1125904",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125904",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "ACCY-111-ENR-WU1125907",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125907",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "ACCY-111-ENR-WU1125912",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125912",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "ACCY-111-ENR-WU1125919",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125919",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "ACCY-374-ENR-WU1125875",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125875",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "ACCY-374-ENR-WU1125893",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125893",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "F",
+      "current_points": 52.0
+    },
+    {
+      "id": "ACCY-374-ENR-WU1125904",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125904",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "ACCY-374-ENR-WU1125907",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125907",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "ACCY-374-ENR-WU1125912",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125912",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "ACCY-374-ENR-WU1125919",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125919",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "ACCY-491-ENR-WU1125875",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125875",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "ACCY-491-ENR-WU1125893",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125893",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "F",
+      "current_points": 52.0
+    },
+    {
+      "id": "ACCY-491-ENR-WU1125904",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125904",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "ACCY-491-ENR-WU1125907",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125907",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "ACCY-491-ENR-WU1125912",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125912",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "ACCY-491-ENR-WU1125919",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125919",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "FINC-106-ENR-WU1125879",
+      "course_id": "FINC-106",
+      "user_id": "WU1125879",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "FINC-106-ENR-WU1125880",
+      "course_id": "FINC-106",
+      "user_id": "WU1125880",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "F",
+      "current_points": 52.0
+    },
+    {
+      "id": "FINC-106-ENR-WU1125881",
+      "course_id": "FINC-106",
+      "user_id": "WU1125881",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "FINC-106-ENR-WU1125888",
+      "course_id": "FINC-106",
+      "user_id": "WU1125888",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "FINC-106-ENR-WU1125889",
+      "course_id": "FINC-106",
+      "user_id": "WU1125889",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "FINC-106-ENR-WU1125896",
+      "course_id": "FINC-106",
+      "user_id": "WU1125896",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": "A-",
+      "current_points": 92.0
+    },
+    {
+      "id": "FINC-321-ENR-WU1125879",
+      "course_id": "FINC-321",
+      "user_id": "WU1125879",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": null,
+      "current_points": null
+    },
+    {
+      "id": "FINC-321-ENR-WU1125880",
+      "course_id": "FINC-321",
+      "user_id": "WU1125880",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": null,
+      "current_points": null
+    },
+    {
+      "id": "FINC-321-ENR-WU1125881",
+      "course_id": "FINC-321",
+      "user_id": "WU1125881",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": null,
+      "current_points": null
+    },
+    {
+      "id": "FINC-321-ENR-WU1125888",
+      "course_id": "FINC-321",
+      "user_id": "WU1125888",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": null,
+      "current_points": null
+    },
+    {
+      "id": "FINC-321-ENR-WU1125889",
+      "course_id": "FINC-321",
+      "user_id": "WU1125889",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": null,
+      "current_points": null
+    },
+    {
+      "id": "FINC-321-ENR-WU1125896",
+      "course_id": "FINC-321",
+      "user_id": "WU1125896",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": null,
+      "current_points": null
+    },
+    {
+      "id": "FINC-439-ENR-WU1125879",
+      "course_id": "FINC-439",
+      "user_id": "WU1125879",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": null,
+      "current_points": null
+    },
+    {
+      "id": "FINC-439-ENR-WU1125880",
+      "course_id": "FINC-439",
+      "user_id": "WU1125880",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": null,
+      "current_points": null
+    },
+    {
+      "id": "FINC-439-ENR-WU1125881",
+      "course_id": "FINC-439",
+      "user_id": "WU1125881",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": null,
+      "current_points": null
+    },
+    {
+      "id": "FINC-439-ENR-WU1125888",
+      "course_id": "FINC-439",
+      "user_id": "WU1125888",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": null,
+      "current_points": null
+    },
+    {
+      "id": "FINC-439-ENR-WU1125889",
+      "course_id": "FINC-439",
+      "user_id": "WU1125889",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": null,
+      "current_points": null
+    },
+    {
+      "id": "FINC-439-ENR-WU1125896",
+      "course_id": "FINC-439",
+      "user_id": "WU1125896",
+      "type": "StudentEnrollment",
+      "enrollment_state": "active",
+      "current_grade": null,
+      "current_points": null
+    }
+  ],
+  "modules": [
+    {
+      "id": "ACCY-111-MOD-1",
+      "course_id": "ACCY-111",
+      "name": "Module 1: Foundations of Accounting",
+      "position": 1,
+      "items": [
+        {
+          "id": "ACCY-111-MOD-1-I1",
+          "title": "Module 1 Assessment",
+          "type": "Assignment",
+          "content_id": "ACCY-111-A-M1"
+        }
+      ]
+    },
+    {
+      "id": "ACCY-111-MOD-2",
+      "course_id": "ACCY-111",
+      "name": "Module 2: Applying Accounting",
+      "position": 2,
+      "items": [
+        {
+          "id": "ACCY-111-MOD-2-I1",
+          "title": "Module 2 Assessment",
+          "type": "Assignment",
+          "content_id": "ACCY-111-A-M2"
+        }
+      ]
+    },
+    {
+      "id": "ACCY-374-MOD-1",
+      "course_id": "ACCY-374",
+      "name": "Module 1: Foundations of Law, Governance, & Ethics",
+      "position": 1,
+      "items": [
+        {
+          "id": "ACCY-374-MOD-1-I1",
+          "title": "Module 1 Assessment",
+          "type": "Assignment",
+          "content_id": "ACCY-374-A-M1"
+        }
+      ]
+    },
+    {
+      "id": "ACCY-374-MOD-2",
+      "course_id": "ACCY-374",
+      "name": "Module 2: Applying Law, Governance, & Ethics",
+      "position": 2,
+      "items": [
+        {
+          "id": "ACCY-374-MOD-2-I1",
+          "title": "Module 2 Assessment",
+          "type": "Assignment",
+          "content_id": "ACCY-374-A-M2"
+        }
+      ]
+    },
+    {
+      "id": "ACCY-491-MOD-1",
+      "course_id": "ACCY-491",
+      "name": "Module 1: Foundations of The Financial Audit",
+      "position": 1,
+      "items": [
+        {
+          "id": "ACCY-491-MOD-1-I1",
+          "title": "Module 1 Assessment",
+          "type": "Assignment",
+          "content_id": "ACCY-491-A-M1"
+        }
+      ]
+    },
+    {
+      "id": "ACCY-491-MOD-2",
+      "course_id": "ACCY-491",
+      "name": "Module 2: Applying The Financial Audit",
+      "position": 2,
+      "items": [
+        {
+          "id": "ACCY-491-MOD-2-I1",
+          "title": "Module 2 Assessment",
+          "type": "Assignment",
+          "content_id": "ACCY-491-A-M2"
+        }
+      ]
+    },
+    {
+      "id": "FINC-106-MOD-1",
+      "course_id": "FINC-106",
+      "name": "Module 1: Foundations of Finance",
+      "position": 1,
+      "items": [
+        {
+          "id": "FINC-106-MOD-1-I1",
+          "title": "Module 1 Assessment",
+          "type": "Assignment",
+          "content_id": "FINC-106-A-M1"
+        }
+      ]
+    },
+    {
+      "id": "FINC-106-MOD-2",
+      "course_id": "FINC-106",
+      "name": "Module 2: Applying Finance",
+      "position": 2,
+      "items": [
+        {
+          "id": "FINC-106-MOD-2-I1",
+          "title": "Module 2 Assessment",
+          "type": "Assignment",
+          "content_id": "FINC-106-A-M2"
+        }
+      ]
+    },
+    {
+      "id": "FINC-321-MOD-1",
+      "course_id": "FINC-321",
+      "name": "Module 1",
+      "position": 1,
+      "items": [
+        {
+          "id": "FINC-321-MOD-1-I1",
+          "title": "Module 1 Project",
+          "type": "Assignment",
+          "content_id": "FINC-321-A-M1"
+        }
+      ]
+    },
+    {
+      "id": "FINC-321-MOD-2",
+      "course_id": "FINC-321",
+      "name": "Module 2",
+      "position": 2,
+      "items": [
+        {
+          "id": "FINC-321-MOD-2-I1",
+          "title": "Module 2 Project",
+          "type": "Assignment",
+          "content_id": "FINC-321-A-M2"
+        }
+      ]
+    },
+    {
+      "id": "FINC-439-MOD-1",
+      "course_id": "FINC-439",
+      "name": "Module 1",
+      "position": 1,
+      "items": [
+        {
+          "id": "FINC-439-MOD-1-I1",
+          "title": "Module 1 Project",
+          "type": "Assignment",
+          "content_id": "FINC-439-A-M1"
+        }
+      ]
+    },
+    {
+      "id": "FINC-439-MOD-2",
+      "course_id": "FINC-439",
+      "name": "Module 2",
+      "position": 2,
+      "items": [
+        {
+          "id": "FINC-439-MOD-2-I1",
+          "title": "Module 2 Project",
+          "type": "Assignment",
+          "content_id": "FINC-439-A-M2"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "id": "ACCY-111-PAGE-syllabus",
+      "course_id": "ACCY-111",
+      "url": "syllabus",
+      "title": "Course Syllabus",
+      "body": "Foundations of Accounting, assessed across two modules and a final."
+    },
+    {
+      "id": "ACCY-374-PAGE-syllabus",
+      "course_id": "ACCY-374",
+      "url": "syllabus",
+      "title": "Course Syllabus",
+      "body": "Foundations of Law, Governance, & Ethics, assessed across two modules and a final."
+    },
+    {
+      "id": "ACCY-491-PAGE-syllabus",
+      "course_id": "ACCY-491",
+      "url": "syllabus",
+      "title": "Course Syllabus",
+      "body": "Foundations of The Financial Audit, assessed across two modules and a final."
+    },
+    {
+      "id": "FINC-106-PAGE-syllabus",
+      "course_id": "FINC-106",
+      "url": "syllabus",
+      "title": "Course Syllabus",
+      "body": "Foundations of Finance, assessed across two modules and a final."
+    },
+    {
+      "id": "FINC-321-PAGE-syllabus",
+      "course_id": "FINC-321",
+      "url": "syllabus",
+      "title": "Course Syllabus",
+      "body": "Capital Markets: a digital-credential course issuing badges per module."
+    },
+    {
+      "id": "FINC-439-PAGE-syllabus",
+      "course_id": "FINC-439",
+      "url": "syllabus",
+      "title": "Course Syllabus",
+      "body": "Applied Securities Analysis: a digital-credential course issuing badges per module."
+    }
+  ],
+  "assignments": [
+    {
+      "id": "ACCY-111-A-M1",
+      "course_id": "ACCY-111",
+      "name": "Module 1 Assessment",
+      "description": "Demonstrate the Accounting competency.",
+      "points_possible": 100.0,
+      "due_at": "2026-03-23T01:23:39.341770Z",
+      "role": "module",
+      "module_id": "ACCY-111-MOD-1",
+      "outcome_id": "ACCY-111-OUT-1",
+      "badge_id": null,
+      "rubric_id": null
+    },
+    {
+      "id": "ACCY-111-A-M2",
+      "course_id": "ACCY-111",
+      "name": "Module 2 Assessment",
+      "description": "Demonstrate a Accounting sub-skill.",
+      "points_possible": 100.0,
+      "due_at": "2026-01-15T16:49:40.359134Z",
+      "role": "module",
+      "module_id": "ACCY-111-MOD-2",
+      "outcome_id": "ACCY-111-OUT-1-2",
+      "badge_id": null,
+      "rubric_id": null
+    },
+    {
+      "id": "ACCY-111-A-FINAL",
+      "course_id": "ACCY-111",
+      "name": "Final Accounting Exam",
+      "description": "Comprehensive Accounting assessment.",
+      "points_possible": 100.0,
+      "due_at": "2026-02-11T16:52:33.575566Z",
+      "role": "final",
+      "module_id": null,
+      "outcome_id": null,
+      "badge_id": null,
+      "rubric_id": "ACCY-111-RUB-ACCY-111-A-FINAL"
+    },
+    {
+      "id": "ACCY-374-A-M1",
+      "course_id": "ACCY-374",
+      "name": "Module 1 Assessment",
+      "description": "Demonstrate the Law, Governance, & Ethics competency.",
+      "points_possible": 100.0,
+      "due_at": "2026-03-16T08:29:48.337820Z",
+      "role": "module",
+      "module_id": "ACCY-374-MOD-1",
+      "outcome_id": "ACCY-374-OUT-1",
+      "badge_id": null,
+      "rubric_id": null
+    },
+    {
+      "id": "ACCY-374-A-M2",
+      "course_id": "ACCY-374",
+      "name": "Module 2 Assessment",
+      "description": "Demonstrate a Law, Governance, & Ethics sub-skill.",
+      "points_possible": 100.0,
+      "due_at": "2026-03-30T02:15:00.718089Z",
+      "role": "module",
+      "module_id": "ACCY-374-MOD-2",
+      "outcome_id": "ACCY-374-OUT-1-2",
+      "badge_id": null,
+      "rubric_id": null
+    },
+    {
+      "id": "ACCY-374-A-FINAL",
+      "course_id": "ACCY-374",
+      "name": "Final Law, Governance, & Ethics Exam",
+      "description": "Comprehensive Law, Governance, & Ethics assessment.",
+      "points_possible": 100.0,
+      "due_at": "2026-01-17T22:46:36.488768Z",
+      "role": "final",
+      "module_id": null,
+      "outcome_id": null,
+      "badge_id": null,
+      "rubric_id": "ACCY-374-RUB-ACCY-374-A-FINAL"
+    },
+    {
+      "id": "ACCY-491-A-M1",
+      "course_id": "ACCY-491",
+      "name": "Module 1 Assessment",
+      "description": "Demonstrate the The Financial Audit competency.",
+      "points_possible": 100.0,
+      "due_at": "2026-02-10T14:34:09.809627Z",
+      "role": "module",
+      "module_id": "ACCY-491-MOD-1",
+      "outcome_id": "ACCY-491-OUT-1",
+      "badge_id": null,
+      "rubric_id": null
+    },
+    {
+      "id": "ACCY-491-A-M2",
+      "course_id": "ACCY-491",
+      "name": "Module 2 Assessment",
+      "description": "Demonstrate a The Financial Audit sub-skill.",
+      "points_possible": 100.0,
+      "due_at": "2026-02-08T15:15:30.599794Z",
+      "role": "module",
+      "module_id": "ACCY-491-MOD-2",
+      "outcome_id": "ACCY-491-OUT-1-2",
+      "badge_id": null,
+      "rubric_id": null
+    },
+    {
+      "id": "ACCY-491-A-FINAL",
+      "course_id": "ACCY-491",
+      "name": "Final The Financial Audit Exam",
+      "description": "Comprehensive The Financial Audit assessment.",
+      "points_possible": 100.0,
+      "due_at": "2026-03-14T15:03:58.333503Z",
+      "role": "final",
+      "module_id": null,
+      "outcome_id": null,
+      "badge_id": null,
+      "rubric_id": "ACCY-491-RUB-ACCY-491-A-FINAL"
+    },
+    {
+      "id": "FINC-106-A-M1",
+      "course_id": "FINC-106",
+      "name": "Module 1 Assessment",
+      "description": "Demonstrate the Finance competency.",
+      "points_possible": 100.0,
+      "due_at": "2026-03-23T00:09:25.526494Z",
+      "role": "module",
+      "module_id": "FINC-106-MOD-1",
+      "outcome_id": "FINC-106-OUT-1",
+      "badge_id": null,
+      "rubric_id": null
+    },
+    {
+      "id": "FINC-106-A-M2",
+      "course_id": "FINC-106",
+      "name": "Module 2 Assessment",
+      "description": "Demonstrate a Finance sub-skill.",
+      "points_possible": 100.0,
+      "due_at": "2026-03-19T18:27:02.836972Z",
+      "role": "module",
+      "module_id": "FINC-106-MOD-2",
+      "outcome_id": "FINC-106-OUT-1-2",
+      "badge_id": null,
+      "rubric_id": null
+    },
+    {
+      "id": "FINC-106-A-FINAL",
+      "course_id": "FINC-106",
+      "name": "Final Finance Exam",
+      "description": "Comprehensive Finance assessment.",
+      "points_possible": 100.0,
+      "due_at": "2026-01-29T12:09:33.782690Z",
+      "role": "final",
+      "module_id": null,
+      "outcome_id": null,
+      "badge_id": null,
+      "rubric_id": "FINC-106-RUB-FINC-106-A-FINAL"
+    },
+    {
+      "id": "FINC-321-A-M1",
+      "course_id": "FINC-321",
+      "name": "Module 1 Project",
+      "description": "Project evidencing a Capital Markets competency.",
+      "points_possible": 100.0,
+      "due_at": "2026-02-18T12:19:03.997510Z",
+      "role": "module",
+      "module_id": "FINC-321-MOD-1",
+      "outcome_id": null,
+      "badge_id": "FINC-321-BADGE-ACCEPTED",
+      "rubric_id": null
+    },
+    {
+      "id": "FINC-321-A-M2",
+      "course_id": "FINC-321",
+      "name": "Module 2 Project",
+      "description": "Project evidencing a second Capital Markets competency.",
+      "points_possible": 100.0,
+      "due_at": "2026-03-17T12:53:46.313668Z",
+      "role": "module",
+      "module_id": "FINC-321-MOD-2",
+      "outcome_id": null,
+      "badge_id": "FINC-321-BADGE-UNACCEPTED",
+      "rubric_id": null
+    },
+    {
+      "id": "FINC-321-A-FINAL",
+      "course_id": "FINC-321",
+      "name": "Capital Markets Capstone",
+      "description": "Capstone for the Capital Markets credential.",
+      "points_possible": 100.0,
+      "due_at": "2026-02-06T20:27:26.592805Z",
+      "role": "final",
+      "module_id": null,
+      "outcome_id": null,
+      "badge_id": "FINC-321-BADGE-COURSE",
+      "rubric_id": "FINC-321-RUB-FINC-321-A-FINAL"
+    },
+    {
+      "id": "FINC-439-A-M1",
+      "course_id": "FINC-439",
+      "name": "Module 1 Project",
+      "description": "Project evidencing a Applied Securities Analysis competency.",
+      "points_possible": 100.0,
+      "due_at": "2026-04-16T00:37:00.766354Z",
+      "role": "module",
+      "module_id": "FINC-439-MOD-1",
+      "outcome_id": null,
+      "badge_id": "FINC-439-BADGE-ACCEPTED",
+      "rubric_id": null
+    },
+    {
+      "id": "FINC-439-A-M2",
+      "course_id": "FINC-439",
+      "name": "Module 2 Project",
+      "description": "Project evidencing a second Applied Securities Analysis competency.",
+      "points_possible": 100.0,
+      "due_at": "2026-03-13T10:26:35.555532Z",
+      "role": "module",
+      "module_id": "FINC-439-MOD-2",
+      "outcome_id": null,
+      "badge_id": "FINC-439-BADGE-UNACCEPTED",
+      "rubric_id": null
+    },
+    {
+      "id": "FINC-439-A-FINAL",
+      "course_id": "FINC-439",
+      "name": "Applied Securities Analysis Capstone",
+      "description": "Capstone for the Applied Securities Analysis credential.",
+      "points_possible": 100.0,
+      "due_at": "2026-01-18T11:07:29.820462Z",
+      "role": "final",
+      "module_id": null,
+      "outcome_id": null,
+      "badge_id": "FINC-439-BADGE-COURSE",
+      "rubric_id": "FINC-439-RUB-FINC-439-A-FINAL"
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "ACCY-111-OUT-1",
+      "title": "1.0.0 Accounting Principles",
+      "display_name": "Apply core principles of accounting",
+      "description": "Learner can independently apply accounting to analyze a problem.",
+      "code": "1.0.0",
+      "mastery_points": 3.0,
+      "points_possible": 5.0
+    },
+    {
+      "id": "ACCY-111-OUT-1-2",
+      "title": "1.2.0 Prepare a accounting work product",
+      "display_name": "Complete a discrete accounting task",
+      "description": "Learner can complete a single bounded accounting task accurately.",
+      "code": "1.2.0",
+      "mastery_points": 3.0,
+      "points_possible": 5.0
+    },
+    {
+      "id": "ACCY-374-OUT-1",
+      "title": "1.0.0 Law, Governance, & Ethics Principles",
+      "display_name": "Apply core principles of law, governance, & ethics",
+      "description": "Learner can independently apply law, governance, & ethics to analyze a problem.",
+      "code": "1.0.0",
+      "mastery_points": 3.0,
+      "points_possible": 5.0
+    },
+    {
+      "id": "ACCY-374-OUT-1-2",
+      "title": "1.2.0 Prepare a law, governance, & ethics work product",
+      "display_name": "Complete a discrete law, governance, & ethics task",
+      "description": "Learner can complete a single bounded law, governance, & ethics task accurately.",
+      "code": "1.2.0",
+      "mastery_points": 3.0,
+      "points_possible": 5.0
+    },
+    {
+      "id": "ACCY-491-OUT-1",
+      "title": "1.0.0 The Financial Audit Principles",
+      "display_name": "Apply core principles of the financial audit",
+      "description": "Learner can independently apply the financial audit to analyze a problem.",
+      "code": "1.0.0",
+      "mastery_points": 3.0,
+      "points_possible": 5.0
+    },
+    {
+      "id": "ACCY-491-OUT-1-2",
+      "title": "1.2.0 Prepare a the financial audit work product",
+      "display_name": "Complete a discrete the financial audit task",
+      "description": "Learner can complete a single bounded the financial audit task accurately.",
+      "code": "1.2.0",
+      "mastery_points": 3.0,
+      "points_possible": 5.0
+    },
+    {
+      "id": "FINC-106-OUT-1",
+      "title": "1.0.0 Finance Principles",
+      "display_name": "Apply core principles of finance",
+      "description": "Learner can independently apply finance to analyze a problem.",
+      "code": "1.0.0",
+      "mastery_points": 3.0,
+      "points_possible": 5.0
+    },
+    {
+      "id": "FINC-106-OUT-1-2",
+      "title": "1.2.0 Prepare a finance work product",
+      "display_name": "Complete a discrete finance task",
+      "description": "Learner can complete a single bounded finance task accurately.",
+      "code": "1.2.0",
+      "mastery_points": 3.0,
+      "points_possible": 5.0
+    },
+    {
+      "id": "FINC-321-OUT-1",
+      "title": "1.0.0 Capital Markets Competency",
+      "display_name": "Demonstrate capital markets competency",
+      "description": "Learner demonstrates capital markets competency to a credential standard.",
+      "code": "1.0.0",
+      "mastery_points": 3.0,
+      "points_possible": 5.0
+    },
+    {
+      "id": "FINC-439-OUT-1",
+      "title": "1.0.0 Applied Securities Analysis Competency",
+      "display_name": "Demonstrate applied securities analysis competency",
+      "description": "Learner demonstrates applied securities analysis competency to a credential standard.",
+      "code": "1.0.0",
+      "mastery_points": 3.0,
+      "points_possible": 5.0
+    }
+  ],
+  "outcome_results": [
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-WU1125875",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125875",
+      "outcome_id": "ACCY-111-OUT-1",
+      "assignment_id": "ACCY-111-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-2-WU1125875",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125875",
+      "outcome_id": "ACCY-111-OUT-1-2",
+      "assignment_id": "ACCY-111-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-WU1125893",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125893",
+      "outcome_id": "ACCY-111-OUT-1",
+      "assignment_id": "ACCY-111-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-2-WU1125893",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125893",
+      "outcome_id": "ACCY-111-OUT-1-2",
+      "assignment_id": "ACCY-111-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-WU1125904",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125904",
+      "outcome_id": "ACCY-111-OUT-1",
+      "assignment_id": "ACCY-111-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-2-WU1125904",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125904",
+      "outcome_id": "ACCY-111-OUT-1-2",
+      "assignment_id": "ACCY-111-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-WU1125907",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125907",
+      "outcome_id": "ACCY-111-OUT-1",
+      "assignment_id": "ACCY-111-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-2-WU1125907",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125907",
+      "outcome_id": "ACCY-111-OUT-1-2",
+      "assignment_id": "ACCY-111-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-WU1125912",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125912",
+      "outcome_id": "ACCY-111-OUT-1",
+      "assignment_id": "ACCY-111-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-2-WU1125912",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125912",
+      "outcome_id": "ACCY-111-OUT-1-2",
+      "assignment_id": "ACCY-111-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-WU1125919",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125919",
+      "outcome_id": "ACCY-111-OUT-1",
+      "assignment_id": "ACCY-111-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-111-OR-ACCY-111-OUT-1-2-WU1125919",
+      "course_id": "ACCY-111",
+      "user_id": "WU1125919",
+      "outcome_id": "ACCY-111-OUT-1-2",
+      "assignment_id": "ACCY-111-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-374-OR-ACCY-374-OUT-1-WU1125875",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125875",
+      "outcome_id": "ACCY-374-OUT-1",
+      "assignment_id": "ACCY-374-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-374-OR-ACCY-374-OUT-1-2-WU1125875",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125875",
+      "outcome_id": "ACCY-374-OUT-1-2",
+      "assignment_id": "ACCY-374-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-374-OR-ACCY-374-OUT-1-WU1125893",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125893",
+      "outcome_id": "ACCY-374-OUT-1",
+      "assignment_id": "ACCY-374-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-374-OR-ACCY-374-OUT-1-2-WU1125893",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125893",
+      "outcome_id": "ACCY-374-OUT-1-2",
+      "assignment_id": "ACCY-374-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-374-OR-ACCY-374-OUT-1-WU1125904",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125904",
+      "outcome_id": "ACCY-374-OUT-1",
+      "assignment_id": "ACCY-374-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-374-OR-ACCY-374-OUT-1-2-WU1125904",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125904",
+      "outcome_id": "ACCY-374-OUT-1-2",
+      "assignment_id": "ACCY-374-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-374-OR-ACCY-374-OUT-1-WU1125907",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125907",
+      "outcome_id": "ACCY-374-OUT-1",
+      "assignment_id": "ACCY-374-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-374-OR-ACCY-374-OUT-1-2-WU1125907",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125907",
+      "outcome_id": "ACCY-374-OUT-1-2",
+      "assignment_id": "ACCY-374-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-374-OR-ACCY-374-OUT-1-WU1125912",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125912",
+      "outcome_id": "ACCY-374-OUT-1",
+      "assignment_id": "ACCY-374-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-374-OR-ACCY-374-OUT-1-2-WU1125912",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125912",
+      "outcome_id": "ACCY-374-OUT-1-2",
+      "assignment_id": "ACCY-374-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-374-OR-ACCY-374-OUT-1-WU1125919",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125919",
+      "outcome_id": "ACCY-374-OUT-1",
+      "assignment_id": "ACCY-374-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-374-OR-ACCY-374-OUT-1-2-WU1125919",
+      "course_id": "ACCY-374",
+      "user_id": "WU1125919",
+      "outcome_id": "ACCY-374-OUT-1-2",
+      "assignment_id": "ACCY-374-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-491-OR-ACCY-491-OUT-1-WU1125875",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125875",
+      "outcome_id": "ACCY-491-OUT-1",
+      "assignment_id": "ACCY-491-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-491-OR-ACCY-491-OUT-1-2-WU1125875",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125875",
+      "outcome_id": "ACCY-491-OUT-1-2",
+      "assignment_id": "ACCY-491-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-491-OR-ACCY-491-OUT-1-WU1125893",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125893",
+      "outcome_id": "ACCY-491-OUT-1",
+      "assignment_id": "ACCY-491-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-491-OR-ACCY-491-OUT-1-2-WU1125893",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125893",
+      "outcome_id": "ACCY-491-OUT-1-2",
+      "assignment_id": "ACCY-491-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-491-OR-ACCY-491-OUT-1-WU1125904",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125904",
+      "outcome_id": "ACCY-491-OUT-1",
+      "assignment_id": "ACCY-491-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-491-OR-ACCY-491-OUT-1-2-WU1125904",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125904",
+      "outcome_id": "ACCY-491-OUT-1-2",
+      "assignment_id": "ACCY-491-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-491-OR-ACCY-491-OUT-1-WU1125907",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125907",
+      "outcome_id": "ACCY-491-OUT-1",
+      "assignment_id": "ACCY-491-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-491-OR-ACCY-491-OUT-1-2-WU1125907",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125907",
+      "outcome_id": "ACCY-491-OUT-1-2",
+      "assignment_id": "ACCY-491-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-491-OR-ACCY-491-OUT-1-WU1125912",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125912",
+      "outcome_id": "ACCY-491-OUT-1",
+      "assignment_id": "ACCY-491-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-491-OR-ACCY-491-OUT-1-2-WU1125912",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125912",
+      "outcome_id": "ACCY-491-OUT-1-2",
+      "assignment_id": "ACCY-491-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-491-OR-ACCY-491-OUT-1-WU1125919",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125919",
+      "outcome_id": "ACCY-491-OUT-1",
+      "assignment_id": "ACCY-491-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "ACCY-491-OR-ACCY-491-OUT-1-2-WU1125919",
+      "course_id": "ACCY-491",
+      "user_id": "WU1125919",
+      "outcome_id": "ACCY-491-OUT-1-2",
+      "assignment_id": "ACCY-491-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "FINC-106-OR-FINC-106-OUT-1-WU1125879",
+      "course_id": "FINC-106",
+      "user_id": "WU1125879",
+      "outcome_id": "FINC-106-OUT-1",
+      "assignment_id": "FINC-106-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "FINC-106-OR-FINC-106-OUT-1-2-WU1125879",
+      "course_id": "FINC-106",
+      "user_id": "WU1125879",
+      "outcome_id": "FINC-106-OUT-1-2",
+      "assignment_id": "FINC-106-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "FINC-106-OR-FINC-106-OUT-1-WU1125880",
+      "course_id": "FINC-106",
+      "user_id": "WU1125880",
+      "outcome_id": "FINC-106-OUT-1",
+      "assignment_id": "FINC-106-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "FINC-106-OR-FINC-106-OUT-1-2-WU1125880",
+      "course_id": "FINC-106",
+      "user_id": "WU1125880",
+      "outcome_id": "FINC-106-OUT-1-2",
+      "assignment_id": "FINC-106-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "FINC-106-OR-FINC-106-OUT-1-WU1125881",
+      "course_id": "FINC-106",
+      "user_id": "WU1125881",
+      "outcome_id": "FINC-106-OUT-1",
+      "assignment_id": "FINC-106-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "FINC-106-OR-FINC-106-OUT-1-2-WU1125881",
+      "course_id": "FINC-106",
+      "user_id": "WU1125881",
+      "outcome_id": "FINC-106-OUT-1-2",
+      "assignment_id": "FINC-106-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "FINC-106-OR-FINC-106-OUT-1-WU1125888",
+      "course_id": "FINC-106",
+      "user_id": "WU1125888",
+      "outcome_id": "FINC-106-OUT-1",
+      "assignment_id": "FINC-106-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "FINC-106-OR-FINC-106-OUT-1-2-WU1125888",
+      "course_id": "FINC-106",
+      "user_id": "WU1125888",
+      "outcome_id": "FINC-106-OUT-1-2",
+      "assignment_id": "FINC-106-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "FINC-106-OR-FINC-106-OUT-1-WU1125889",
+      "course_id": "FINC-106",
+      "user_id": "WU1125889",
+      "outcome_id": "FINC-106-OUT-1",
+      "assignment_id": "FINC-106-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "FINC-106-OR-FINC-106-OUT-1-2-WU1125889",
+      "course_id": "FINC-106",
+      "user_id": "WU1125889",
+      "outcome_id": "FINC-106-OUT-1-2",
+      "assignment_id": "FINC-106-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "FINC-106-OR-FINC-106-OUT-1-WU1125896",
+      "course_id": "FINC-106",
+      "user_id": "WU1125896",
+      "outcome_id": "FINC-106-OUT-1",
+      "assignment_id": "FINC-106-A-M1",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "FINC-106-OR-FINC-106-OUT-1-2-WU1125896",
+      "course_id": "FINC-106",
+      "user_id": "WU1125896",
+      "outcome_id": "FINC-106-OUT-1-2",
+      "assignment_id": "FINC-106-A-M2",
+      "score": 5.0,
+      "possible": 5.0,
+      "mastery": true,
+      "submitted_or_assessed_at": "2026-05-01T00:00:00Z"
+    }
+  ],
+  "submissions": [
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M1-WU1125875",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M1",
+      "user_id": "WU1125875",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-06T02:33:44.039814Z",
+      "graded_at": "2026-04-08T21:24:04.273437Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M2-WU1125875",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M2",
+      "user_id": "WU1125875",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-27T02:00:18.257041Z",
+      "graded_at": "2026-04-27T05:38:49.260620Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-FINAL-WU1125875",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-FINAL",
+      "user_id": "WU1125875",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-22T09:20:43.635032Z",
+      "graded_at": "2026-03-04T23:53:18.761080Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M1-WU1125893",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M1",
+      "user_id": "WU1125893",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-16T05:14:03.814021Z",
+      "graded_at": "2026-02-08T03:03:26.912059Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M2-WU1125893",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M2",
+      "user_id": "WU1125893",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-08T13:52:51.264350Z",
+      "graded_at": "2026-03-09T23:54:11.191216Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-FINAL-WU1125893",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-FINAL",
+      "user_id": "WU1125893",
+      "score": 52.0,
+      "grade": "F",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-03T11:23:13.886087Z",
+      "graded_at": "2026-03-31T16:56:43.629143Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M1-WU1125904",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M1",
+      "user_id": "WU1125904",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-12T20:29:17.943805Z",
+      "graded_at": "2026-03-23T16:30:01.448256Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M2-WU1125904",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M2",
+      "user_id": "WU1125904",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-17T15:22:35.949383Z",
+      "graded_at": "2026-04-22T13:06:54.592634Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-FINAL-WU1125904",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-FINAL",
+      "user_id": "WU1125904",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-13T16:50:41.226308Z",
+      "graded_at": "2026-04-10T03:57:15.917452Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M1-WU1125907",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M1",
+      "user_id": "WU1125907",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-29T09:34:38.322514Z",
+      "graded_at": "2026-04-09T11:47:49.115388Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M2-WU1125907",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M2",
+      "user_id": "WU1125907",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-29T19:00:10.308644Z",
+      "graded_at": "2026-04-27T02:20:22.322088Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-FINAL-WU1125907",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-FINAL",
+      "user_id": "WU1125907",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-18T08:27:11.019355Z",
+      "graded_at": "2026-02-24T23:56:01.993739Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M1-WU1125912",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M1",
+      "user_id": "WU1125912",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-23T10:41:19.855508Z",
+      "graded_at": "2026-04-16T02:56:12.563015Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M2-WU1125912",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M2",
+      "user_id": "WU1125912",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-19T04:51:28.343891Z",
+      "graded_at": "2026-04-22T17:53:35.901626Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-FINAL-WU1125912",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-FINAL",
+      "user_id": "WU1125912",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-01T19:27:53.247997Z",
+      "graded_at": "2026-04-17T11:06:41.101998Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M1-WU1125919",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M1",
+      "user_id": "WU1125919",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-28T02:18:57.816844Z",
+      "graded_at": "2026-04-29T04:41:37.269470Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-M2-WU1125919",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-M2",
+      "user_id": "WU1125919",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-13T14:53:21.538537Z",
+      "graded_at": "2026-04-22T17:55:11.667173Z"
+    },
+    {
+      "id": "ACCY-111-SUB-ACCY-111-A-FINAL-WU1125919",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-FINAL",
+      "user_id": "WU1125919",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-20T19:12:11.513261Z",
+      "graded_at": "2026-04-25T07:15:22.340122Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M1-WU1125875",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M1",
+      "user_id": "WU1125875",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-06T14:42:44.389760Z",
+      "graded_at": "2026-03-02T17:51:38.940534Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M2-WU1125875",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M2",
+      "user_id": "WU1125875",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-21T14:49:14.895070Z",
+      "graded_at": "2026-02-13T18:04:06.933208Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-FINAL-WU1125875",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-FINAL",
+      "user_id": "WU1125875",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-23T21:47:44.538108Z",
+      "graded_at": "2026-02-19T21:31:51.171459Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M1-WU1125893",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M1",
+      "user_id": "WU1125893",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-22T15:41:38.686320Z",
+      "graded_at": "2026-04-06T00:12:25.722073Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M2-WU1125893",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M2",
+      "user_id": "WU1125893",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-21T23:30:32.640361Z",
+      "graded_at": "2026-03-08T05:31:38.115619Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-FINAL-WU1125893",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-FINAL",
+      "user_id": "WU1125893",
+      "score": 52.0,
+      "grade": "F",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-10T20:00:23.453105Z",
+      "graded_at": "2026-04-25T23:38:38.836898Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M1-WU1125904",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M1",
+      "user_id": "WU1125904",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-23T23:42:27.786813Z",
+      "graded_at": "2026-04-16T03:24:47.332755Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M2-WU1125904",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M2",
+      "user_id": "WU1125904",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-31T11:35:28.954066Z",
+      "graded_at": "2026-04-06T18:03:12.977837Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-FINAL-WU1125904",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-FINAL",
+      "user_id": "WU1125904",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-30T15:32:21.349791Z",
+      "graded_at": "2026-03-05T22:22:24.348408Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M1-WU1125907",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M1",
+      "user_id": "WU1125907",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-29T20:50:40.289460Z",
+      "graded_at": "2026-04-30T14:13:26.376523Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M2-WU1125907",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M2",
+      "user_id": "WU1125907",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-14T03:36:49.449110Z",
+      "graded_at": "2026-04-15T21:48:55.074914Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-FINAL-WU1125907",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-FINAL",
+      "user_id": "WU1125907",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-14T00:40:19.837675Z",
+      "graded_at": "2026-04-27T04:45:30.526293Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M1-WU1125912",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M1",
+      "user_id": "WU1125912",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-06T17:41:33.369112Z",
+      "graded_at": "2026-02-09T09:50:19.169323Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M2-WU1125912",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M2",
+      "user_id": "WU1125912",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-16T01:39:15.482049Z",
+      "graded_at": "2026-03-07T20:43:08.667722Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-FINAL-WU1125912",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-FINAL",
+      "user_id": "WU1125912",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-04T18:52:03.110073Z",
+      "graded_at": "2026-04-26T03:14:34.084868Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M1-WU1125919",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M1",
+      "user_id": "WU1125919",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-17T15:32:41.596142Z",
+      "graded_at": "2026-04-21T20:23:05.675726Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-M2-WU1125919",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-M2",
+      "user_id": "WU1125919",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-24T18:53:49.273600Z",
+      "graded_at": "2026-04-08T12:14:13.214965Z"
+    },
+    {
+      "id": "ACCY-374-SUB-ACCY-374-A-FINAL-WU1125919",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-FINAL",
+      "user_id": "WU1125919",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-21T18:30:26.469387Z",
+      "graded_at": "2026-04-26T00:08:22.537105Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-M1-WU1125875",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-M1",
+      "user_id": "WU1125875",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-10T09:01:34.497449Z",
+      "graded_at": "2026-03-28T22:09:16.827259Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-M2-WU1125875",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-M2",
+      "user_id": "WU1125875",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-19T23:09:24.891471Z",
+      "graded_at": "2026-04-24T08:56:06.820019Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-FINAL-WU1125875",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-FINAL",
+      "user_id": "WU1125875",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-05T16:28:45.867848Z",
+      "graded_at": "2026-04-30T19:01:02.263595Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-M1-WU1125893",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-M1",
+      "user_id": "WU1125893",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-09T00:41:31.751554Z",
+      "graded_at": "2026-03-13T20:15:56.924881Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-M2-WU1125893",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-M2",
+      "user_id": "WU1125893",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-18T02:07:32.322363Z",
+      "graded_at": "2026-01-29T08:56:42.505671Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-FINAL-WU1125893",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-FINAL",
+      "user_id": "WU1125893",
+      "score": 52.0,
+      "grade": "F",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-21T18:20:24.504340Z",
+      "graded_at": "2026-04-22T15:13:09.692367Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-M1-WU1125904",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-M1",
+      "user_id": "WU1125904",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-27T14:14:19.082201Z",
+      "graded_at": "2026-03-03T13:23:16.643437Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-M2-WU1125904",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-M2",
+      "user_id": "WU1125904",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-23T05:09:25.886250Z",
+      "graded_at": "2026-04-30T17:46:59.452510Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-FINAL-WU1125904",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-FINAL",
+      "user_id": "WU1125904",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-11T03:27:51.776989Z",
+      "graded_at": "2026-04-29T12:42:00.444669Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-M1-WU1125907",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-M1",
+      "user_id": "WU1125907",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-15T23:08:27.557491Z",
+      "graded_at": "2026-04-16T03:17:01.915239Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-M2-WU1125907",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-M2",
+      "user_id": "WU1125907",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-31T20:06:39.440814Z",
+      "graded_at": "2026-04-21T09:35:36.903394Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-FINAL-WU1125907",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-FINAL",
+      "user_id": "WU1125907",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-11T23:49:37.547111Z",
+      "graded_at": "2026-03-25T08:03:48.052688Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-M1-WU1125912",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-M1",
+      "user_id": "WU1125912",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-23T05:22:22.734908Z",
+      "graded_at": "2026-03-27T13:11:10.562007Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-M2-WU1125912",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-M2",
+      "user_id": "WU1125912",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-28T22:54:41.507044Z",
+      "graded_at": "2026-03-28T15:39:24.565042Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-FINAL-WU1125912",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-FINAL",
+      "user_id": "WU1125912",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-26T00:17:27.182885Z",
+      "graded_at": "2026-04-30T09:08:18.452215Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-M1-WU1125919",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-M1",
+      "user_id": "WU1125919",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-10T10:42:15.910369Z",
+      "graded_at": "2026-03-22T06:28:16.127537Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-M2-WU1125919",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-M2",
+      "user_id": "WU1125919",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-01T07:03:56.427603Z",
+      "graded_at": "2026-04-23T05:59:25.431704Z"
+    },
+    {
+      "id": "ACCY-491-SUB-ACCY-491-A-FINAL-WU1125919",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-FINAL",
+      "user_id": "WU1125919",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-17T00:23:02.878861Z",
+      "graded_at": "2026-04-21T04:32:48.369035Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-M1-WU1125879",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-M1",
+      "user_id": "WU1125879",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-05T08:25:40.777661Z",
+      "graded_at": "2026-04-19T04:27:16.293487Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-M2-WU1125879",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-M2",
+      "user_id": "WU1125879",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-07T02:11:59.397398Z",
+      "graded_at": "2026-04-19T18:31:00.503934Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-FINAL-WU1125879",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-FINAL",
+      "user_id": "WU1125879",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-13T01:28:56.477149Z",
+      "graded_at": "2026-02-17T01:12:51.302402Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-M1-WU1125880",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-M1",
+      "user_id": "WU1125880",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-15T02:29:01.378551Z",
+      "graded_at": "2026-04-23T11:48:10.696470Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-M2-WU1125880",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-M2",
+      "user_id": "WU1125880",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-17T21:38:49.586344Z",
+      "graded_at": "2026-04-28T19:05:00.761278Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-FINAL-WU1125880",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-FINAL",
+      "user_id": "WU1125880",
+      "score": 52.0,
+      "grade": "F",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-15T05:04:35.806957Z",
+      "graded_at": "2026-02-19T13:02:51.496465Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-M1-WU1125881",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-M1",
+      "user_id": "WU1125881",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-17T19:48:03.172093Z",
+      "graded_at": "2026-04-30T07:13:31.651723Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-M2-WU1125881",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-M2",
+      "user_id": "WU1125881",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-22T06:00:49.491936Z",
+      "graded_at": "2026-03-11T05:48:15.819485Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-FINAL-WU1125881",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-FINAL",
+      "user_id": "WU1125881",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-20T11:23:55.852332Z",
+      "graded_at": "2026-04-06T22:25:42.425049Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-M1-WU1125888",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-M1",
+      "user_id": "WU1125888",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-05T17:02:34.226749Z",
+      "graded_at": "2026-04-08T22:58:15.255939Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-M2-WU1125888",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-M2",
+      "user_id": "WU1125888",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-05T07:55:54.926515Z",
+      "graded_at": "2026-04-05T11:42:07.645435Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-FINAL-WU1125888",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-FINAL",
+      "user_id": "WU1125888",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-10T15:01:36.415966Z",
+      "graded_at": "2026-04-20T20:59:18.042191Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-M1-WU1125889",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-M1",
+      "user_id": "WU1125889",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-27T16:46:24.747602Z",
+      "graded_at": "2026-03-12T21:27:34.769025Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-M2-WU1125889",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-M2",
+      "user_id": "WU1125889",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-12T05:51:19.663619Z",
+      "graded_at": "2026-04-17T13:29:55.001463Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-FINAL-WU1125889",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-FINAL",
+      "user_id": "WU1125889",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-03T17:23:00.802702Z",
+      "graded_at": "2026-03-02T14:49:41.812941Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-M1-WU1125896",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-M1",
+      "user_id": "WU1125896",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-30T11:25:37.676874Z",
+      "graded_at": "2026-04-30T19:35:52.430523Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-M2-WU1125896",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-M2",
+      "user_id": "WU1125896",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-01T07:33:19.503023Z",
+      "graded_at": "2026-04-01T17:22:33.167294Z"
+    },
+    {
+      "id": "FINC-106-SUB-FINC-106-A-FINAL-WU1125896",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-FINAL",
+      "user_id": "WU1125896",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-26T01:38:34.352486Z",
+      "graded_at": "2026-02-16T09:35:00.882304Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-M1-WU1125879",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-M1",
+      "user_id": "WU1125879",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-05T18:48:12.457794Z",
+      "graded_at": "2026-02-11T18:17:39.559672Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-M1-WU1125880",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-M1",
+      "user_id": "WU1125880",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-22T03:49:07.914879Z",
+      "graded_at": "2026-03-31T06:43:42.542149Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-M1-WU1125881",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-M1",
+      "user_id": "WU1125881",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-20T18:50:55.225363Z",
+      "graded_at": "2026-04-29T13:35:21.924317Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-M1-WU1125888",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-M1",
+      "user_id": "WU1125888",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-20T15:39:44.103281Z",
+      "graded_at": "2026-02-13T12:51:27.988053Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-M1-WU1125889",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-M1",
+      "user_id": "WU1125889",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-26T05:59:25.444838Z",
+      "graded_at": "2026-04-02T21:48:27.148894Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-M1-WU1125896",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-M1",
+      "user_id": "WU1125896",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-27T06:57:08.322823Z",
+      "graded_at": "2026-04-24T22:58:06.405887Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-M2-WU1125879",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-M2",
+      "user_id": "WU1125879",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-15T16:08:37.312437Z",
+      "graded_at": "2026-04-06T13:41:09.281611Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-M2-WU1125880",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-M2",
+      "user_id": "WU1125880",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-07T17:44:00.771942Z",
+      "graded_at": "2026-04-26T12:31:55.166231Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-M2-WU1125881",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-M2",
+      "user_id": "WU1125881",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-02T13:32:32.992893Z",
+      "graded_at": "2026-02-11T00:56:50.795689Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-M2-WU1125888",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-M2",
+      "user_id": "WU1125888",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-28T13:17:04.793270Z",
+      "graded_at": "2026-03-26T13:56:32.743726Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-M2-WU1125889",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-M2",
+      "user_id": "WU1125889",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-04T10:31:40.582384Z",
+      "graded_at": "2026-04-15T09:43:32.922119Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-M2-WU1125896",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-M2",
+      "user_id": "WU1125896",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-26T17:21:39.263703Z",
+      "graded_at": "2026-04-30T10:35:37.131887Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-FINAL-WU1125879",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-FINAL",
+      "user_id": "WU1125879",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-23T15:05:56.839293Z",
+      "graded_at": "2026-03-03T19:59:06.037406Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-FINAL-WU1125880",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-FINAL",
+      "user_id": "WU1125880",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-18T15:28:20.471462Z",
+      "graded_at": "2026-04-21T03:06:37.353868Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-FINAL-WU1125881",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-FINAL",
+      "user_id": "WU1125881",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-08T20:31:01.983077Z",
+      "graded_at": "2026-02-24T06:56:44.054335Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-FINAL-WU1125888",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-FINAL",
+      "user_id": "WU1125888",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-02T10:48:22.737540Z",
+      "graded_at": "2026-03-27T13:45:24.381349Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-FINAL-WU1125889",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-FINAL",
+      "user_id": "WU1125889",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-12T01:59:20.453916Z",
+      "graded_at": "2026-03-03T13:07:46.999400Z"
+    },
+    {
+      "id": "FINC-321-SUB-FINC-321-A-FINAL-WU1125896",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-FINAL",
+      "user_id": "WU1125896",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-22T17:06:15.959964Z",
+      "graded_at": "2026-04-26T09:14:27.691727Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-M1-WU1125879",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-M1",
+      "user_id": "WU1125879",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-30T22:08:24.569253Z",
+      "graded_at": "2026-04-30T23:41:42.040710Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-M1-WU1125880",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-M1",
+      "user_id": "WU1125880",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-27T15:38:17.875975Z",
+      "graded_at": "2026-04-30T18:04:57.747285Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-M1-WU1125881",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-M1",
+      "user_id": "WU1125881",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-14T15:49:09.636967Z",
+      "graded_at": "2026-04-17T09:02:35.507817Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-M1-WU1125888",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-M1",
+      "user_id": "WU1125888",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-06T10:46:54.469806Z",
+      "graded_at": "2026-03-18T07:45:12.544774Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-M1-WU1125889",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-M1",
+      "user_id": "WU1125889",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-25T07:29:47.177837Z",
+      "graded_at": "2026-03-01T02:31:41.012705Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-M1-WU1125896",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-M1",
+      "user_id": "WU1125896",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-22T22:17:53.967798Z",
+      "graded_at": "2026-04-30T00:21:05.822158Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-M2-WU1125879",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-M2",
+      "user_id": "WU1125879",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-02-10T15:24:22.776416Z",
+      "graded_at": "2026-04-13T20:44:31.876943Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-M2-WU1125880",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-M2",
+      "user_id": "WU1125880",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-03T03:22:54.077315Z",
+      "graded_at": "2026-03-28T00:55:47.267449Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-M2-WU1125881",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-M2",
+      "user_id": "WU1125881",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-26T09:22:02.370390Z",
+      "graded_at": "2026-04-30T23:29:36.957926Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-M2-WU1125888",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-M2",
+      "user_id": "WU1125888",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-14T00:33:05.379363Z",
+      "graded_at": "2026-04-17T11:45:41.758883Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-M2-WU1125889",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-M2",
+      "user_id": "WU1125889",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-29T17:14:00.135997Z",
+      "graded_at": "2026-02-25T19:15:03.409797Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-M2-WU1125896",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-M2",
+      "user_id": "WU1125896",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-04-27T14:53:40.826400Z",
+      "graded_at": "2026-04-29T13:52:09.061312Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-FINAL-WU1125879",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-FINAL",
+      "user_id": "WU1125879",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-12T13:22:11.863064Z",
+      "graded_at": "2026-04-18T12:56:24.609141Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-FINAL-WU1125880",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-FINAL",
+      "user_id": "WU1125880",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-19T04:10:20.594554Z",
+      "graded_at": "2026-03-19T15:48:05.956979Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-FINAL-WU1125881",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-FINAL",
+      "user_id": "WU1125881",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-08T07:23:17.493098Z",
+      "graded_at": "2026-04-23T02:12:47.137372Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-FINAL-WU1125888",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-FINAL",
+      "user_id": "WU1125888",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-30T00:03:56.270949Z",
+      "graded_at": "2026-04-27T10:20:37.305284Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-FINAL-WU1125889",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-FINAL",
+      "user_id": "WU1125889",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-01-21T15:38:56.104453Z",
+      "graded_at": "2026-02-09T02:43:15.027872Z"
+    },
+    {
+      "id": "FINC-439-SUB-FINC-439-A-FINAL-WU1125896",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-FINAL",
+      "user_id": "WU1125896",
+      "score": 92.0,
+      "grade": "A-",
+      "workflow_state": "graded",
+      "submitted_at": "2026-03-18T06:19:51.585306Z",
+      "graded_at": "2026-04-16T19:04:50.274472Z"
+    }
+  ],
+  "rubrics": [
+    {
+      "id": "ACCY-111-RUB-ACCY-111-A-FINAL",
+      "course_id": "ACCY-111",
+      "assignment_id": "ACCY-111-A-FINAL",
+      "title": "Final Accounting Exam Rubric",
+      "criteria": [
+        {
+          "id": "ACCY-111-A-FINAL-C1",
+          "description": "Demonstrates understanding of core concepts",
+          "points": 5.0,
+          "ratings": [
+            {
+              "description": "Exceeds",
+              "points": 5.0
+            },
+            {
+              "description": "Meets",
+              "points": 3.0
+            },
+            {
+              "description": "Approaching",
+              "points": 1.0
+            }
+          ]
+        },
+        {
+          "id": "ACCY-111-A-FINAL-C2",
+          "description": "Applies concepts to a realistic problem",
+          "points": 5.0,
+          "ratings": [
+            {
+              "description": "Exceeds",
+              "points": 5.0
+            },
+            {
+              "description": "Meets",
+              "points": 3.0
+            },
+            {
+              "description": "Approaching",
+              "points": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ACCY-374-RUB-ACCY-374-A-FINAL",
+      "course_id": "ACCY-374",
+      "assignment_id": "ACCY-374-A-FINAL",
+      "title": "Final Law, Governance, & Ethics Exam Rubric",
+      "criteria": [
+        {
+          "id": "ACCY-374-A-FINAL-C1",
+          "description": "Demonstrates understanding of core concepts",
+          "points": 5.0,
+          "ratings": [
+            {
+              "description": "Exceeds",
+              "points": 5.0
+            },
+            {
+              "description": "Meets",
+              "points": 3.0
+            },
+            {
+              "description": "Approaching",
+              "points": 1.0
+            }
+          ]
+        },
+        {
+          "id": "ACCY-374-A-FINAL-C2",
+          "description": "Applies concepts to a realistic problem",
+          "points": 5.0,
+          "ratings": [
+            {
+              "description": "Exceeds",
+              "points": 5.0
+            },
+            {
+              "description": "Meets",
+              "points": 3.0
+            },
+            {
+              "description": "Approaching",
+              "points": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ACCY-491-RUB-ACCY-491-A-FINAL",
+      "course_id": "ACCY-491",
+      "assignment_id": "ACCY-491-A-FINAL",
+      "title": "Final The Financial Audit Exam Rubric",
+      "criteria": [
+        {
+          "id": "ACCY-491-A-FINAL-C1",
+          "description": "Demonstrates understanding of core concepts",
+          "points": 5.0,
+          "ratings": [
+            {
+              "description": "Exceeds",
+              "points": 5.0
+            },
+            {
+              "description": "Meets",
+              "points": 3.0
+            },
+            {
+              "description": "Approaching",
+              "points": 1.0
+            }
+          ]
+        },
+        {
+          "id": "ACCY-491-A-FINAL-C2",
+          "description": "Applies concepts to a realistic problem",
+          "points": 5.0,
+          "ratings": [
+            {
+              "description": "Exceeds",
+              "points": 5.0
+            },
+            {
+              "description": "Meets",
+              "points": 3.0
+            },
+            {
+              "description": "Approaching",
+              "points": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FINC-106-RUB-FINC-106-A-FINAL",
+      "course_id": "FINC-106",
+      "assignment_id": "FINC-106-A-FINAL",
+      "title": "Final Finance Exam Rubric",
+      "criteria": [
+        {
+          "id": "FINC-106-A-FINAL-C1",
+          "description": "Demonstrates understanding of core concepts",
+          "points": 5.0,
+          "ratings": [
+            {
+              "description": "Exceeds",
+              "points": 5.0
+            },
+            {
+              "description": "Meets",
+              "points": 3.0
+            },
+            {
+              "description": "Approaching",
+              "points": 1.0
+            }
+          ]
+        },
+        {
+          "id": "FINC-106-A-FINAL-C2",
+          "description": "Applies concepts to a realistic problem",
+          "points": 5.0,
+          "ratings": [
+            {
+              "description": "Exceeds",
+              "points": 5.0
+            },
+            {
+              "description": "Meets",
+              "points": 3.0
+            },
+            {
+              "description": "Approaching",
+              "points": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FINC-321-RUB-FINC-321-A-FINAL",
+      "course_id": "FINC-321",
+      "assignment_id": "FINC-321-A-FINAL",
+      "title": "Capital Markets Capstone Rubric",
+      "criteria": [
+        {
+          "id": "FINC-321-A-FINAL-C1",
+          "description": "Demonstrates understanding of core concepts",
+          "points": 5.0,
+          "ratings": [
+            {
+              "description": "Exceeds",
+              "points": 5.0
+            },
+            {
+              "description": "Meets",
+              "points": 3.0
+            },
+            {
+              "description": "Approaching",
+              "points": 1.0
+            }
+          ]
+        },
+        {
+          "id": "FINC-321-A-FINAL-C2",
+          "description": "Applies concepts to a realistic problem",
+          "points": 5.0,
+          "ratings": [
+            {
+              "description": "Exceeds",
+              "points": 5.0
+            },
+            {
+              "description": "Meets",
+              "points": 3.0
+            },
+            {
+              "description": "Approaching",
+              "points": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "FINC-439-RUB-FINC-439-A-FINAL",
+      "course_id": "FINC-439",
+      "assignment_id": "FINC-439-A-FINAL",
+      "title": "Applied Securities Analysis Capstone Rubric",
+      "criteria": [
+        {
+          "id": "FINC-439-A-FINAL-C1",
+          "description": "Demonstrates understanding of core concepts",
+          "points": 5.0,
+          "ratings": [
+            {
+              "description": "Exceeds",
+              "points": 5.0
+            },
+            {
+              "description": "Meets",
+              "points": 3.0
+            },
+            {
+              "description": "Approaching",
+              "points": 1.0
+            }
+          ]
+        },
+        {
+          "id": "FINC-439-A-FINAL-C2",
+          "description": "Applies concepts to a realistic problem",
+          "points": 5.0,
+          "ratings": [
+            {
+              "description": "Exceeds",
+              "points": 5.0
+            },
+            {
+              "description": "Meets",
+              "points": 3.0
+            },
+            {
+              "description": "Approaching",
+              "points": 1.0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "badges": [
+    {
+      "id": "FINC-321-BADGE-ACCEPTED",
+      "course_id": "FINC-321",
+      "name": "Capital Markets Module Badge",
+      "description": "Awarded for demonstrating a capital markets competency.",
+      "outcome_id": "FINC-321-OUT-1",
+      "criteria": "Pass the Capital Markets module assessment.",
+      "image_url": null,
+      "accepted": true
+    },
+    {
+      "id": "FINC-321-BADGE-UNACCEPTED",
+      "course_id": "FINC-321",
+      "name": "Capital Markets Provisional Badge",
+      "description": "Issued by a provider not yet accepted by the wallet.",
+      "outcome_id": null,
+      "criteria": "Pass the second Capital Markets module assessment.",
+      "image_url": null,
+      "accepted": false
+    },
+    {
+      "id": "FINC-321-BADGE-COURSE",
+      "course_id": "FINC-321",
+      "name": "Capital Markets Course Credential",
+      "description": "Awarded for completing the Capital Markets course.",
+      "outcome_id": "FINC-321-OUT-1",
+      "criteria": "Complete the Capital Markets capstone.",
+      "image_url": null,
+      "accepted": true
+    },
+    {
+      "id": "FINC-439-BADGE-ACCEPTED",
+      "course_id": "FINC-439",
+      "name": "Applied Securities Analysis Module Badge",
+      "description": "Awarded for demonstrating a applied securities analysis competency.",
+      "outcome_id": "FINC-439-OUT-1",
+      "criteria": "Pass the Applied Securities Analysis module assessment.",
+      "image_url": null,
+      "accepted": true
+    },
+    {
+      "id": "FINC-439-BADGE-UNACCEPTED",
+      "course_id": "FINC-439",
+      "name": "Applied Securities Analysis Provisional Badge",
+      "description": "Issued by a provider not yet accepted by the wallet.",
+      "outcome_id": null,
+      "criteria": "Pass the second Applied Securities Analysis module assessment.",
+      "image_url": null,
+      "accepted": false
+    },
+    {
+      "id": "FINC-439-BADGE-COURSE",
+      "course_id": "FINC-439",
+      "name": "Applied Securities Analysis Course Credential",
+      "description": "Awarded for completing the Applied Securities Analysis course.",
+      "outcome_id": "FINC-439-OUT-1",
+      "criteria": "Complete the Applied Securities Analysis capstone.",
+      "image_url": null,
+      "accepted": true
+    }
+  ],
+  "actions": [
+    {
+      "id": "ACCY-111-grade-m1",
+      "course_id": "ACCY-111",
+      "label": "Grade Module 1 (competency outcome)",
+      "assignment_id": "ACCY-111-A-M1"
+    },
+    {
+      "id": "ACCY-111-grade-m2",
+      "course_id": "ACCY-111",
+      "label": "Grade Module 2 (sub-competency outcome)",
+      "assignment_id": "ACCY-111-A-M2"
+    },
+    {
+      "id": "ACCY-111-grade-final",
+      "course_id": "ACCY-111",
+      "label": "Grade Final Exam (passing / failing learner)",
+      "assignment_id": "ACCY-111-A-FINAL"
+    },
+    {
+      "id": "ACCY-374-grade-m1",
+      "course_id": "ACCY-374",
+      "label": "Grade Module 1 (competency outcome)",
+      "assignment_id": "ACCY-374-A-M1"
+    },
+    {
+      "id": "ACCY-374-grade-m2",
+      "course_id": "ACCY-374",
+      "label": "Grade Module 2 (sub-competency outcome)",
+      "assignment_id": "ACCY-374-A-M2"
+    },
+    {
+      "id": "ACCY-374-grade-final",
+      "course_id": "ACCY-374",
+      "label": "Grade Final Exam (passing / failing learner)",
+      "assignment_id": "ACCY-374-A-FINAL"
+    },
+    {
+      "id": "ACCY-491-grade-m1",
+      "course_id": "ACCY-491",
+      "label": "Grade Module 1 (competency outcome)",
+      "assignment_id": "ACCY-491-A-M1"
+    },
+    {
+      "id": "ACCY-491-grade-m2",
+      "course_id": "ACCY-491",
+      "label": "Grade Module 2 (sub-competency outcome)",
+      "assignment_id": "ACCY-491-A-M2"
+    },
+    {
+      "id": "ACCY-491-grade-final",
+      "course_id": "ACCY-491",
+      "label": "Grade Final Exam (passing / failing learner)",
+      "assignment_id": "ACCY-491-A-FINAL"
+    },
+    {
+      "id": "FINC-106-grade-m1",
+      "course_id": "FINC-106",
+      "label": "Grade Module 1 (competency outcome)",
+      "assignment_id": "FINC-106-A-M1"
+    },
+    {
+      "id": "FINC-106-grade-m2",
+      "course_id": "FINC-106",
+      "label": "Grade Module 2 (sub-competency outcome)",
+      "assignment_id": "FINC-106-A-M2"
+    },
+    {
+      "id": "FINC-106-grade-final",
+      "course_id": "FINC-106",
+      "label": "Grade Final Exam (passing / failing learner)",
+      "assignment_id": "FINC-106-A-FINAL"
+    },
+    {
+      "id": "FINC-321-grade-m1",
+      "course_id": "FINC-321",
+      "label": "Grade Module 1 (accepted/fetchable badge)",
+      "assignment_id": "FINC-321-A-M1"
+    },
+    {
+      "id": "FINC-321-grade-m2",
+      "course_id": "FINC-321",
+      "label": "Grade Module 2 (unaccepted badge)",
+      "assignment_id": "FINC-321-A-M2"
+    },
+    {
+      "id": "FINC-321-grade-final",
+      "course_id": "FINC-321",
+      "label": "Grade Capstone (course credential)",
+      "assignment_id": "FINC-321-A-FINAL"
+    },
+    {
+      "id": "FINC-439-grade-m1",
+      "course_id": "FINC-439",
+      "label": "Grade Module 1 (accepted/fetchable badge)",
+      "assignment_id": "FINC-439-A-M1"
+    },
+    {
+      "id": "FINC-439-grade-m2",
+      "course_id": "FINC-439",
+      "label": "Grade Module 2 (unaccepted badge)",
+      "assignment_id": "FINC-439-A-M2"
+    },
+    {
+      "id": "FINC-439-grade-final",
+      "course_id": "FINC-439",
+      "label": "Grade Capstone (course credential)",
+      "assignment_id": "FINC-439-A-FINAL"
+    }
+  ]
+}

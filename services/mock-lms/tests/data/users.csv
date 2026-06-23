@@ -1,0 +1,6 @@
+user_id,login_id,full_name,email,status,password,property:Gender,property:Ethnicity,property:Academic Classification,property:Admission Cohort,property:Academic Standing,property:Degree Program,property:Major,property:Minor,property:Student Athlete
+t-stu-1,astudent,Ada Student,ada@test.edu,active,password,Female,,Sophomore,2026,Good,BS,Testing,,
+t-stu-2,bstudent,Ben Student,ben@test.edu,active,password,Male,,Sophomore,2026,Good,BS,Testing,,
+t-stu-3,cstudent,Cleo Student,cleo@test.edu,active,password,Female,,Sophomore,2026,Good,BS,Testing,,
+t-stu-4,dstudent,Dex Student,dex@test.edu,active,password,Male,,Sophomore,2026,Good,BS,Testing,,
+t-teacher,dteacher,Dana Teacher,dana@test.edu,active,password,Female,,,,,,,,

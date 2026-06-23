@@ -1,0 +1,42 @@
+[project]
+name = "skills-mobility"
+version = "0.0.0"
+description = "Skills Mobility Infrastructure POC — workspace root"
+requires-python = ">=3.12"
+dependencies = []
+
+# Virtual workspace root: not itself a package, just the anchor for members below.
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["libs/*", "services/*"]
+
+[tool.uv.sources]
+skills-mobility-events = { workspace = true }
+mock-lms = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "httpx>=0.27",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "coverage>=7",
+    "faker>=30",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["libs", "services"]
