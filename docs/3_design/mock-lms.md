@@ -128,6 +128,8 @@ The catalog is the **Mock LMS Resource / Event Data Store** (boundary matrix §7
 - The assembled catalog is **captured to committed `fixtures/*.json`**; the runtime loads that frozen snapshot **read-only** and never re-runs the assembly. Deterministic — same inputs → byte-identical fixtures.
 - Raw CSVs stay out of the repo (input artifacts); larger/bulk sets can live in gitignored `generated-fixtures/`, selectable via `MOCK_LMS_FIXTURES_DIR`.
 
+> **Realism for LLM-service testing (Phase 2+):** to exercise the **Field Mapping** and **Field Synthesis** Decision Services (ADR-0007/0008), the generated layer must eventually carry *highly realistic and voluminous* course-context and learner-activity content — enough that Field Mapping can distinguish operational fields from those pertinent to the learner's badge, and Field Synthesis can summarize large quantities of course material across payloads. Phase 1's happy-path slice needs only linked ids + the contract; the realistic-content overhaul is tracked separately (#23).
+
 This yields two repeatability guarantees: **source data** identical every run (deterministic APIs), and **emitted events** fresh-id'd per run over stable business keys.
 
 ---
@@ -196,12 +198,14 @@ Detailed, step-by-step happy-path test procedures will live under `4_operations/
 2. `services/mock-lms`: catalog + generator + LMS Resource APIs + `LocalEmitter` + emission API (Actions), returning the envelope synchronously.
 3. Assemble catalog: import a demo subset of the roster CSVs (courses/learners/enrollments) + generate the academic/credential layer — both course kinds + **both variants of each event** (happy: competency mastery / passing / accepted-fetchable badge; edge: sub-competency / failing / unaccepted badge).
 4. `apps/mock-lms`: course view → inspect (modules/submissions) → Action triggers → emitted-envelope confirmation.
-5. Phase 1 end-to-end happy path with the middle stubbed (§6). This spans the downstream components the slice needs, in order:
+5. Phase 1 end-to-end happy path with the middle stubbed (§6). This spans the downstream components the slice needs, in **dependency order** — the **Orchestrator is built last**, once the services it coordinates exist:
    1. **Event Consumer** — ingress + idempotency, starts a workflow run.
-   2. **Orchestrator** — runs the slice; fills the required OBv3 fields with placeholder data and stubs the wallet-input updates (the offloaded Decision Service jobs).
-   3. **Context Builder** — deterministic source-data fetch from the LMS Resource APIs.
-   4. **Delivery Router — LearnCard Issuer Adapter** — issues the credential and returns it to the Orchestrator.
-   5. **Delivery Router — LearnCard Wallet Adapter** — delivers the badge to the wallet.
+   2. **Context Builder** — deterministic source-data fetch from the LMS Resource APIs.
+   3. **LearnCard Profile Resolver** — resolves the learner's wallet profile (the delivery recipient).
+   4. **LearnCard Issuer Adapter** — issues (signs) the credential.
+   5. **LearnCard Wallet Adapter** — delivers the badge to the learner's wallet.
+   6. **Delivery Router** — routes the issued credential to the correct delivery target/adapter (ADR-0016).
+   7. **Orchestrator** — built last; runs the slice end-to-end, fills the required OBv3 fields with placeholder data, and stubs the offloaded Decision Service jobs.
 6. `EventBridgeEmitter` + CDK infra; deploy.
 7. CloudFront-layer auth (ADR-0002).
 
@@ -209,7 +213,6 @@ Detailed, step-by-step happy-path test procedures will live under `4_operations/
 
 - **Account provisioning for delivery:** the downstream wallet may require the mock learner to already have an account before a badge can be delivered. The roster CSVs give us concrete learner emails, so we'd fix a handful of those as the demo learners and pre-create their wallet accounts. To be confirmed when we wire delivery.
 - **Where the happy-path test lives:** §6 points at [`phase-1-poc-slice.md`](../2_requirements/phase-1-poc-slice.md) for the slice definition; the detailed end-to-end test steps will be a `4_operations/` doc when Phase 1 is built.
-- **Sub-competency representation:** how exactly to encode the parent/sub-competency outcome hierarchy in flat Canvas outcomes so the Workflow Actions LLM can infer structure (naming convention vs. an explicit field).
 - **Rubric fidelity:** how much rubric detail the transformation pipeline actually needs in a badge before we over-model the rubric endpoint.
 
 ## 9. References
