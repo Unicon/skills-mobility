@@ -23,14 +23,15 @@ For each supported event type, the Phase 1 happy path is:
 2. The Mock LMS Event Producer publishes the event and the Event Consumer accepts it.
 3. The Orchestrator starts a workflow run.
 4. The Context Builder uses deterministic configuration to decide which Mock LMS Resource APIs to fetch for the given event type and returns the required source data to the Orchestrator.
-5. The Orchestrator converts just enough of that source data into the input Open Badges 3.0 payload required by the LearnCard Issuer Adapter.
-6. The Orchestrator sends that payload to the Delivery Router.
-7. The Delivery Router sends the payload to the LearnCard Issuer Adapter.
-8. The LearnCard Issuer Adapter returns the issued and signed Open Badges 3.0 badge to the Delivery Router, which returns it to the Orchestrator.
-9. The Orchestrator makes any additional payload adjustments needed to prepare input for the LearnCard Wallet Adapter.
-10. The Orchestrator sends that wallet-input payload to the Delivery Router.
-11. The Delivery Router sends the payload to the LearnCard Wallet Adapter.
-12. The workflow records the final outcome for later inspection.
+5. The Orchestrator invokes the **LearnCard Profile Resolver** to resolve the learner's LearnCard `profileId` and DID from the learner identifier in the event context. The resolved values are stored in the execution context.
+6. The Orchestrator converts just enough of that source data into the input Open Badges 3.0 payload required by the LearnCard Issuer Adapter, embedding the resolved DID in `credentialSubject.id`.
+7. The Orchestrator sends that payload to the Delivery Router.
+8. The Delivery Router sends the payload to the LearnCard Issuer Adapter.
+9. The LearnCard Issuer Adapter returns the issued and signed Open Badges 3.0 badge to the Delivery Router, which returns it to the Orchestrator.
+10. The Orchestrator makes any additional payload adjustments needed to prepare input for the LearnCard Wallet Adapter, using the resolved `profileId` for delivery targeting.
+11. The Orchestrator sends that wallet-input payload to the Delivery Router.
+12. The Delivery Router sends the payload to the LearnCard Wallet Adapter.
+13. The workflow records the final outcome for later inspection.
 
 ## 3. In Scope
 
@@ -41,6 +42,7 @@ Phase 1 includes:
 - The **Event Consumer** as a thin ingress boundary
 - The **Orchestrator** as the execution runtime
 - The **Context Builder** with deterministic configuration mapping event type to required Mock LMS Resource API fetches
+- The **LearnCard Profile Resolver** as a required pre-delivery orchestration step
 - Direct payload preparation inside the **Orchestrator** for the LearnCard Issuer Adapter input
 - The **Delivery Router**
 - The **LearnCard Issuer Adapter**
@@ -75,13 +77,14 @@ Phase 1 does not require:
 - **FR-P1-2** The Event Consumer SHALL validate the incoming event envelope, enforce ingress idempotency, create an execution identifier, and hand off the run to the Orchestrator.
 - **FR-P1-3** The Context Builder SHALL use deterministic configuration keyed by event type to determine which Mock LMS Resource APIs and resources must be fetched.
 - **FR-P1-4** The Context Builder SHALL return the fetched source data to the Orchestrator in a form the Orchestrator can use for Phase 1 payload preparation.
-- **FR-P1-5** The Orchestrator SHALL convert the fetched source data into the minimum Open Badges 3.0 input payload required by the LearnCard Issuer Adapter.
-- **FR-P1-6** The Orchestrator SHALL send the issuer-input payload to the Delivery Router.
-- **FR-P1-7** The Delivery Router SHALL invoke the LearnCard Issuer Adapter and return the issued signed badge to the Orchestrator.
-- **FR-P1-8** The Orchestrator SHALL make any necessary additions or adjustments to the issued badge so it is prepared as input to the LearnCard Wallet Adapter.
-- **FR-P1-9** The Orchestrator SHALL send the wallet-input payload to the Delivery Router.
-- **FR-P1-10** The Delivery Router SHALL invoke the LearnCard Wallet Adapter.
-- **FR-P1-11** Phase 1 SHALL avoid introducing LLM planning, LLM routing, or deterministic policy gating as required runtime dependencies for the happy path.
+- **FR-P1-5** The Orchestrator SHALL invoke the LearnCard Profile Resolver to resolve the learner's LearnCard `profileId` and DID from the learner identifier before preparing the issuer input payload. The resolved `profileId` and DID SHALL be stored in the execution context and consumed by both the issuer and wallet payload preparation steps.
+- **FR-P1-6** The Orchestrator SHALL convert the fetched source data into the minimum Open Badges 3.0 input payload required by the LearnCard Issuer Adapter, embedding the resolved DID in `credentialSubject.id`.
+- **FR-P1-7** The Orchestrator SHALL send the issuer-input payload to the Delivery Router.
+- **FR-P1-8** The Delivery Router SHALL invoke the LearnCard Issuer Adapter and return the issued signed badge to the Orchestrator.
+- **FR-P1-9** The Orchestrator SHALL make any necessary additions or adjustments to the issued badge so it is prepared as input to the LearnCard Wallet Adapter, using the resolved `profileId` for delivery targeting.
+- **FR-P1-10** The Orchestrator SHALL send the wallet-input payload to the Delivery Router.
+- **FR-P1-11** The Delivery Router SHALL invoke the LearnCard Wallet Adapter.
+- **FR-P1-12** Phase 1 SHALL avoid introducing LLM planning, LLM routing, or deterministic policy gating as required runtime dependencies for the happy path.
 
 ## 6. Boundary Rules for Phase 1
 
@@ -98,6 +101,7 @@ Phase 1 is complete when the team can demonstrate all of the following:
 
 - A `skill_mastered` event can run end to end through the Phase 1 pipeline.
 - A `course_completed` event can run end to end through the Phase 1 pipeline.
+- For each supported event type, the LearnCard Profile Resolver resolves or creates the learner's LearnCard `profileId` and DID before the issuer input payload is prepared.
 - For each supported event type, the Orchestrator prepares issuer input, the LearnCard Issuer Adapter returns a signed Open Badges 3.0 badge, and the Orchestrator then prepares and sends wallet input through the Delivery Router.
 - The happy paths are repeatable locally with deterministic source data.
 - The implementation leaves clear room for later phases to add Policy Rules, specialized LLM services, richer payload transformation, and the Admin UI without replacing the basic pipeline.

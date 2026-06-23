@@ -15,6 +15,11 @@
 | [`mock-lms-event-producer.md`](./mock-lms-event-producer.md) | Emits credential events (skill mastered, course completed, badge awarded); Actions, payloads, repeatability |
 | [`mock-lms-apis.md`](./mock-lms-apis.md) | Canvas-style **LMS Resource APIs** the Context Builder reads; seeded data model |
 | [`mock-lms-ui.md`](./mock-lms-ui.md) | Presenter-facing demo console (course-centric inspect + trigger + live emission feed) |
+| **Delivery layer** (four parts ↓) | |
+| [`delivery-router-service.md`](./delivery-router-service.md) | Stable internal delivery execution facade between the Orchestrator and target adapters |
+| [`learncard-profile-resolver.md`](./learncard-profile-resolver.md) | Standalone Lambda that resolves or creates a learner's LearnCard profile before issuance or wallet delivery |
+| [`learncard-issuer-adapter.md`](./learncard-issuer-adapter.md) | Thin Node/TypeScript adapter that issues and signs credentials through LearnCard |
+| [`learncard-wallet-adapter.md`](./learncard-wallet-adapter.md) | Thin Python adapter that delivers already-issued credentials to LearnCard wallet flows |
 
 ## System-level requirements docs
 
