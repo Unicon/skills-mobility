@@ -12,7 +12,7 @@ Governing ADRs: [0002](../decisions/0002-frontend-architecture.md) · [0003](../
 The **Mock LMS** is the POC's *source system* — it stands in for a real LMS (Open edX in production; modeled on **Canvas** for the POC). It has three pieces, kept distinct because they serve different purposes and evolve differently:
 
 1. **Event Producer** — publishes credential events onto the bus.
-2. **LMS Resource APIs** — Canvas-style read endpoints the Context Builder queries for decision context.
+2. **LMS Resource APIs** — Canvas-style read endpoints the Context Builder queries for decision context, and that the Demo UI reads to make a course's content + a learner's submissions legible.
 3. **Demo UI** — a course-centric console that **mimics an LMS** so a stakeholder can browse a course's materials and a learner's submissions, trigger grading, and then **compare that source data to the badge issued downstream** in the wallet — judging for themselves whether the AI orchestration did a good job.
 
 > **Scope boundary (ADR-0002):** observing the orchestration itself — the live execution timeline, per-step status, LLM confidence/rationale, correlation tracing — is the job of the **Admin UI**, a *separate* application. This doc covers the Mock LMS only; the Admin UI is out of scope here. The Mock LMS makes the **source side** legible (course + submissions in, badge to compare against out); the Admin UI makes the **orchestration** legible.
@@ -68,7 +68,7 @@ Three event types, in a Canvas Live Events–style `{ metadata, body }` envelope
 |---|---|---|
 | `skill_mastered` | Canvas `learning_outcome_result_created` | outcome id, score, mastery |
 | `course_completed` | Canvas `course_completed` | final course grade |
-| `badge_awarded` | POC-defined | badge id, acceptance status |
+| `badge_awarded` | POC-defined | badge id, name (acceptance is **not** on the event — discovered via GET badge by id) |
 
 `metadata` adds `correlation_id` (one per Action run) and `action_id` for traceability. No `credential_eligible` (no realistic source event).
 
@@ -78,13 +78,13 @@ Each event type has a **happy variant** that should flow all the way to delivery
 
 | Event | Happy variant — delivers | Edge variant — planner declines to deliver | Primarily tests |
 |---|---|---|---|
-| `skill_mastered` | competency-level outcome | sub-competency (flat outcome, e.g. `1.2.3`) | happy → delivery + transformation services; edge → Workflow Actions "skip delivery" |
+| `skill_mastered` | competency-level outcome (code `1.0.0`) | sub-competency (code `1.2.0`) | happy → delivery + transformation services; edge → Workflow Actions "skip delivery" |
 | `course_completed` | passing final grade | failing final grade | happy → delivery; edge → Workflow Actions early-terminate |
 | `badge_awarded` | badge accepted, fetchable via GET badge by id | badge unaccepted (GET badge by id errors) | happy → delivery; edge → Workflow Actions acceptance-gate |
 
 ### Actions
 
-The operator never emits raw events — a **Course contains Actions**, and each Action emits 1..N events for **one learner** or **all learners** (bulk → one event per enrolled learner). Action availability depends on course kind. See [requirements §3](../2_requirements/mock-lms-event-producer.md) for the Action catalog and the per-Action → endpoint → id-tracing mapping; the UI placement of these Actions is in §4.
+The operator never emits raw events — a **Course contains Actions**, and each Action emits 1..N events for **one learner** or **all learners** (bulk → one event per enrolled learner). A course's **kind** — *standard* or *digital-credential-supported* — determines which Actions it offers, and thus which events: a **standard** course emits `skill_mastered` (grading a module assignment) and `course_completed` (grading the final); a **digital-credential** course emits `badge_awarded`. (This kind distinction recurs throughout the doc.) See [requirements §3](../2_requirements/mock-lms-event-producer.md) for the Action catalog and the per-Action → endpoint → id-tracing mapping; the UI placement of these Actions is in §4.
 
 ### Emission control API
 
@@ -103,7 +103,7 @@ One `correlation_id` per Action run, stamped into every emitted event. Emitting 
 
 ## 3. Piece 2 — LMS Resource APIs
 
-Canvas-style read endpoints (route group/tag `resources`). Full table in [requirements §2](../2_requirements/mock-lms-apis.md): course, enrollment (with `current_grade`/`current_points`), modules, pages, assignments, outcomes, outcome_results (+alignments), submissions, **user profile** (email as badge recipient id), **rubrics**, and a POC-defined **GET badge by id**.
+Canvas-style read endpoints (route group/tag `resources`). Full table in [requirements §2](../2_requirements/mock-lms-apis.md): course, enrollment (with `current_grade`/`current_points`), modules, pages, assignments, outcomes, submissions, **user profile** (email as badge recipient id), **rubrics**, and a POC-defined **GET badge by id**.
 
 ### What these feed (ADR-0007 / 0008)
 
@@ -112,11 +112,9 @@ The Context Builder reads these to assemble decision context; the transformation
 | Pipeline stage (ADR-0008) | Mock LMS data it reads |
 |---|---|
 | Loop 1 — credential template (course-level) | course, modules, pages, assignments, outcome/skill, **rubrics** |
-| Loop 2 — learner record (learner-level) | submissions, outcome_results, enrollment, **user profile** |
+| Loop 2 — learner record (learner-level) | submissions, enrollment, **user profile** |
 
 > Note: the **skills-framework context** (O*NET, etc.) that ADR-0008's Loop 1 also needs is *not* supplied by the Mock LMS — it's an external context source. The Mock LMS provides only the LMS-side learning context.
-
-This is why the endpoint set grew beyond the original sketch: rubrics and course content are the inputs people actually want inside a badge, and the profile email is the badge recipient identity.
 
 **Fetch ownership (per the matrix §5):** *which* of these endpoints to call for a given event is decided deterministically by the **Context Builder** (via versioned fetch profiles keyed by event type) — the Mock LMS only serves the data. The per-Action → endpoint table in the requirements documents those relationships; it does not place fetch logic in the Mock LMS.
 
@@ -124,8 +122,8 @@ This is why the endpoint set grew beyond the original sketch: rubrics and course
 
 The catalog is the **Mock LMS Resource / Event Data Store** (boundary matrix §7): read by the Event Producer, the LMS Resource APIs, and the Demo UI. It is assembled from two sources, then **captured → committed → replayed**:
 
-- **Real roster base (PM-provided CSVs).** Canvas SIS-style exports — `course_sections.csv`, `users.csv`, `enrollments.csv` — provide realistic courses/sections, learners (with **real emails** and profile attributes), and enrollments (e.g. *Wasatch University*, *FINC-106 Introduction to Finance*). We import a **small demo subset** (a handful of courses + learners), not the full export (~143 sections / ~4k users / ~12k enrollments).
-- **Generated academic + credential layer.** The CSVs don't include the activity/credential data our events need, so a **seeded generator** builds it on top of the imported roster, with **logically linked ids**: modules, outcomes (competency *and* sub-competency, e.g. flat `1.2.3`), module + final assignments, submissions with **passing and failing** grades, outcome results, rubrics, and badges (**accepted/fetchable and unaccepted**). It also tags each course a **kind** (standard vs digital-credential-supported).
+- **Roster base (real Canvas SIS CSV schema).** A PM-provided roster in Canvas's real SIS export schema — `course_sections.csv`, `users.csv`, `enrollments.csv` — supplies realistic courses/sections, learners (emails + profile attributes), and enrollments (e.g. *Wasatch University*, *FINC-106 Introduction to Finance*). The *schema* is the real Canvas one; the rows are demo data. We import a **small demo subset** (a handful of courses + learners), not the full export (~143 sections / ~4k users / ~12k enrollments).
+- **Generated academic + credential layer.** The CSVs don't include the activity/credential data our events need, so a **seeded generator** builds it on top of the imported roster, with **logically linked ids**: modules, outcomes (competency *and* sub-competency, distinguished by the title-prefix convention — `1.0.0` vs `1.2.0`), module + final assignments, submissions with **passing and failing** grades, outcome results, rubrics, and badges (**accepted/fetchable and unaccepted**). It also tags each course a **kind** (standard vs digital-credential-supported).
 - Together these guarantee **both course kinds** and **both variants of each event** (§2) are present.
 - The assembled catalog is **captured to committed `fixtures/*.json`**; the runtime loads that frozen snapshot **read-only** and never re-runs the assembly. Deterministic — same inputs → byte-identical fixtures.
 - Raw CSVs stay out of the repo (input artifacts); larger/bulk sets can live in gitignored `generated-fixtures/`, selectable via `MOCK_LMS_FIXTURES_DIR`.
