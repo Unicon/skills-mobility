@@ -118,3 +118,8 @@ services/mock-lms/seed-data/
 # Coverage
 # ==========================================
 coverage.xml
+
+# ==========================================
+# Claude Code — personal local settings
+# ==========================================
+.claude/settings.local.json

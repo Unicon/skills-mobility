@@ -48,7 +48,7 @@ Two **course kinds** determine which Actions a course offers (a course shows one
       "event_name": "learning_outcome_result_created",
       "event_time": "2026-06-12T17:00:00Z",
       "producer": "mock-lms",
-      "root_account_uuid": "…",
+      "root_account_id": "…",
       "user_id": "…",
       "context_type": "Course",
       "context_id": "…",
@@ -60,22 +60,22 @@ Two **course kinds** determine which Actions a course offers (a course shows one
   }
   ```
 - **FR-EP7** Bodies SHALL mirror the Canvas live-event body where one exists (`learning_outcome_result_created`, `course_completed`) and a documented POC shape for `badge_awarded`. The `course_completed` body SHALL include the learner's final course grade.
-- **FR-EP8** Every id in a body (course, user, outcome, assignment, badge) SHALL resolve against the [LMS Resource APIs](./mock-lms-apis.md), so the Context Builder can dereference it (fail fast on emit if it can't).
+- **FR-EP8** Every emitted identifier the Context Builder depends on — whether carried in metadata or body fields — SHALL resolve against the [LMS Resource APIs](./mock-lms-apis.md) or the related account-user lookup path, so the Context Builder can dereference it (fail fast on emit if it can't).
 
 ## 5. Per-Action mapping (event → endpoints → id tracing)
 
-For each Action, this documents the event payload, the LMS endpoints the Context Builder will read, and how it traces ids from event body to source data. (Endpoint paths: see [LMS APIs](./mock-lms-apis.md).)
+For each Action, this documents the event payload, the LMS endpoints the Context Builder will read, and how it traces ids from event metadata/body to source data. (Endpoint paths: see [LMS APIs](./mock-lms-apis.md).)
 
 | Action | Event | Relevant LMS endpoints | Context Builder id tracing |
 |---|---|---|---|
-| Submit skill mastery | `skill_mastered` | outcome by id; outcome_results (+alignments); assignments; submissions; rubrics; user profile | `learning_outcome_id`→outcome, `assignment_id`→assignment/submission/rubric, `user_id`→profile |
-| Submit final grade | `course_completed` | course; enrollment (incl. `current_grade`/`current_points`); modules/pages | `course_id`→course, `user_id`→enrollment (final grade) |
+| Submit skill mastery | `skill_mastered` | outcome by id; assignment by course/id; rubric lookup by `assignment.rubric_id` when needed; course modules; account users by UUID; assignment submission by course/assignment/user | `result_context_type=Course` + `result_context_id`→`course_id`, `associated_asset_type=Assignment` + `associated_asset_id`→`assignment_id`, `learning_outcome_id`→outcome, `root_account_id` + `user_uuid`→Canvas `user_id`, `assignment.rubric_id`→rubric, resolved Canvas `user_id` + `course_id` + `assignment_id`→submission |
+| Submit final grade | `course_completed` | course; learner profile; enrollment (incl. `current_grade`/`current_points`); modules; pages; assignments; rubrics; learner submissions for the course | `body.course.id`→`course_id`, `metadata.user_id`→`user_id`, `user_id`→learner profile, `course_id`→course/modules/pages/assignments/rubrics, `course_id` + `user_id`→enrollment and learner submissions |
 | Award badge (skill/course) | `badge_awarded` | badge by id (primary); user profile (optional) | `badge_id`→badge. Badge is pre-defined, so no learning-context endpoints are needed; `user_id`→profile is only for downstream account matching (the learner's email is also already in the badge). |
 
 ## 6. Repeatability
 
 - **FR-EP9** Actions and their data SHALL be reproducible: the underlying data is a committed, seeded snapshot (see [LMS APIs §data model](./mock-lms-apis.md)), and Actions are re-runnable any number of times within a demo, each run producing fresh correlation/event ids over stable business keys.
-- **FR-EP10** The UI SHALL let the operator **reset** emission state between runs (see [Demo UI](./mock-lms-ui.md)).
+- **FR-EP10** The UI SHALL let the operator **reset** between runs; the reset SHALL clear emission state and SHALL call the Event Consumer to clear the relevant idempotency records (see [FR-EC-23](./event-consumer.md)) so that re-triggering the same scenario starts a new end-to-end workflow.
 
 ## 7. Where emission fits
 

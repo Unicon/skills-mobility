@@ -6,11 +6,22 @@
 
 | Doc | Scope |
 |---|---|
-| [`poc-requirements.md`](./poc-requirements.md) | **Master** POC requirements — scope/definitions, objectives, the full component breakdown, success criteria |
+| [`event-consumer.md`](./event-consumer.md) | Workflow ingress boundary: envelope validation, ingress idempotency, execution creation, and handoff to the Orchestrator |
+| [`poc-requirements.md`](./poc-requirements.md) | Original stakeholder-provided POC requirements, preserved as the starting-point brief even where later ADRs and design docs diverge |
+| [`target-poc-requirements.md`](./target-poc-requirements.md) | Current working system-level requirements for the target POC, reconciled with accepted ADRs and current design docs |
+| [`phase-1-poc-slice.md`](./phase-1-poc-slice.md) | First implementation slice across components: a fast end-to-end pipeline for `skill_mastered` and `course_completed` that later phases can build on |
+| [`context-builder.md`](./context-builder.md) | Deterministic source-data aggregation for the Orchestrator: event-type-based fetch profiles, chained LMS lookups, and the returned context bundle |
 | **Mock LMS** (source-system component, three parts ↓) | |
 | [`mock-lms-event-producer.md`](./mock-lms-event-producer.md) | Emits credential events (skill mastered, course completed, badge awarded); Actions, payloads, repeatability |
 | [`mock-lms-apis.md`](./mock-lms-apis.md) | Canvas-style **LMS Resource APIs** the Context Builder reads; seeded data model |
 | [`mock-lms-ui.md`](./mock-lms-ui.md) | Presenter-facing demo console (course-centric inspect + trigger + live emission feed) |
+
+## System-level requirements docs
+
+The repo now intentionally keeps two system-level POC requirements docs:
+
+- [`poc-requirements.md`](./poc-requirements.md) is the preserved stakeholder baseline. It is an input to the project, not a document that must be rewritten every time architecture decisions evolve.
+- [`target-poc-requirements.md`](./target-poc-requirements.md) is the evolving working requirements doc for the architecture the team is actually building.
 
 ## Mock LMS overview
 
@@ -26,7 +37,11 @@ The **Mock LMS** stands in for a real LMS (Open edX in production; modeled on **
 
 ## Conventions
 
-- One requirements doc per component, named after the component. The Mock LMS currently spans three (`mock-lms-event-producer.md`, `mock-lms-apis.md`, `mock-lms-ui.md`); the `mock-lms-` prefix is specific to those — other components (Context Builder, Policy Rules, the LLM Decision Services, etc.) won't carry it. Each doc references the master `poc-requirements.md` and relevant ADRs in [`../decisions/`](../decisions/) rather than restating them. Design lives in [`../3_design/`](../3_design/).
+- One requirements doc per component, named after the component. The Mock LMS currently spans three (`mock-lms-event-producer.md`, `mock-lms-apis.md`, `mock-lms-ui.md`); the `mock-lms-` prefix is specific to those — other components (Context Builder, Policy Rules, the LLM Decision Services, etc.) won't carry it. Each doc references the master `poc-requirements.md` and relevant ADRs in [`../decisions/`](../decisions/) rather than restating them.
+- Phase-scoped requirements docs are acceptable when defining a concrete implementation slice that spans multiple components; [`phase-1-poc-slice.md`](./phase-1-poc-slice.md) is the current example.
+- Preserve stakeholder/source documents when they matter as historical inputs. When the team's current working requirements diverge, create or update a separate working requirements doc rather than rewriting the source document.
+- Current implementation-facing docs should usually align to [`target-poc-requirements.md`](./target-poc-requirements.md) plus relevant ADRs. Reference [`poc-requirements.md`](./poc-requirements.md) when you need to anchor back to original stakeholder intent.
+- Design lives in [`../3_design/`](../3_design/).
 
 ## Workflows
 
