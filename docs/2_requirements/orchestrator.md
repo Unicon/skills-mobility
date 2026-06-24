@@ -89,7 +89,13 @@ Phase 1 does not require the final LLM-backed decision services or the full targ
   - and LearnCard wallet delivery.
 - **FR-OR-13** The Orchestrator SHALL invoke the LearnCard Profile Resolver before any LearnCard issuance or wallet delivery action that requires a resolved LearnCard identity, and SHALL store the returned `profileId` and DID in the execution context for downstream steps.
 - **FR-OR-14** For Phase 1, the Orchestrator SHALL preserve the future transformation-service seam by representing issuer-payload preparation as explicit Field Mapping, Field Synthesis, and Translation Executor steps even when the first two are no-op stubs.
-- **FR-OR-15** For Phase 1, the Orchestrator SHALL preserve the future transformation-service seam by representing wallet-payload preparation as explicit Field Mapping and Translation Executor steps, with Field Synthesis included only when the payload phase actually requires it.
+- **FR-OR-15** For Phase 1, the Orchestrator SHALL preserve the future transformation-service seam by representing wallet-payload preparation as explicit Field Mapping and Translation Executor steps. Field Synthesis is not required for the wallet pass because the LearnCard wallet schema is designed to accept Open Badges payloads directly: the wallet input is a structural derivation of the issued badge output, not a semantically interpreted composition. This is a property of the target schema pair (issuer output → wallet input), not of the event type. The following table shows which transformation service seams are active per payload preparation pass:
+
+  | Preparation pass | Field Mapping | Field Synthesis | Translation Executor |
+  |---|---|---|---|
+  | Issuer payload (Phase 1 stub) | Yes | Yes | Yes |
+  | Wallet payload (Phase 1 stub) | Yes | No | Yes |
+
 - **FR-OR-16** For Phase 1, the issuer-side Translation Executor stub SHALL construct the minimum Open Badges 3.0 input payload required by the LearnCard Issuer Adapter from the source context plus the resolved LearnCard DID, embedding that DID in `credentialSubject.id`.
 - **FR-OR-17** For Phase 1, the wallet-side Translation Executor stub SHALL construct the minimum payload required by the LearnCard Wallet Adapter from the issued badge plus the resolved LearnCard `profileId`.
 - **FR-OR-18** The Orchestrator SHALL invoke the Delivery Router for `issue_learncard_badge` and `deliver_to_learncard_wallet` as separate delivery actions and SHALL correlate both results to the same workflow execution.

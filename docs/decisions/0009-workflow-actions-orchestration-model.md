@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-06-23
+- Supersedes: the 2026-06-15 single-call hierarchical model decision (original ADR-0009; see Options Considered)
 - Related: [ADR-0007](./0007-llm-decision-service-decomposition.md) · [ADR-0008](./0008-transformation-mapping-service-decomposition.md) · [ADR-0011](./0011-orchestration-runtime-technology.md)
 
 ## Context
@@ -79,7 +80,7 @@ The intended order is:
 | Option | Description | Main concern |
 | --- | --- | --- |
 | Peer model | Delivery Targets and downstream transformation planning run before Workflow Actions planning | Cannot terminate cleanly before Delivery Targets; Workflow Actions becomes downstream coordination rather than the main planning boundary |
-| Single-call hierarchical model | Workflow Actions runs once before Delivery Targets and emits the full plan | Target-specific downstream planning must happen without access to the actual selected targets |
+| Single-call hierarchical model *(accepted 2026-06-15, superseded by this ADR)* | Workflow Actions runs once before Delivery Targets and emits the full plan | Target-specific downstream planning must happen without access to the actual selected targets |
 | Two-stage hierarchical model (chosen) | Workflow Actions first decides terminate vs continue; Delivery Targets then runs; Workflow Actions runs again to produce the delivery-phase plan | Adds one extra Workflow Actions invocation and introduces two Workflow Actions artifacts instead of one |
 
 ## Why Two-Stage Hierarchical

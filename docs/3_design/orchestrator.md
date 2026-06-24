@@ -130,6 +130,8 @@ The second Workflow Actions call returns the delivery-phase plan. For Phase 1, t
 }
 ```
 
+The `steps` array is shown empty above to illustrate the plan envelope shape only. The full 8-step Phase 1 plan appears in §5.
+
 The exact binding language for step inputs and conditions remains open. Phase 1 should keep this simple by using structured source references rather than inventing a second DSL. This document uses `type` for the step-classification field per [ADR-0011](../decisions/0011-orchestration-runtime-technology.md). The Phase 1 example uses only `type: call`, but the target-POC schema should still leave room for other step types such as `wait`, `for_each`, or `terminate`.
 
 A minimal step can therefore look like:
@@ -155,7 +157,7 @@ A minimal step can therefore look like:
 
 For the POC, integer `step_id` values are acceptable and keep the execution records compact. Human-readable meaning should live primarily in `action_id` and in optional step metadata.
 
-Runtime configuration values such as `delivery_config_ref` should be attached to the workflow execution context by the Orchestrator itself. They are part of execution configuration, not fields the raw source event is expected to carry. For Phase 1, `delivery_config_ref` is loaded from an environment variable.
+Runtime configuration values such as `delivery_config_ref` should be attached to the workflow execution context by the Orchestrator itself. They are part of execution configuration, not fields the raw source event is expected to carry. For Phase 1, `delivery_config_ref` is loaded from the `LEARNCARD_DELIVERY_CONFIG_REF` environment variable.
 
 The Orchestrator should also treat the full Context Builder output as **opaque JSON**, not as a fully modeled Pydantic domain object. The workflow start contract, plan schema subset, and step result envelopes should use typed envelope fields, but the full LMS context bundle should remain flexible so source JSON can evolve during the POC without forcing a full schema rewrite.
 
