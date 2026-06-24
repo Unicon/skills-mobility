@@ -1,132 +1,151 @@
-# 0009. Workflow Actions Orchestration Model: Peer vs. Hierarchical
+# 0009. Workflow Actions Orchestration Model: Two-Stage Hierarchical Planning
 
 - Status: Accepted
-- Date: 2026-06-15
+- Date: 2026-06-23
+- Related: [ADR-0007](./0007-llm-decision-service-decomposition.md) · [ADR-0008](./0008-transformation-mapping-service-decomposition.md) · [ADR-0011](./0011-orchestration-runtime-technology.md)
 
 ## Context
 
-ADR 0007 decomposed the monolithic LLM Decision Service into three specialized services: the Delivery Targets LLM Decision Service, the Transformation Mappings LLM Decision Service, and the Workflow Actions LLM Decision Service. ADR 0007 identified the relationship between Workflow Actions and the other two services as an open architectural question with two plausible models:
+ADR 0007 decomposed the monolithic LLM Decision Service into three specialized services: the Delivery Targets LLM Decision Service, the Transformation Mappings LLM Decision Service, and the Workflow Actions LLM Decision Service.
 
-- **Peer model**: All three services are invoked by the orchestration engine as independent upfront steps. Delivery Targets runs first, followed by Transformation Mappings (which depends on the delivery target outputs), and then Workflow Actions consumes both sets of outputs and generates an execution plan for the remaining delivery phase.
-- **Hierarchical model**: Workflow Actions is the top-level planner. It runs first and generates a complete abstract orchestration plan that names the other two services as steps within that plan. The orchestration engine then executes the plan step by step, invoking Delivery Targets and Transformation Mappings at the points the plan specifies and passing outputs between steps.
+The key orchestration question is where Workflow Actions should sit relative to Delivery Targets and the downstream transformation and delivery steps. The main architectural pressures are:
 
-The choice between these models has significant implications for how the orchestration engine is structured, what the Workflow Actions service actually generates, and how faithfully the architecture reflects the LLM-as-orchestrator intent described in the POC requirements.
+- preserving the ability to terminate early before Delivery Targets when the event should not proceed at all, and
+- allowing downstream planning to use the actual selected targets once Delivery Targets has run.
 
-The choice becomes concrete when considering the range of events the POC must handle. Every event may not trigger the full Delivery Targets → Transformation Mappings → deliver pipeline. Here are some examples of use cases that do not:
+This becomes concrete when considering the range of events the POC must handle. Every event should not automatically trigger the full delivery path. Here are examples of cases that do not:
 
 - A **skill mastered** event at a sub-competency level may not result in badge issuance. Some programs explicitly do not want credentials issued for sub-competencies — only for the parent competency. LMS systems like Canvas Learning Outcomes do not natively represent competency hierarchies; a flat outcome named "1.2.3" must be interpreted structurally by the Workflow Actions LLM to determine that it is a sub-competency not yet warranting delivery.
 - A **course completed** event where the learner received a failing grade should not trigger delivery. The correct plan ends immediately without invoking Delivery Targets.
 - A **badge awarded** event where the learner has not yet accepted the badge in the issuing system cannot be delivered downstream, since the badge is not retrievable from the API until accepted. The Workflow Actions service can add an acceptance-check step to the plan and abort the delivery path if acceptance has not occurred.
 
-In each of these cases the correct plan is not "invoke DT → TM → deliver." A model that always runs Delivery Targets first — whether Peer or Hybrid — cannot express "do not proceed to delivery at all" without adding fallback logic outside the plan. Only the hierarchical model allows the Workflow Actions LLM to make this determination at plan time, before any downstream service is invoked.
-
-The POC requirements frame the orchestration engine as something that "could be a true orchestration engine or an AI agent with a goal of message delivery." This framing positions the LLM as the primary decision-maker for the overall workflow plan, not merely a generator of supplementary hints. The choice of orchestration model determines whether the Workflow Actions service functions as a true top-level planner or as a post-hoc delivery plan generator.
+These cases show that the system needs a pre-delivery decision boundary that can stop the workflow before targets are selected. At the same time, steps such as LearnCard profile resolution, target-specific transformation seams, and target-specific delivery preparation are easier to plan correctly once the actual target set is known.
 
 ## Decision Drivers
 
-- Faithfulness to the LLM-as-orchestrator intent expressed in the POC requirements
-- Completeness of the orchestration plan produced by the Workflow Actions service
-- Ability to conditionally include, reorder, or skip workflow steps based on event type and context
-- Value of the Workflow Actions service as a genuine orchestration research subject within the POC
-- Clarity of the orchestration engine's role as plan executor vs. plan co-author
-- Position of the Policy Rules Service as a deterministic validation layer over the full plan
+- Preserve the ability to terminate before Delivery Targets when the event does not merit delivery
+- Let the delivery-phase Workflow Actions invocation reason over the actual selected targets
+- Keep Workflow Actions as a first-class orchestration decision boundary rather than collapsing downstream planning into fixed deterministic logic
+- Keep the runtime model small enough for the POC
+- Preserve deterministic validation and execution boundaries around LLM outputs
 
 ## Decision
 
-The Workflow Actions LLM Decision Service will be structured as the **hierarchical top-level planner**. It runs before Delivery Targets and Transformation Mappings and generates a complete abstract orchestration plan. The orchestration engine executes that plan faithfully, invoking the other services at the steps specified in the plan. The Policy Rules Service validates the complete plan before execution begins.
+The Workflow Actions LLM Decision Service will use a **two-stage hierarchical model**.
 
-The plan generated by the Workflow Actions service is **abstract**: it specifies which steps to take, in what order, and under what conditions — using service names and step types rather than the specific values (targets, mappings, learner data) that will only be available once those steps execute. The orchestration engine resolves actual values as it executes each step and passes outputs forward as inputs to subsequent steps.
+### Stage 1: Pre-target gate
 
-This is a **single-plan model**: the plan is generated once at the start of execution and does not change as steps execute. It relies on all meaningful conditions being expressible from the event context available at plan time. If step outputs carry information that should alter the remaining plan — information not predictable upfront — this model cannot accommodate that without a replanning invocation. That scenario is identified as a revisit trigger.
+The first Workflow Actions invocation runs **before** Delivery Targets.
 
-Validated plans will be stored for reuse. When a new event arrives, the orchestration engine checks for a stored plan matching the event type and relevant context before invoking the Workflow Actions LLM. If a matching plan is found, the orchestration engine submits it directly to the Policy Rules Service for re-validation against the current event and proceeds to execution if validation passes, bypassing the LLM invocation. The plan key structure, invalidation rules, and reuse scope are deferred to a future ADR.
+Its job is to determine whether the workflow:
+
+- terminates early with a named business outcome, or
+- proceeds to Delivery Targets.
+
+This first invocation is intentionally narrow. It is a gating decision, not the full delivery-phase plan.
+
+### Stage 2: Delivery-phase planning
+
+If the first invocation returns `continue`, the Orchestrator invokes the Delivery Targets LLM Decision Service.
+
+The second Workflow Actions invocation then runs **after** Delivery Targets and receives:
+
+- the event,
+- the assembled context,
+- the selected delivery targets,
+- and the available service/action vocabulary.
+
+This second invocation produces the abstract ordered plan for getting from the event and context to the selected target systems. The runtime then validates and executes that delivery-phase plan.
+
+This is therefore a **two-call Workflow Actions model**, but not arbitrary mid-flight replanning. The second call occurs at one fixed orchestration boundary: after Delivery Targets, before execution of the delivery-phase plan.
+
+Only the delivery-phase plan should be stored for reuse. The pre-target gate decision is execution-scoped and should run anew for each event.
+
+## Resulting Invocation Order
+
+The intended order is:
+
+1. Event arrives.
+2. Context Builder assembles source context.
+3. Workflow Actions call 1 decides `terminate` or `continue`.
+4. If `terminate`, the workflow ends.
+5. If `continue`, Delivery Targets runs.
+6. Workflow Actions call 2 generates the delivery-phase plan using the selected targets.
+7. Policy Rules validates that delivery-phase plan when policy validation is active.
+8. The Orchestrator executes the plan.
 
 ## Options Considered
 
 | Option | Description | Main concern |
 | --- | --- | --- |
-| Peer model | All three services invoked as independent upfront steps; Workflow Actions runs last and generates a delivery-phase plan using the other services' outputs | Workflow Actions is a post-hoc plan generator, not a true planner; Delivery Targets and Transformation Mappings always run regardless of event type, removing conditional authority from the Workflow Actions service |
-| Hierarchical model (chosen) | Workflow Actions runs first and generates a complete abstract plan; the other two services are named steps within that plan; orchestration engine executes step by step | Workflow Actions must plan without knowing the outputs of the other services; orchestration engine must be able to interpret and execute a structured plan; higher implementation complexity than the peer model |
-| Hybrid: fixed setup phase, then planning | Delivery Targets always runs first as a fixed upfront step; Workflow Actions then uses the target list to decide whether and how to invoke Transformation Mappings and what delivery steps to take | Partially collapses the distinction between peer and hierarchical; Delivery Targets loses its conditional status; Workflow Actions still cannot decide to skip or reorder the target-resolution step |
+| Peer model | Delivery Targets and downstream transformation planning run before Workflow Actions planning | Cannot terminate cleanly before Delivery Targets; Workflow Actions becomes downstream coordination rather than the main planning boundary |
+| Single-call hierarchical model | Workflow Actions runs once before Delivery Targets and emits the full plan | Target-specific downstream planning must happen without access to the actual selected targets |
+| Two-stage hierarchical model (chosen) | Workflow Actions first decides terminate vs continue; Delivery Targets then runs; Workflow Actions runs again to produce the delivery-phase plan | Adds one extra Workflow Actions invocation and introduces two Workflow Actions artifacts instead of one |
 
-## Why Hierarchical
+## Why Two-Stage Hierarchical
 
-### The peer model produces an incomplete plan
+### It preserves early termination
 
-In the peer model, Delivery Targets and Transformation Mappings always run as fixed upfront steps before Workflow Actions ever invokes. By the time Workflow Actions generates a plan, two of the most significant workflow decisions have already been executed. The plan produced by Workflow Actions covers only the delivery phase — it is not a "complete orchestration plan" in any meaningful sense. Calling it a planner while the hardest decisions are already resolved beforehand is structurally misleading and reduces the Workflow Actions service to a delivery coordinator.
+The first Workflow Actions call still allows the system to stop before Delivery Targets for cases such as:
 
-### Conditional authority requires hierarchical position
+- sub-competency events that should not issue a credential,
+- failing course-completion events,
+- or any future pre-delivery disqualifier that is visible from event or context alone.
 
-A genuine planner must be able to decide which steps to include, not just how to execute a predetermined set of them. The concrete event scenarios described in the Context section illustrate this directly: a failing course completion, a sub-competency skill mastery, or an unaccepted badge all require the plan to terminate early or take a non-standard path. The Workflow Actions LLM must be able to reach these conclusions at plan time, before Delivery Targets is ever invoked. Additionally, some event types may require steps not covered by the three core services at all — an acceptance check, a pre-delivery eligibility verification, or a learner notification. The hierarchical model allows the Workflow Actions LLM to include, skip, or reorder steps based on context. The peer and hybrid models cannot support this without moving those conditional decisions outside the plan entirely.
+### It gives the second planning call the target information it actually needs
 
-### The POC requirements position the LLM as the primary orchestration decision-maker
+Downstream steps such as LearnCard profile resolution, target-specific transformation seams, or wallet-delivery preparation are easier to plan correctly when the target set is already known. The two-stage model lets the second Workflow Actions call reason over real selected targets instead of hypothetical ones.
 
-The POC requirements describe the orchestration engine as something that "could be a true orchestration engine or an AI agent with a goal of message delivery." This framing assigns the primary orchestration decision-making role to the LLM, not to a deterministic fixed pipeline. The hierarchical model implements this intent directly: the Workflow Actions LLM decides what the workflow should do, and the orchestration engine carries it out. The peer model inverts this — the fixed pipeline decides what runs, and the LLM fills in details afterward.
+### It is still structurally constrained
 
-### The hierarchical model is more interesting as a POC research subject
+This is not open-ended replanning after every step. The second planning boundary happens once, at a fixed place in the workflow. That keeps the runtime model simpler than a fully dynamic replanning system while addressing the main weakness of the single-call model.
 
-One of the POC's goals is to evaluate how well LLM-based services can handle orchestration-class decisions. A Workflow Actions service that generates a complete abstract plan — including decisions about which downstream services to invoke — is a richer and more informative research subject than one that generates a delivery script after all upstream decisions are resolved. The hierarchical model gives the POC more signal about where LLM planning is reliable, where it needs guardrails, and whether the plan quality justifies the approach.
+### It keeps Workflow Actions meaningful as an orchestration decision boundary
 
-### Pre-execution plan validation is an additive safety layer
-
-In the hierarchical model, the Policy Rules Service can validate the complete abstract plan before any downstream service is invoked — catching structural problems such as invalid step ordering, missing dependencies, or unauthorized service references before any LLM-generated action takes effect. This is a genuine benefit, but it is additive rather than a complete replacement for post-execution validation.
-
-Validation of generated badge content — eligibility checks, required field completeness, and output correctness — can only happen after the Transformation Mappings service has run, because that content does not exist until transformation is complete. Both the hierarchical and peer models require this post-execution validation pass. The pre-execution plan validation in the hierarchical model complements this by catching plan-level problems early, before the cost of executing any steps is incurred.
+The POC wants Workflow Actions to be more than a post-hoc delivery script generator. The two-stage model preserves that by keeping an early gating decision under Workflow Actions control while still allowing the later plan to use target-aware information.
 
 ## Implementation Implications
 
-The hierarchical model has the following concrete implications for the orchestration engine design:
+The two-stage hierarchical model has the following concrete implications for the orchestration engine design:
 
-- **Invocation order**: Workflow Actions runs first. It receives event context, learner context, policy context, and the set of available services and actions. It does not receive outputs from Delivery Targets or Transformation Mappings, because those have not yet run.
-- **Plan structure**: The plan produced by Workflow Actions is an abstract execution plan — an ordered list of named steps with associated service identifiers, input bindings, and conditions. It specifies what should happen and in what order, not specific values for targets or mappings.
-- **Plan validation**: The Policy Rules Service validates the abstract plan before the orchestration engine executes any steps. If validation fails, execution does not begin.
-- **Step execution**: The orchestration engine executes each step in plan order. When it encounters a step that names a Delivery Targets or Transformation Mappings invocation, it calls that service, collects the output, and passes it forward as an input binding for subsequent steps.
-- **Conditional steps**: Steps in the plan may include conditions. The orchestration engine evaluates those conditions against current execution state (previously resolved outputs) and skips steps whose conditions are not met.
-- **Plan storage and reuse**: The orchestration engine stores each plan that passes Policy Rules validation. On receipt of a new event, the engine looks up stored plans by event type and context before invoking the Workflow Actions LLM. A matched plan is re-submitted to the Policy Rules Service for validation against the current event; if it passes, execution proceeds without an LLM call.
+- **Two Workflow Actions contracts**: the Orchestrator needs a pre-target gate contract and a delivery-phase plan contract.
+- **Invocation order**: Workflow Actions pre-target gate runs before Delivery Targets. Delivery Targets runs only on the continue path. The delivery-phase planning call runs after targets are selected.
+- **Plan structure**: the second Workflow Actions call returns the abstract ordered plan the runtime executes. That plan names steps, bindings, and conditions rather than embedding target-system mechanics directly into the Orchestrator.
+- **Plan validation**: when policy validation is active, the delivery-phase plan is validated before execution begins.
+- **Artifact reuse**: only delivery-phase plans belong in the reusable-plan store. Pre-target gate decisions are recorded only as execution-scoped metadata and are not looked up for reuse. Delivery-phase plan applicability keys should include selected targets and whatever other planning dimensions the team decides are materially relevant.
 
 ## Consequences
 
 ### Positive
 
-- The Workflow Actions service is a genuine top-level planner with full conditional authority over the workflow
-- The orchestration plan is truly complete — it covers all phases from target resolution through delivery
-- Conditional invocation allows event-specific workflows without modifying the orchestration engine's core logic
-- Policy Rules validation covers the full plan before any LLM-generated action is taken
-- The POC generates meaningful signal about LLM orchestration planning capability
-- Validated plans can be stored and reused for recurring event patterns, reducing LLM invocation overhead for well-understood scenarios
+- Early termination remains possible before Delivery Targets
+- Delivery-phase planning can use the actual selected targets
+- LearnCard-specific and other target-specific steps no longer need to be planned blindly
+- The model is still bounded enough for a POC executor
 
 ### Negative
 
-- Workflow Actions must reason about the overall workflow without access to the outputs of Delivery Targets or Transformation Mappings, requiring its prompt to be grounded in available service descriptions rather than resolved values
-- The orchestration engine must be capable of parsing and executing a structured plan, which is more complex than invoking a fixed sequence of services
-- Abstract plans introduce a new artifact type that must be versioned, validated, and audited independently
-- This model has a meaningful tension with AWS Step Functions, identified as a strong candidate for orchestration in ADR 0004. Step Functions state machines are defined statically at deploy time in Amazon States Language and cannot natively execute a plan generated at runtime by the Workflow Actions service. Fitting the hierarchical model into Step Functions would require either pre-enumerating all possible steps as a fixed state machine with Choice states driven by the Workflow Actions output — which collapses to the peer model at the state machine level — or confining Step Functions to a top-level triggering role while a separate plan-executor Lambda handles the dynamic plan. This tension should be weighed when the orchestration technology ADR is written.
+- One additional Workflow Actions invocation on the continue path
+- One execution-scoped pre-target gate decision to record plus one reusable delivery-phase plan artifact to persist and inspect
+- More planner-path orchestration logic than the single-call model
 
 ### Revisit Triggers
 
 This decision should be revisited if:
 
-- The Workflow Actions service consistently generates plans that do not vary from a fixed baseline, suggesting that the conditional planning capability adds no observable value
-- The structured plan format proves too rigid to express the range of workflows the POC encounters, or too flexible to validate reliably with the Policy Rules Service
-- The overhead of Workflow Actions running before all other services — including the latency of an LLM call before any concrete workflow work begins — proves unacceptable in practice
-- Step outputs routinely carry signal that affects which future steps should be taken in ways that static conditional logic in the abstract plan cannot accommodate. For example, if a downstream LLM produces a low confidence score, then it's possible that this should impact what the plan should have been. If this proves common, the static single-plan model should be reconsidered in favor of a dynamic replanning approach where the Workflow Actions service re-evaluates and updates the remaining plan after each step executes based on its observed output.
+- the first Workflow Actions call rarely does anything beyond returning `continue`,
+- the second Workflow Actions call still does not produce meaningfully target-aware plans,
+- the extra LLM call materially harms latency without improving plan quality,
+- or the project later needs arbitrary replanning after execution has already begun.
 
 ## Open Questions
 
-- What is the minimum necessary schema for an abstract orchestration plan that is expressive enough to capture conditional step execution while remaining deterministically validatable by the Policy Rules Service?
-- Should the plan include explicit input bindings (specifying which prior step output feeds into each step), or should the orchestration engine resolve data dependencies automatically?
-- If the Workflow Actions LLM generates a plan that references a service not in the approved set, how should the orchestration engine and Policy Rules Service handle the discrepancy?
-- Should the Workflow Actions service have access to a schema or registry of available services and their expected inputs and outputs at prompt time, and who maintains that registry?
-- What is the appropriate level of plan granularity? At minimum, the Workflow Actions plan should specify whether and when to invoke the Delivery Targets and Transformation Mappings services. Whether the plan also governs logic internal to those services — for example, whether the Transformation Mappings service should execute Loop 1 or use a cached template — is an open question.
-- How should stored plans be keyed? What combination of event type, learner context, and policy context is sufficient to determine that a stored plan applies to a new event, without being so specific that no two events ever match?
-- When should a stored plan be invalidated? Changes to policy rules, available services, or delivery target configurations may make a previously valid plan incorrect. Who or what triggers invalidation, and at what granularity?
-- Should plan reuse be scoped to exact-match lookups, or should the orchestration engine be able to select a stored plan that is a close-enough match (e.g., same event type, different learner) and rely on Policy Rules re-validation to catch anything that doesn't apply?
-- If AWS Step Functions is chosen as the orchestration technology, how should its predefined state machine model accommodate the dynamically generated plan produced by the hierarchical Workflow Actions service? Does this tension favor a different orchestration technology or a modified interpretation of the hierarchical model?
-- What policy rules should the Policy Rules Service be configured to validate for the abstract plan? Does pre-execution validation check step ordering and service dependencies, or only whether the named services and steps are authorized?
-- What confidence score should the Workflow Actions service produce for its generated plan, and how should a low-confidence result be handled? The PRD identifies confidence scoring as a success criterion. Options include blocking execution until a confidence threshold is met, adding a human review step to the plan, or falling back to a deterministic default plan.
+- What is the minimum schema for the first Workflow Actions gate result?
+- Which exact dimensions belong in the delivery-phase plan applicability key beyond event type and selected targets?
+- What management surface should delete stored delivery-phase plans when the team wants to force regeneration?
 
 ## References
 
-- [ADR 0007: LLM Decision Service Decomposition](0007-llm-decision-service-decomposition.md)
-- [ADR 0008: Transformation Mapping Service Decomposition](0008-transformation-mapping-service-decomposition.md)
+- [ADR-0007: LLM Decision Service Decomposition](./0007-llm-decision-service-decomposition.md)
+- [ADR-0008: Transformation Mapping Service Decomposition](./0008-transformation-mapping-service-decomposition.md)
 - [Skills Mobility Infrastructure POC Requirements](../2_requirements/poc-requirements.md)
