@@ -26,3 +26,16 @@ def sample_event() -> dict[str, Any]:
         },
         "body": {"learning_outcome_id": "OUT1"},
     }
+
+
+@pytest.fixture
+def course_event() -> dict[str, Any]:
+    return {
+        "metadata": {
+            "event_name": "course_completed",
+            "event_id": "evt_2",
+            "correlation_id": "corr_2",
+            "user_id": "WU1125875",
+        },
+        "body": {"course_id": "ACCY-111"},
+    }

@@ -1,5 +1,10 @@
-"""Execution-log store (ADR-0014: SQLite locally). Persists the correlated
-per-workflow execution record the Admin UI will later read."""
+"""Execution-state store (ADR-0014: SQLite locally; design §9).
+
+Three tables: ``workflow_execution`` (one row per run), ``workflow_step_execution``
+(one row per executed step), and the reusable ``workflow_plan`` store. Step
+payloads are kept inline as JSON for the POC (FR-OR-21 permits inline storage);
+the AWS-shaped target moves large artifacts out-of-line.
+"""
 
 from __future__ import annotations
 
@@ -8,17 +13,47 @@ import sqlite3
 from datetime import UTC, datetime
 from typing import Any
 
-from orchestrator.schemas import ExecutionRecord
+from orchestrator.schemas import DeliveryPhasePlan, ExecutionView, GateDecision, StepResult
 
 _SCHEMA = """
-CREATE TABLE IF NOT EXISTS executions (
-    execution_id TEXT PRIMARY KEY,
-    event_type   TEXT,
+CREATE TABLE IF NOT EXISTS workflow_execution (
+    execution_id         TEXT PRIMARY KEY,
+    event_id             TEXT,
+    correlation_id       TEXT,
+    event_type           TEXT,
+    status               TEXT NOT NULL,
+    gate_decision        TEXT,
+    plan_id              TEXT,
+    context_artifact_ref TEXT,
+    result               TEXT,
+    created_at           TEXT NOT NULL,
+    updated_at           TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS workflow_step_execution (
+    execution_id TEXT NOT NULL,
+    step_id      INTEGER NOT NULL,
+    action_id    TEXT NOT NULL,
     status       TEXT NOT NULL,
-    record       TEXT NOT NULL,
-    recorded_at  TEXT NOT NULL
+    attempt      INTEGER NOT NULL DEFAULT 1,
+    output_json  TEXT,
+    error_json   TEXT,
+    started_at   TEXT,
+    finished_at  TEXT,
+    PRIMARY KEY (execution_id, step_id)
+);
+CREATE TABLE IF NOT EXISTS workflow_plan (
+    plan_id           TEXT PRIMARY KEY,
+    applicability_key TEXT,
+    plan_json         TEXT NOT NULL,
+    created_at        TEXT NOT NULL,
+    last_used_at      TEXT,
+    updated_at        TEXT NOT NULL
 );
 """
+
+
+def _now() -> str:
+    return datetime.now(UTC).isoformat()
 
 
 class ExecutionStore:
@@ -28,25 +63,126 @@ class ExecutionStore:
         self._conn.executescript(_SCHEMA)
         self._conn.commit()
 
-    def save(self, record: ExecutionRecord) -> None:
+    # --- workflow_execution -------------------------------------------------
+
+    def create_execution(
+        self, execution_id: str, event_id: str, correlation_id: str, event_type: str
+    ) -> None:
+        now = _now()
         self._conn.execute(
-            "INSERT OR REPLACE INTO executions "
-            "(execution_id, event_type, status, record, recorded_at) VALUES (?, ?, ?, ?, ?)",
+            "INSERT OR REPLACE INTO workflow_execution "
+            "(execution_id, event_id, correlation_id, event_type, status, created_at, updated_at) "
+            "VALUES (?, ?, ?, ?, 'created', ?, ?)",
+            (execution_id, event_id, correlation_id, event_type, now, now),
+        )
+        self._conn.commit()
+
+    def set_status(self, execution_id: str, status: str) -> None:
+        self._conn.execute(
+            "UPDATE workflow_execution SET status = ?, updated_at = ? WHERE execution_id = ?",
+            (status, _now(), execution_id),
+        )
+        self._conn.commit()
+
+    def record_gate_decision(self, execution_id: str, gate: GateDecision) -> None:
+        self._conn.execute(
+            "UPDATE workflow_execution SET gate_decision = ?, updated_at = ? "
+            "WHERE execution_id = ?",
+            (gate.model_dump_json(), _now(), execution_id),
+        )
+        self._conn.commit()
+
+    def set_plan(self, execution_id: str, plan_id: str) -> None:
+        self._conn.execute(
+            "UPDATE workflow_execution SET plan_id = ?, updated_at = ? WHERE execution_id = ?",
+            (plan_id, _now(), execution_id),
+        )
+        self._conn.commit()
+
+    def set_result(self, execution_id: str, result: dict[str, Any]) -> None:
+        self._conn.execute(
+            "UPDATE workflow_execution SET result = ?, updated_at = ? WHERE execution_id = ?",
+            (json.dumps(result), _now(), execution_id),
+        )
+        self._conn.commit()
+
+    # --- workflow_step_execution -------------------------------------------
+
+    def save_step(self, execution_id: str, step: StepResult) -> None:
+        self._conn.execute(
+            "INSERT OR REPLACE INTO workflow_step_execution "
+            "(execution_id, step_id, action_id, status, attempt, output_json, error_json, "
+            "started_at, finished_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
-                record.execution_id,
-                record.event_type,
-                record.status,
-                record.model_dump_json(),
-                datetime.now(UTC).isoformat(),
+                execution_id,
+                step.step_id,
+                step.action_id,
+                step.status,
+                step.attempt,
+                json.dumps(step.output),
+                json.dumps(step.error) if step.error is not None else None,
+                step.started_at,
+                step.finished_at,
             ),
         )
         self._conn.commit()
 
-    def get(self, execution_id: str) -> dict[str, Any] | None:
+    # --- workflow_plan (reusable) ------------------------------------------
+
+    def save_plan(self, plan: DeliveryPhasePlan, applicability_key: str) -> None:
+        now = _now()
+        self._conn.execute(
+            "INSERT OR REPLACE INTO workflow_plan "
+            "(plan_id, applicability_key, plan_json, created_at, last_used_at, updated_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (plan.plan_id, applicability_key, plan.model_dump_json(), now, now, now),
+        )
+        self._conn.commit()
+
+    def get_plan_by_key(self, applicability_key: str) -> DeliveryPhasePlan | None:
         row = self._conn.execute(
-            "SELECT record FROM executions WHERE execution_id = ?", (execution_id,)
+            "SELECT plan_json FROM workflow_plan WHERE applicability_key = ?", (applicability_key,)
         ).fetchone()
         if row is None:
             return None
-        record: dict[str, Any] = json.loads(row["record"])
-        return record
+        return DeliveryPhasePlan.model_validate_json(row["plan_json"])
+
+    def delete_plan(self, plan_id: str) -> bool:
+        cur = self._conn.execute("DELETE FROM workflow_plan WHERE plan_id = ?", (plan_id,))
+        self._conn.commit()
+        return cur.rowcount > 0
+
+    # --- read model ---------------------------------------------------------
+
+    def get_execution_view(self, execution_id: str) -> ExecutionView | None:
+        row = self._conn.execute(
+            "SELECT * FROM workflow_execution WHERE execution_id = ?", (execution_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        step_rows = self._conn.execute(
+            "SELECT * FROM workflow_step_execution WHERE execution_id = ? ORDER BY step_id",
+            (execution_id,),
+        ).fetchall()
+        steps = [
+            StepResult(
+                step_id=s["step_id"],
+                action_id=s["action_id"],
+                status=s["status"],
+                attempt=s["attempt"],
+                output=json.loads(s["output_json"]) if s["output_json"] else {},
+                error=json.loads(s["error_json"]) if s["error_json"] else None,
+                started_at=s["started_at"] or "",
+                finished_at=s["finished_at"] or "",
+            )
+            for s in step_rows
+        ]
+        return ExecutionView(
+            execution_id=row["execution_id"],
+            event_type=row["event_type"],
+            status=row["status"],
+            gate_decision=json.loads(row["gate_decision"]) if row["gate_decision"] else None,
+            plan_id=row["plan_id"],
+            steps=steps,
+            result=json.loads(row["result"]) if row["result"] else {},
+        )

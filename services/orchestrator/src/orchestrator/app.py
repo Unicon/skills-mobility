@@ -1,8 +1,9 @@
 """FastAPI application factory for the Orchestrator.
 
-`POST /run-workflow` executes the Phase-1 plan and persists the trace;
-`GET /executions/{id}` returns the correlated execution record. The downstream
-seams default to the Phase-1 stubs (no running services, no live LearnCard).
+`POST /run-workflow` runs the planner + executor paths and persists the trail;
+`GET /executions/{id}` returns the correlated execution view. `POST /admin/plan-lookup`
+toggles reusable delivery-phase plan lookup (FR-OR-28) and `DELETE /admin/plans/{id}`
+forces regeneration (FR-OR-29). Seams default to the Phase-1 stubs.
 """
 
 from __future__ import annotations
@@ -10,8 +11,9 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
-from orchestrator import runner
+from orchestrator import engine
 from orchestrator.clients import (
     ContextBuilderClient,
     HttpContextBuilderClient,
@@ -20,8 +22,12 @@ from orchestrator.clients import (
     StubProfileResolver,
 )
 from orchestrator.config import Settings, get_settings
-from orchestrator.schemas import RunRequest
+from orchestrator.schemas import WorkflowStartRequest
 from orchestrator.store import ExecutionStore
+
+
+class PlanLookupToggle(BaseModel):
+    enabled: bool
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -29,7 +35,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(
         title="Orchestrator",
         version="0.1.0",
-        summary="Phase-1 deterministic workflow executor (POC)",
+        summary="Phase-1 constrained plan executor (POC)",
     )
     app.state.settings = settings
     app.state.store = ExecutionStore(settings.db_path)
@@ -43,29 +49,43 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Profile Resolver + Delivery Router are unbuilt (#19) — Phase-1 stubs for now.
     app.state.profile_resolver = StubProfileResolver()
     app.state.delivery_router = StubDeliveryRouter()
+    # Runtime-toggleable plan lookup (seeded from settings; FR-OR-28).
+    app.state.reusable_plan_lookup_enabled = settings.reusable_plan_lookup_enabled
 
     @app.post("/run-workflow")
-    def run_workflow(request: RunRequest) -> dict[str, Any]:
-        record = runner.run_workflow(
+    def run_workflow(request: WorkflowStartRequest) -> dict[str, Any]:
+        view = engine.run_workflow(
             request,
+            store=app.state.store,
             context_builder=app.state.context_builder,
             profile_resolver=app.state.profile_resolver,
             delivery_router=app.state.delivery_router,
             issuer_id=settings.issuer_id,
+            delivery_config_ref=settings.delivery_config_ref,
+            reusable_plan_lookup=app.state.reusable_plan_lookup_enabled,
         )
-        app.state.store.save(record)
-        return record.model_dump()
+        return view.model_dump()
 
     @app.get("/executions/{execution_id}")
     def get_execution(execution_id: str) -> dict[str, Any]:
         store: ExecutionStore = app.state.store
-        record = store.get(execution_id)
-        if record is None:
+        view = store.get_execution_view(execution_id)
+        if view is None:
             raise HTTPException(
                 status_code=404,
                 detail={"errors": [{"message": f"execution {execution_id} not found"}]},
             )
-        return record
+        return view.model_dump()
+
+    @app.post("/admin/plan-lookup", tags=["admin"])
+    def set_plan_lookup(toggle: PlanLookupToggle) -> dict[str, Any]:
+        app.state.reusable_plan_lookup_enabled = toggle.enabled
+        return {"reusable_plan_lookup_enabled": toggle.enabled}
+
+    @app.delete("/admin/plans/{plan_id}", tags=["admin"])
+    def delete_plan(plan_id: str) -> dict[str, Any]:
+        store: ExecutionStore = app.state.store
+        return {"deleted": store.delete_plan(plan_id)}
 
     @app.get("/healthz", tags=["meta"])
     def healthz() -> dict[str, Any]:
