@@ -42,6 +42,12 @@ Orchestrator
 
 ## 3. Request and Response Shape
 
+Recommended endpoint:
+
+```text
+POST /build-context
+```
+
 The precise wire format can evolve, but the useful minimal request shape is:
 
 ```json

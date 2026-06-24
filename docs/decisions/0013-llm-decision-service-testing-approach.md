@@ -92,7 +92,7 @@ Every evaluated LLM output must first pass its deterministic contract checks:
 
 - output schema is valid
 - `confidence` and `rationale` are present
-- only approved targets, actions, or step kinds are referenced
+- only approved targets, actions, or step types are referenced
 - JSONata parses and executes where applicable
 - no unresolved placeholders or structurally invalid payload fragments remain
 - if the Policy Rules Service is implemented in time for the POC, the relevant output also passes policy validation
@@ -105,7 +105,7 @@ Each of the four service types is then judged against a service-specific scoreca
 
 | Service type | Hard gates | Primary capability judgment | Authoritative reviewer |
 | --- | --- | --- | --- |
-| Workflow Actions | Plan schema valid; only approved action IDs/step kinds; passes Policy Rules validation if that service is implemented | Match against the canonical expected plan for the scenario, including expected terminal outcome and required or forbidden major steps | Deterministic comparator against the canonical scenario plan |
+| Workflow Actions | Plan schema valid; only approved action IDs/step types; passes Policy Rules validation if that service is implemented | Match against the canonical expected plan for the scenario, including expected terminal outcome and required or forbidden major steps | Deterministic comparator against the canonical scenario plan |
 | Delivery Targets | Output schema valid; only known targets referenced | Exact match on selected target set for the scenario | Deterministic comparator |
 | Field Mapping | Mapping spec schema valid; JSONata parses; placeholder structure valid; passes policy validation if implemented | Functional correctness of the executed result plus semantic correctness of the source-to-target field alignment and JSONata logic relative to a human-authored canonical mapping | Deterministic execution + comparator against canonical human mapping, with human review when semantic alignment is unclear |
 | Field Synthesis | Output schema valid; all requested synthesis fields returned | Groundedness, usefulness for the target field, and absence of fabrication | Human rubric review |
