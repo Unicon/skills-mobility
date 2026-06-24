@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI
@@ -15,10 +17,20 @@ from context_builder.schemas import BuildRequest
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        yield
+        # Close the long-lived LMS HTTP client on shutdown.
+        close = getattr(app.state.lms_client, "close", None)
+        if callable(close):
+            close()
+
     app = FastAPI(
         title="Context Builder",
         version="0.1.0",
         summary="Deterministic source-data aggregation for the Orchestrator (POC)",
+        lifespan=lifespan,
     )
     app.state.settings = settings
     app.state.profiles = load_profiles()

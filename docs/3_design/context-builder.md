@@ -157,7 +157,7 @@ Each profile should define:
 
 ### Profile schema
 
-Profiles are YAML files stored in `config/fetch-profiles/` at the repo root, one file per event type (e.g. `skill_mastered.yaml`). The `version` field is an integer starting at 1; increment it whenever the profile changes. Git history preserves prior versions. The bundle records `fetch_profile_id` as `{event_type}.v{version}`.
+Profiles are YAML files bundled inside the service package at `services/context-builder/src/context_builder/fetch_profiles/`, one file per event type (e.g. `skill_mastered.yaml`), and loaded read-only at startup. (They live in the package — rather than a repo-root `config/` dir — so the profiles deploy as part of the service artifact with no extra packaging or path configuration; for a single-service POC that's simpler than an external config directory.) The `version` field is an integer starting at 1; increment it whenever the profile changes. Git history preserves prior versions. The bundle records `fetch_profile_id` as `{event_type}.v{version}`.
 
 Top-level fields:
 
@@ -207,7 +207,7 @@ select:
     contains_item:          # choose the array element whose nested items match all criteria
       in: items
       type: Assignment
-      id: { source: event, path: body.associated_asset_id }
+      content_id: { source: event, path: body.associated_asset_id }   # Canvas module items reference the assignment by content_id, not id
 ```
 
 A `for_each` iterates over items from a prior step's response, with optional filtering:
@@ -219,6 +219,8 @@ for_each:
   path: items               # dot-path to the list within that response
   where: { type: Page }     # optional: keep only items matching this filter
 ```
+
+`where` values may be static (as above) or source specs (`{ source: event|response, path: ... }`), resolved the same way as `select`'s `contains_item` criteria.
 
 ### `skill_mastered`
 

@@ -64,6 +64,8 @@ def test_skill_mastered_full_chain(profiles, fake_client):
     assert sd["rubric"]["id"] == "RUB1"  # conditional step ran (assignment had rubric_id)
     assert sd["module_context"]["id"] == "MOD1"  # select picked the module containing A1
     assert sd["module_pages"][0]["id"] == "P1"  # for_each over the module's Page items
+    # The account-user lookup resolved the Canvas user_id (chained into the submission fetch).
+    assert sd["canvas_user"][0]["id"] == "U1"
     # The submission fetch was keyed by the user_id resolved from the account lookup.
     assert sd["submission"]["user_id"] == "U1"
     assert "/api/v1/courses/C1/assignments/A1/submissions/U1" in client.calls
@@ -108,11 +110,23 @@ def test_course_completed_happy_path(profiles, fake_client):
         "/api/v1/courses/C1/rubrics": (200, []),
         "/api/v1/courses/C1/students/submissions?student_ids[]=U1": (200, [{"user_id": "U1"}]),
     }
-    result = _build("e2", event, fake_client(responses), profiles)
+    client = fake_client(responses)
+    result = _build("e2", event, client, profiles)
     assert isinstance(result, ContextBundle)
-    assert result.source_data["course"]["id"] == "C1"
-    assert result.source_data["enrollment"][0]["current_grade"] == "A"
-    assert result.source_data["submissions"][0]["user_id"] == "U1"
+    assert result.event_type == "course_completed"
+    assert result.fetch_profile_id == "course_completed.v1"
+    sd = result.source_data
+    # All eight output keys are present with the expected data.
+    assert sd["course"] == {"id": "C1", "name": "Accounting"}
+    assert sd["learner_profile"] == {"id": "U1", "email": "a@b.c"}
+    assert sd["enrollment"][0]["current_grade"] == "A"
+    assert sd["modules"] == []
+    assert sd["pages"] == []
+    assert sd["assignments"] == []
+    assert sd["rubrics"] == []
+    assert sd["submissions"][0]["user_id"] == "U1"
+    # The submissions fetch was keyed by the event's user_id.
+    assert "/api/v1/courses/C1/students/submissions?student_ids[]=U1" in client.calls
 
 
 def test_badge_awarded_happy_and_unaccepted(profiles, fake_client):

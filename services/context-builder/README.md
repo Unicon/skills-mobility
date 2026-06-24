@@ -20,7 +20,7 @@ src/context_builder/
   profiles.py        FetchProfile model + YAML loader
   lms_client.py      LMSClient protocol + httpx implementation
   schemas.py         request / bundle / failure contracts
-  fetch_profiles/    versioned YAML recipes (skill_mastered, course_completed, badge_awarded)
+  fetch_profiles/    versioned YAML recipes, bundled in-package (skill_mastered, course_completed, badge_awarded)
 ```
 
 ## Run (from repo root)
@@ -31,12 +31,17 @@ CONTEXT_BUILDER_LMS_BASE_URL=http://127.0.0.1:8000 uv run context-builder   # se
 ```
 
 It reads the Mock LMS Resource APIs, so run `uv run mock-lms` (:8000) alongside it.
+Interactive API docs (Swagger) are at `http://127.0.0.1:8100/docs`.
 
 ```bash
 # Build a context bundle for an event envelope
 curl -X POST localhost:8100/build-context -H 'content-type: application/json' \
   -d '{"execution_id":"wf_1","event":{ ... emitted envelope ... }}'
 ```
+
+> When testing via `curl` or the Swagger UI, the request body needs **both**
+> `execution_id` and `event` — `execution_id` is required (not optional), so
+> include it alongside the event envelope you paste from the Mock LMS.
 
 ## Fetch profiles
 

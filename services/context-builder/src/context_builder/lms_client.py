@@ -35,3 +35,6 @@ class HttpxLMSClient:
         except ValueError:
             data = None
         return LMSResponse(status_code=resp.status_code, data=data)
+
+    def close(self) -> None:
+        self._client.close()

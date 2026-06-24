@@ -130,7 +130,12 @@ def _run_for_each(
     where = fe.get("where", {})
     out: list[Any] = []
     for item in source_list:
-        if where and not all(item.get(k) == v for k, v in where.items()):
+        # `where` values may be static (e.g. `type: Page`) or source specs
+        # ({source: event/response, path: ...}); _crit_match handles both, so
+        # for_each filtering matches select's contains_item capability.
+        if where and not all(
+            _crit_match(item, k, v, event, responses) for k, v in where.items()
+        ):
             continue
         url = _fill(step.endpoint, step.params, event, responses, item)
         if url is _MISSING:
