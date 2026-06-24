@@ -15,7 +15,7 @@ from mock_lms.emitter import EventBridgeEmitter, LocalEmitter
 def _build_emitter(settings: Settings) -> LocalEmitter | EventBridgeEmitter:
     if settings.emitter == "eventbridge":
         return EventBridgeEmitter(settings.event_bus_name, settings.aws_region)
-    return LocalEmitter()
+    return LocalEmitter(forward_url=settings.event_consumer_url)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:

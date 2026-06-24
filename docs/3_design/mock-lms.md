@@ -1,111 +1,230 @@
 # Mock LMS — Design
 
-Status: Draft
-Date: 2026-06-12
-Related: [Requirements: Event Producer](../2_requirements/mock-lms-event-producer.md) · [APIs](../2_requirements/mock-lms-apis.md) · [UI](../2_requirements/mock-lms-ui.md) · [ADR-0001](../decisions/0001-repo-structure.md) · [ADR-0002](../decisions/0002-frontend-architecture.md) · [ADR-0003](../decisions/0003-programming-language.md)
+- Status: Draft
+- Date: 2026-06-18
+
+Related requirements: [Event Producer](../2_requirements/mock-lms-event-producer.md) · [LMS Resource APIs](../2_requirements/mock-lms-apis.md) · [Demo UI](../2_requirements/mock-lms-ui.md) · [Phase 1 POC Slice](../2_requirements/phase-1-poc-slice.md)
+Design context: [**POC Component Boundary Matrix**](./poc-component-boundaries.md) — the source of truth for component names, ownership boundaries, and logical stores; this doc stays consistent with it. Aligns to the current working requirements in [Target POC Requirements](../2_requirements/target-poc-requirements.md) and the [Target POC Architecture](./architecture/target-poc-architecture.md).
+Governing ADRs: [0002](../decisions/0002-frontend-architecture.md) · [0003](../decisions/0003-programming-language.md) · [0004](../decisions/0004-lif-usage.md) · [0007](../decisions/0007-llm-decision-service-decomposition.md) · [0008](../decisions/0008-transformation-mapping-service-decomposition.md) · [0009](../decisions/0009-workflow-actions-orchestration-model.md) · [0011](../decisions/0011-orchestration-runtime-technology.md)
 
 ## 1. Overview
 
-The **Mock LMS** is three parts across the ADR-0001 monorepo:
+The **Mock LMS** is the POC's *source system* — it stands in for a real LMS (Open edX in production; modeled on **Canvas** for the POC). It has three pieces, kept distinct because they serve different purposes and evolve differently:
 
-| Part | Path | Tech (ADR-0003) | Role |
+1. **Event Producer** — publishes credential events onto the bus.
+2. **LMS Resource APIs** — Canvas-style read endpoints the Context Builder queries for decision context, and that the Demo UI reads to make a course's content + a learner's submissions legible.
+3. **Demo UI** — a course-centric console that **mimics an LMS** so a stakeholder can browse a course's materials and a learner's submissions, trigger grading, and then **compare that source data to the badge issued downstream** in the wallet — judging for themselves whether the AI orchestration did a good job.
+
+> **Scope boundary (ADR-0002):** observing the orchestration itself — the live execution timeline, per-step status, LLM confidence/rationale, correlation tracing — is the job of the **Admin UI**, a *separate* application. This doc covers the Mock LMS only; the Admin UI is out of scope here. The Mock LMS makes the **source side** legible (course + submissions in, badge to compare against out); the Admin UI makes the **orchestration** legible.
+
+```
+┌─ Mock LMS ─────────────────────────────────────────┐
+│  Demo UI ──reads──► LMS Resource APIs ◄──reads──────┼─── Context Builder (downstream)
+│     │                      ▲                         │
+│     └─triggers Action─► Event Producer               │
+└──────────────────────────────┬──────────────────────┘
+                                │ PutEvents
+                                ▼
+                         Amazon EventBridge
+                                │
+                                ▼
+              Event Consumer  (ingress; primary idempotency)
+                                │
+                                ▼
+        Orchestrator  (project-internal runtime, ADR-0011)
+          → Workflow Actions plan (ADR-0009)
+          → Delivery Targets · Field Mapping · Field Synthesis (ADR-0007/0008)
+          → Transformation Executor → Delivery Router → delivery (wallet)
+```
+
+(Component names — Orchestrator, Event Consumer, the specialized LLM Decision Services — follow the boundary matrix.) The Mock LMS is upstream of every orchestration decision. It does two things for the rest of the system: it **emits the events** that trigger workflows, and it **serves the source data** those workflows read.
+
+### Design goals
+
+- **Legible source side & repeatable** — a stakeholder can see the course materials and submissions that drove an event, and compare them to the issued badge; the same demo runs identically every time.
+- **Drives the pipeline incrementally** — the Mock LMS can emit the full range of events the orchestration must handle (including ones that should *not* deliver), but we build it in phases: a happy-path end-to-end slice first with the decision services stubbed, then the events that exercise each LLM Decision Service. See §6 Phasing.
+- **Lightweight** — Python/FastAPI service + React SPA (ADR-0002/0003), seeded fixtures, no real Canvas or AWS required for local dev.
+
+### Boundaries & repo placement (ADR-0001)
+
+The boundary matrix treats **Event Producer** and **LMS Resource APIs** as two distinct boundaries. For the POC they are **co-deployed in one FastAPI service** (`services/mock-lms/`) as separate routers/modules — kept cleanly separable so they can split into independent deployables later without rework.
+
+| Boundary / piece | Path | Tech |
+|---|---|---|
+| Event Producer | `services/mock-lms/` (emit + events modules) | Python 3.12 + FastAPI + Pydantic |
+| LMS Resource APIs | `services/mock-lms/` (resources module) | Python 3.12 + FastAPI + Pydantic |
+| Demo UI | `apps/mock-lms/` | React + TypeScript + Vite |
+| Event contracts | `libs/events/` | Pydantic (TS types generated into `packages/` if needed) |
+
+---
+
+## 2. Piece 1 — Event Producer
+
+### Events
+
+Three event types, in a Canvas Live Events–style `{ metadata, body }` envelope (full schema in [requirements §4](../2_requirements/mock-lms-event-producer.md)):
+
+| Event | Modeled on | Body highlight |
+|---|---|---|
+| `skill_mastered` | Canvas `learning_outcome_result_created` | outcome id, score, mastery |
+| `course_completed` | Canvas `course_completed` | final course grade |
+| `badge_awarded` | POC-defined | badge id, name (acceptance is **not** on the event — discovered via GET badge by id) |
+
+`metadata` adds `correlation_id` (one per Action run) and `action_id` for traceability. No `credential_eligible` (no realistic source event).
+
+### Events that exercise the orchestration (happy + edge variants)
+
+Each event type has a **happy variant** that should flow all the way to delivery, and an **edge variant** where the Workflow Actions planner should decide *not* to deliver. The happy variants drive the end-to-end pipeline and the Delivery Targets / Field Mapping / Field Synthesis / Transformation services; the edge variants make the Workflow Actions planner's non-delivery decisions testable (ADR-0009). **Both must be in the seed.**
+
+| Event | Happy variant — delivers | Edge variant — planner declines to deliver | Primarily tests |
 |---|---|---|---|
-| Service | `services/mock-lms/` | Python 3.12 + FastAPI + Pydantic | LMS Resource APIs + emission control API + SSE feed |
-| Demo UI | `apps/mock-lms/` | React + TypeScript SPA | Course-centric inspect, trigger Actions, live emission feed |
-| Event contracts | `libs/events/` (Py) + optionally `packages/event-contracts/` (TS) | Pydantic / generated TS | Event names, envelope, body schemas — the producer is source of truth |
+| `skill_mastered` | competency-level outcome (code `1.0.0`) | sub-competency (code `1.2.0`) | happy → delivery + transformation services; edge → Workflow Actions "skip delivery" |
+| `course_completed` | passing final grade | failing final grade | happy → delivery; edge → Workflow Actions early-terminate |
+| `badge_awarded` | badge accepted, fetchable via GET badge by id | badge unaccepted (GET badge by id errors) | happy → delivery; edge → Workflow Actions acceptance-gate |
 
-The **Event Producer** is the only component that writes to the bus. The **UI** reads data from the LMS Resource APIs and triggers Actions that emit the related events; it never writes to the bus itself. The Context Builder (downstream) reads the LMS Resource APIs directly.
+### Actions
+
+The operator never emits raw events — a **Course contains Actions**, and each Action emits 1..N events for **one learner** or **all learners** (bulk → one event per enrolled learner). A course's **kind** — *standard* or *digital-credential-supported* — determines which Actions it offers, and thus which events: a **standard** course emits `skill_mastered` (grading a module assignment) and `course_completed` (grading the final); a **digital-credential** course emits `badge_awarded`. (This kind distinction recurs throughout the doc.) See [requirements §3](../2_requirements/mock-lms-event-producer.md) for the Action catalog and the per-Action → endpoint → id-tracing mapping; the UI placement of these Actions is in §4.
+
+### Emission control API
 
 ```
-┌──────────────── apps/mock-lms (React SPA, S3+CloudFront) ────────────────┐
-│  Course view → modules → Action buttons   Live emission feed (SSE)         │
-└──────────────┬───────────────────────────────┬──────────────▲────────────┘
-               │ GET LMS Resource APIs           │ POST actions  │ SSE
-               ▼                                 ▼               │
-┌──────────────────────── services/mock-lms (FastAPI) ──────────┴──────────┐
-│  LMS Resource APIs ──reads──► Mock LMS catalog (seeded, read-only)         │
-│  Emission API (Actions) ──build envelope──► Emitter ──PutEvents──► EventBridge
-│  Emission API ──record──► Emission Log (ring) ──► SSE feed                 │
-└────────────────────────────────────────┬─────────────────────────────────┘
-                                          ▼
-                          EventBridge → internal orchestration runtime (ADR-0011, downstream)
+POST /demo/courses/{course_id}/actions   # run an Action (scope: one|all)
+                                          # → returns the emitted envelope(s) + correlation_id synchronously
+POST /demo/reset                          # reset emission state for a clean re-run
+GET  /demo/courses                        # courses + the Actions each offers
 ```
 
-## 2. Service modules
+One `correlation_id` per Action run, stamped into every emitted event. Emitting is a `PutEvents` to EventBridge (locally, an in-process emitter stands in). The trigger response returns the envelope(s) so the UI can show what was emitted; there is no live emission feed here — that lives in the Admin UI (§4).
 
-- `api/resources/` — Canvas-style read routers (one per resource: courses, enrollments, modules, pages, assignments, outcomes, outcome_results, outcome_alignments, submissions, **users/profile**, **rubrics**, **badges**).
-- `api/emit/` — emission control: take an Action, run it (one or all learners), reset.
-- `api/stream/` — SSE endpoint for the live feed.
-- `catalog/` — the Mock LMS catalog: data models, in-memory store, fixture loader.
-- `generators/` — seeded Faker generator (authoring tool; see §7).
+**Idempotency boundary (per the matrix §4):** the Event Producer is only **idempotency-*friendly*** — it emits stable business ids plus fresh `event_id`/`correlation_id` each run. Deduplicating redelivered events is the downstream **Event Consumer's** job (the ingress idempotency boundary), not the producer's.
+
+---
+
+## 3. Piece 2 — LMS Resource APIs
+
+Canvas-style read endpoints (route group/tag `resources`). Full table in [requirements §2](../2_requirements/mock-lms-apis.md): course, enrollment (with `current_grade`/`current_points`), modules, pages, assignments, outcomes, submissions, **user profile** (email as badge recipient id), **rubrics**, and a POC-defined **GET badge by id**.
+
+### What these feed (ADR-0007 / 0008)
+
+The Context Builder reads these to assemble decision context; the transformation pipeline (ADR-0008) consumes them across its two loops:
+
+| Pipeline stage (ADR-0008) | Mock LMS data it reads |
+|---|---|
+| Loop 1 — credential template (course-level) | course, modules, pages, assignments, outcome/skill, **rubrics** |
+| Loop 2 — learner record (learner-level) | submissions, enrollment, **user profile** |
+
+> Note: the **skills-framework context** (O*NET, etc.) that ADR-0008's Loop 1 also needs is *not* supplied by the Mock LMS — it's an external context source. The Mock LMS provides only the LMS-side learning context.
+
+**Fetch ownership (per the matrix §5):** *which* of these endpoints to call for a given event is decided deterministically by the **Context Builder** (via versioned fetch profiles keyed by event type) — the Mock LMS only serves the data. The per-Action → endpoint table in the requirements documents those relationships; it does not place fetch logic in the Mock LMS.
+
+### Data model & repeatability
+
+The catalog is the **Mock LMS Resource / Event Data Store** (boundary matrix §7): read by the Event Producer, the LMS Resource APIs, and the Demo UI. It is assembled from two sources, then **captured → committed → replayed**:
+
+- **Roster base (real Canvas SIS CSV schema).** A PM-provided roster in Canvas's real SIS export schema — `course_sections.csv`, `users.csv`, `enrollments.csv` — supplies realistic courses/sections, learners (emails + profile attributes), and enrollments (e.g. *Wasatch University*, *FINC-106 Introduction to Finance*). The *schema* is the real Canvas one; the rows are demo data. We import a **small demo subset** (a handful of courses + learners), not the full export (~143 sections / ~4k users / ~12k enrollments).
+- **Generated academic + credential layer.** The CSVs don't include the activity/credential data our events need, so a **seeded generator** builds it on top of the imported roster, with **logically linked ids**: modules, outcomes (competency *and* sub-competency, distinguished by the title-prefix convention — `1.0.0` vs `1.2.0`), module + final assignments, submissions with **passing and failing** grades, outcome results, rubrics, and badges (**accepted/fetchable and unaccepted**). It also tags each course a **kind** (standard vs digital-credential-supported).
+- Together these guarantee **both course kinds** and **both variants of each event** (§2) are present.
+- The assembled catalog is **captured to committed `fixtures/*.json`**; the runtime loads that frozen snapshot **read-only** and never re-runs the assembly. Deterministic — same inputs → byte-identical fixtures.
+- Raw CSVs stay out of the repo (input artifacts); larger/bulk sets can live in gitignored `generated-fixtures/`, selectable via `MOCK_LMS_FIXTURES_DIR`.
+
+> **Realism for LLM-service testing (Phase 2+):** to exercise the **Field Mapping** and **Field Synthesis** Decision Services (ADR-0007/0008), the generated layer must eventually carry *highly realistic and voluminous* course-context and learner-activity content — enough that Field Mapping can distinguish operational fields from those pertinent to the learner's badge, and Field Synthesis can summarize large quantities of course material across payloads. Phase 1's happy-path slice needs only linked ids + the contract; the realistic-content overhaul is tracked separately (#23).
+
+This yields two repeatability guarantees: **source data** identical every run (deterministic APIs), and **emitted events** fresh-id'd per run over stable business keys.
+
+---
+
+## 4. Piece 3 — Demo UI
+
+A **course-centric** console (`apps/mock-lms`) that mimics an LMS, so the demonstration makes sense to a stakeholder who knows what an LMS looks like. They browse a course and a learner's work, trigger a grading Action, and later compare that source data to the badge in the downstream wallet. See [requirements §2–3](../2_requirements/mock-lms-ui.md).
+
+- **Inspect** — pick a course → browse its modules, outcomes, assignments, learners, submissions, rubrics (via the LMS Resource APIs — the same surface the Context Builder reads). This is the source data a viewer compares against the issued badge.
+- **Trigger** — grading an assignment is the Action; the event it emits depends on the course kind and which assignment was graded (matrix below). Each Action runs for one learner or all learners.
+- **Confirm** — after a trigger, the UI shows the emitted envelope(s) + correlation id returned synchronously, so the presenter can point to exactly what was emitted.
+
+### Action matrix (what grading emits)
+
+| Course kind | Grade a **module-level** assignment | Grade the **final** assignment |
+|---|---|---|
+| **Standard** | `skill_mastered` — outcome is a **sub-competency** or a **competency** | `course_completed` — **passing** or **failing** |
+| **Digital-credential-supported** | `badge_awarded` for a **competency** — badge **accepted/fetchable** (GET badge by id) or **unaccepted** (errors) | `badge_awarded` for the **course** — accepted/fetchable or unaccepted |
+
+The two variants in each cell are the happy/edge pair from §2; the seed carries both.
+
+### Not in the Mock LMS UI (it's the Admin UI's job, ADR-0002)
+
+The **live emission/execution timeline**, per-workflow execution detail, LLM confidence/rationale, and cross-system correlation tracing belong to the **Admin UI** — a separate SPA. The Mock LMS UI does not host a live feed; it shows source data + the synchronous emit confirmation. A presenter can copy a `correlation_id` from the confirmation to follow the same workflow in the Admin UI, but no shared navigation shell is required.
+
+**Auth:** CloudFront-layer per ADR-0002 (decided — not Cognito), a **single demo user** with full capability (no instructor/admin split). Static SPA on S3 + CloudFront.
+
+---
+
+## 5. Cross-cutting design
+
+### 5.1 Service shape (`services/mock-lms`)
+
+- `api/resources/` — Canvas-style read routers (one per resource).
+- `api/emit/` — Action execution (one/all learners), reset; returns the emitted envelope(s) synchronously.
+- `catalog/` — entity models, in-memory read-only store, fixture loader.
+- `generators/` — seeded Faker generator (authoring tool; not in the runtime path).
 - `events/` — envelope + body builders, id/correlation generation (imports `libs/events`).
-- `emitter/` — `LocalEmitter` (dev) / `EventBridgeEmitter` (AWS, see §8).
-- `emissionlog/` — bounded ring buffer + read/stream.
+- `emitter/` — `LocalEmitter` (dev) / `EventBridgeEmitter` (AWS).
 
-> Naming note: these are the **LMS Resource APIs** (route group/tag `resources`), not "metadata" — the term reads as "data about data," which obscured that these are the LMS endpoints.
+(No SSE/emission-log module — the persistent, cross-system emission view is the Admin UI's, reading the Orchestrator's execution log per the boundary matrix §6.)
 
-## 3. Event model (`libs/events`)
+### 5.2 Local vs AWS
 
-Canvas Live Events–style `{ metadata, body }` envelope; `metadata` adds `correlation_id` (one per Action run) and `action_id` as additive POC traceability fields. Three event types — `skill_mastered` (`learning_outcome_result_created`), `course_completed` (incl. final grade), `badge_awarded`. No `credential_eligible`. Bodies mirror Canvas where one exists, POC-defined for `badge_awarded`. Every body id resolves against the LMS Resource APIs; the builder fails fast on an unresolvable id. The producer owns these schemas (source of truth); TS types, if needed, generate into `packages/event-contracts/`.
+The bus is behind an `Emitter` interface: `LocalEmitter` captures envelopes in-process (dev/tests, no AWS); `EventBridgeEmitter` does `PutEvents` and deploys as the FastAPI service on Lambda. The same abstraction lets tests assert on emitted envelopes without a bus. (Infra via CDK — not yet built.)
 
-## 4. Actions & bulk emission
+### 5.3 Audit & traceability
 
-The catalog's top-level object is a **Course**, which *contains* **Actions**. An Action emits 1..N events of one type for **one learner** or **all enrolled learners**. Action availability depends on course kind (standard vs digital-credential-supported) — see [Event Producer §3](../2_requirements/mock-lms-event-producer.md).
+Every emission carries `correlation_id` + `action_id` + a unique `event_id`, propagated to the bus, so the Orchestrator's execution log (ADR-0011 / boundary matrix §6) — surfaced in the Admin UI — ties back to the exact Action a presenter triggered.
 
-Emission control API:
+---
 
-```
-POST /demo/courses/{course_id}/actions     # run an Action
-  body: { "action": "submit_skill_mastery", "outcome_id": "...", "scope": "one"|"all", "user_id": "..." (when scope=one) }
-  → 200 { "correlation_id", "emissions": [ { emission_id, envelope } ... ] }
+## 6. Phasing — MVP happy path first
 
-POST /demo/reset                            # clear emission state for a clean re-run
-GET  /demo/courses                          # list courses + the Actions each offers
-GET  /demo/emissions?since=<cursor>         # backfill for the UI
-GET  /demo/stream                           # SSE live feed (§5)
-```
+The Phase 1 slice — a working end-to-end pipe with the LLM Decision Services and transformation loops stubbed — is defined authoritatively in [Phase 1 POC Slice Requirements](../2_requirements/phase-1-poc-slice.md). In short: drive one happy event from the Mock LMS through Event Consumer → Orchestrator (which fills the required OBv3 fields and stubs the offloaded Decision Service work) → Delivery Router → LearnCard Issuer → wallet, before any LLM decisioning exists.
 
-One `correlation_id` per Action run, stamped into every event it emits. A bulk Action emits one event per enrolled learner; each event gets a fresh `event_id`.
+From the **Mock LMS's** perspective specifically: Phase 1 needs only the **happy** event variants (competency mastery / passing grade / accepted badge) plus the LMS Resource APIs the Context Builder reads. The **edge** variants (sub-competency, failing grade, unaccepted badge) and the full event matrix (§2) come online in Phase 2+, when the real LLM Decision Services and the two-loop transformation pipeline replace the stubs and the Workflow Actions planner's non-delivery branches become testable.
 
-## 5. Real-time feed (SSE)
+Detailed, step-by-step happy-path test procedures will live under `4_operations/` once Phase 1 is built.
 
-The live feed uses **Server-Sent Events** (`GET /demo/stream`): the lightest transport that gives a genuine real-time, multi-viewer stream (presenter + audience screens), and it composes with static S3+CloudFront hosting. The handler tails the in-memory emission log by cursor and pushes an `emission` event per new record, with periodic keepalives; `GET /demo/emissions?since=` provides backfill. The triggering client may optimistically echo its own emission and reconcile by `emission_id`. (API Gateway WebSockets remain a documented upgrade path if robust multi-client fan-out is later needed.)
+---
 
-## 6. UI design (`apps/mock-lms`)
-
-Course-centric console (see [UI requirements](../2_requirements/mock-lms-ui.md)): pick a course → view modules → Action buttons in context (skill-mastery at the relevant module; final-grade/award-badge at the course level), each runnable for one or all learners. A live SSE timeline shows emissions with raw-envelope view and copyable correlation ids. Static SPA on S3 + CloudFront.
-
-## 7. Data: generate → capture → replay
-
-A **seeded Faker generator** (`mock-lms-generate`) builds the catalog with deterministic, **logically linked ids** (course → modules → outcomes → aligned assignments → submissions → results), guarantees a primary happy path, and uses no wall-clock — so a given seed yields byte-identical output. Its output is **captured to committed `fixtures/*.json`**; the runtime loads that frozen snapshot read-only and never runs the generator. `MOCK_LMS_FIXTURES_DIR` can point at a larger generated set in gitignored `generated-fixtures/`.
-
-This gives two repeatability guarantees: source data identical every run (frozen snapshot → deterministic APIs), and emitted events fresh-id'd per run over stable business keys.
-
-## 8. Local vs AWS
-
-The bus is behind an `Emitter` interface: `LocalEmitter` captures envelopes in-process (dev/tests, no AWS); `EventBridgeEmitter` does `PutEvents` and deploys as the FastAPI service on Lambda behind API Gateway. The same abstraction lets tests assert on emitted envelopes without a bus. (Infra via CDK — not yet built.)
-
-## 9. Auth
-
-CloudFront-layer per ADR-0002 (decided — Cognito was considered and not chosen), resolved in a single dependency so the issuer could change cheaply if that ever changes. A **single demo user** with full capability — no instructor/admin split (it added no functionality for the POC).
-
-## 10. Build order
+## 7. Build order
 
 1. `libs/events`: envelope + 3 event-type schemas.
-2. `services/mock-lms`: catalog + generator + LMS Resource APIs + `LocalEmitter` + emission API (Actions).
-3. Seed catalog: both course kinds, multiple learners.
-4. SSE feed + emission log.
-5. `apps/mock-lms`: course view → Action triggers → live timeline.
+2. `services/mock-lms`: catalog + generator + LMS Resource APIs + `LocalEmitter` + emission API (Actions), returning the envelope synchronously.
+3. Assemble catalog: import a demo subset of the roster CSVs (courses/learners/enrollments) + generate the academic/credential layer — both course kinds + **both variants of each event** (happy: competency mastery / passing / accepted-fetchable badge; edge: sub-competency / failing / unaccepted badge).
+4. `apps/mock-lms`: course view → inspect (modules/submissions) → Action triggers → emitted-envelope confirmation.
+5. Phase 1 end-to-end happy path with the middle stubbed (§6). This spans the downstream components the slice needs, in **dependency order** — the **Orchestrator is built last**, once the services it coordinates exist:
+   1. **Event Consumer** — ingress + idempotency, starts a workflow run.
+   2. **Context Builder** — deterministic source-data fetch from the LMS Resource APIs.
+   3. **LearnCard Profile Resolver** — resolves the learner's wallet profile (the delivery recipient).
+   4. **LearnCard Issuer Adapter** — issues (signs) the credential.
+   5. **LearnCard Wallet Adapter** — delivers the badge to the learner's wallet.
+   6. **Delivery Router** — routes the issued credential to the correct delivery target/adapter (ADR-0016).
+   7. **Orchestrator** — built last; runs the slice end-to-end, fills the required OBv3 fields with placeholder data, and stubs the offloaded Decision Service jobs.
 6. `EventBridgeEmitter` + CDK infra; deploy.
 7. CloudFront-layer auth (ADR-0002).
 
-## 11. Testing
+## 8. Open questions
 
-Per the pyramid (AGENTS.md): unit tests for builders/schemas/catalog; API tests (FastAPI `TestClient`) for the Resource APIs and emission/Actions; happy-path e2e (Playwright) only. `LocalEmitter` captures envelopes so emission tests need no bus. Generator tests assert determinism + the guaranteed happy path. Tooling: `pytest`, `ruff`, `mypy --strict` (per AGENTS.md).
+- **Account provisioning for delivery:** the downstream wallet may require the mock learner to already have an account before a badge can be delivered. The roster CSVs give us concrete learner emails, so we'd fix a handful of those as the demo learners and pre-create their wallet accounts. To be confirmed when we wire delivery.
+- **Where the happy-path test lives:** §6 points at [`phase-1-poc-slice.md`](../2_requirements/phase-1-poc-slice.md) for the slice definition; the detailed end-to-end test steps will be a `4_operations/` doc when Phase 1 is built.
+- **Rubric fidelity:** how much rubric detail the transformation pipeline actually needs in a badge before we over-model the rubric endpoint.
 
-## 12. Persistence
+## 9. References
 
-- **Catalog:** built from the committed snapshot at startup; in-memory, read-only.
-- **Emission log:** in-memory ring (live feed) + optional DynamoDB for replay (matches the AWS diagram's store; in-memory suffices for the POC).
-
-Generated artifacts (`audit-output/`, `execution-traces/`, `logs/`, `*.db`, `generated-fixtures/`) stay gitignored per AGENTS.md; the canonical `fixtures/` snapshot is committed.
+- [POC Component Boundary Matrix](./poc-component-boundaries.md) — component names, ownership boundaries, stores
+- [Target POC Requirements](../2_requirements/target-poc-requirements.md) · [Target POC Architecture](./architecture/target-poc-architecture.md) — current working system-level requirements & architecture this design aligns to
+- [ADR-0012 MCP Client Layer Deferred](../decisions/0012-mcp-client-layer-deferred.md)
+- Requirements: [Event Producer](../2_requirements/mock-lms-event-producer.md), [LMS Resource APIs](../2_requirements/mock-lms-apis.md), [Demo UI](../2_requirements/mock-lms-ui.md)
+- [ADR-0002 Frontend Architecture](../decisions/0002-frontend-architecture.md)
+- [ADR-0003 Programming Language](../decisions/0003-programming-language.md)
+- [ADR-0004 LIF Component Usage](../decisions/0004-lif-usage.md)
+- [ADR-0007 LLM Decision Service Decomposition](../decisions/0007-llm-decision-service-decomposition.md)
+- [ADR-0008 Transformation Mapping Service Decomposition](../decisions/0008-transformation-mapping-service-decomposition.md)
+- [ADR-0009 Workflow Actions Orchestration Model](../decisions/0009-workflow-actions-orchestration-model.md)
+- [ADR-0011 Orchestration Runtime Technology](../decisions/0011-orchestration-runtime-technology.md)
