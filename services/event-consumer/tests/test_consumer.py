@@ -10,8 +10,8 @@ def test_new_event_creates_execution_and_captures_handoff(store, skill_event):
     result = consumer.process(skill_event(), store)
     assert result.status == "created"
     assert result.execution_id and result.execution_id.startswith("exec_")
-    # The initial execution record and the Orchestrator handoff are both inspectable.
-    assert store.get_execution(result.execution_id)["status"] == "created"
+    # The execution status advances past 'created' once the handoff completes.
+    assert store.get_execution(result.execution_id)["status"] == "handoff_captured"
     handoff = store.get_handoff(result.execution_id)
     assert handoff["envelope"]["metadata"]["event_id"] == "evt_1"
 

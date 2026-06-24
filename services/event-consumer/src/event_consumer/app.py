@@ -1,8 +1,9 @@
 """FastAPI application factory for the Event Consumer.
 
 Local ingress stands in for the EventBridge → Lambda trigger (ADR-0015): the
-Mock LMS LocalEmitter POSTs envelopes to ``/ingest`` when EVENT_CONSUMER_URL is
-set. Malformed envelopes are acked with 422 (not retried); valid ones return the
+Mock LMS LocalEmitter POSTs envelopes to ``/ingest`` when its
+``MOCK_LMS_EVENT_CONSUMER_URL`` is set (implemented in the Mock LMS service, #4).
+Malformed envelopes are acked with 422 (not retried); valid ones return the
 ingress decision.
 """
 

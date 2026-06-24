@@ -81,6 +81,14 @@ class SqliteStore:
         )
         self._conn.commit()
 
+    def set_status(self, execution_id: str, status: str) -> None:
+        """Advance the workflow status (e.g. ``handoff_captured`` / ``handoff_sent``)."""
+        self._conn.execute(
+            "UPDATE workflow_execution SET status = ? WHERE execution_id = ?",
+            (status, execution_id),
+        )
+        self._conn.commit()
+
     def capture_handoff(self, execution_id: str, envelope: dict[str, Any]) -> None:
         self._conn.execute(
             "INSERT INTO orchestrator_outbox (execution_id, envelope, created_at) VALUES (?, ?, ?)",
@@ -102,8 +110,9 @@ class SqliteStore:
         (FR-EC-23). Returns the number of idempotency records cleared."""
         row = self._conn.execute("SELECT COUNT(*) AS n FROM ingress_idempotency").fetchone()
         cleared = row["n"]
-        for table in ("ingress_idempotency", "workflow_execution", "orchestrator_outbox"):
-            self._conn.execute(f"DELETE FROM {table}")  # noqa: S608 (fixed table names)
+        self._conn.execute("DELETE FROM ingress_idempotency")
+        self._conn.execute("DELETE FROM workflow_execution")
+        self._conn.execute("DELETE FROM orchestrator_outbox")
         self._conn.commit()
         return int(cleared)
 

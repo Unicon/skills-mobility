@@ -13,11 +13,16 @@ and [`docs/2_requirements/event-consumer.md`](../../docs/2_requirements/event-co
 ```
 src/event_consumer/
   app.py        FastAPI factory + POST /ingest, POST /reset, /healthz
-  config.py     settings (EVENT_CONSUMER_DB_PATH)
+  config.py     settings (EVENT_CONSUMER_DB_PATH, EVENT_CONSUMER_ORCHESTRATOR_URL)
   identity.py   envelope validation (FR-EC-9) + idempotency key derivation (FR-EC-11)
   store.py      SQLite store: ingress_idempotency + workflow_execution + orchestrator_outbox
-  consumer.py   ingress logic: validate → claim identity → create execution → capture handoff
+  consumer.py   ingress logic: validate → claim identity → create execution → hand off
+  handoff.py    Orchestrator handoff seam: CaptureHandoff (local) / HttpHandoff (POST /run-workflow)
 ```
+
+Configuration via env (see [`.env.example`](./.env.example)): `EVENT_CONSUMER_DB_PATH`
+and `EVENT_CONSUMER_ORCHESTRATOR_URL` (set the latter to forward handoffs to the
+real Orchestrator; unset = capture mode).
 
 ## Ingress contract
 
@@ -43,8 +48,37 @@ logical store split maps to DynamoDB tables in AWS.
 ## Run / test
 
 ```bash
-uv run event-consumer            # serves on :8200
+uv sync --all-packages           # install workspace members (required before first run)
+uv run event-consumer            # serves on :8200 — interactive docs at http://127.0.0.1:8200/docs
 uv run pytest services/event-consumer
 uv run ruff check services/event-consumer
 uv run mypy services/event-consumer/src
 ```
+
+## Manual smoke test (end-to-end)
+
+Confirms the Mock LMS → Event Consumer integration and the ingress decision (design §7):
+
+```bash
+# 1. Start the Event Consumer (terminal 1)
+uv sync --all-packages
+uv run event-consumer                                          # :8200
+
+# 2. Start the Mock LMS pointed at it (terminal 2)
+MOCK_LMS_EVENT_CONSUMER_URL=http://127.0.0.1:8200 uv run mock-lms   # :8000
+```
+
+Trigger an event from the Mock LMS UI (or `POST /demo/courses/{id}/actions`), then
+inspect the result:
+
+- **Logs** — the Event Consumer logs event receipt, the idempotency decision, and
+  the new execution id (`ingest created: execution_id=… status=handoff_captured`).
+- **Swagger** — POST envelopes manually at `http://127.0.0.1:8200/docs`.
+- **SQLite** — confirm the event landed:
+
+  ```bash
+  sqlite3 event-consumer.db "SELECT execution_id, event_type, status FROM workflow_execution;"
+  sqlite3 event-consumer.db "SELECT execution_id FROM orchestrator_outbox;"   # capture mode
+  ```
+
+Re-running the same scenario? `POST /reset` (or the Mock LMS Reset) clears state first.
