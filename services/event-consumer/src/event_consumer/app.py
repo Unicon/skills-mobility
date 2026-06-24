@@ -60,6 +60,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
 
 def run() -> None:
+    import logging
+
     import uvicorn
 
-    uvicorn.run(create_app(), host="127.0.0.1", port=8200)
+    settings = get_settings()
+    # Configure the root logger so the consumer's INFO logs are actually emitted
+    # (uvicorn doesn't do this for app loggers). Level via EVENT_CONSUMER_LOG_LEVEL.
+    logging.basicConfig(level=settings.log_level.upper())
+    uvicorn.run(create_app(settings), host="127.0.0.1", port=8200)

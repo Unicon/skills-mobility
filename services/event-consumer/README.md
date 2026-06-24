@@ -20,9 +20,11 @@ src/event_consumer/
   handoff.py    Orchestrator handoff seam: CaptureHandoff (local) / HttpHandoff (POST /run-workflow)
 ```
 
-Configuration via env (see [`.env.example`](./.env.example)): `EVENT_CONSUMER_DB_PATH`
-and `EVENT_CONSUMER_ORCHESTRATOR_URL` (set the latter to forward handoffs to the
-real Orchestrator; unset = capture mode).
+Configuration via env (see [`.env.example`](./.env.example)): `EVENT_CONSUMER_DB_PATH`,
+`EVENT_CONSUMER_ORCHESTRATOR_URL` (set to forward handoffs to the real Orchestrator;
+unset = capture mode), and `EVENT_CONSUMER_LOG_LEVEL` (default `INFO`; set `WARNING`
+to quiet the ingress logs or `DEBUG` for more). The entrypoint calls
+`logging.basicConfig()` at that level so the ingress logs are actually emitted.
 
 ## Ingress contract
 

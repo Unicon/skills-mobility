@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     # When set, hand off to the real Orchestrator over HTTP; else capture-mode (ADR-0015).
     orchestrator_url: str | None = None
 
+    # Root log level for the service entrypoint (e.g. INFO, DEBUG, WARNING).
+    log_level: str = "INFO"
+
 
 @lru_cache
 def get_settings() -> Settings:
