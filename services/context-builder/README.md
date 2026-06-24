@@ -13,7 +13,7 @@ and requirements [`docs/2_requirements/context-builder.md`](../../docs/2_require
 
 ```
 src/context_builder/
-  app.py             FastAPI factory + POST /internal/build-context + /healthz
+  app.py             FastAPI factory + POST /build-context + /healthz
   config.py          settings (CONTEXT_BUILDER_LMS_BASE_URL)
   builder.py         event → profile selection → bundle / failure assembly
   engine.py          fetch-profile execution (param resolution, condition, select, for_each)
@@ -34,7 +34,7 @@ It reads the Mock LMS Resource APIs, so run `uv run mock-lms` (:8000) alongside 
 
 ```bash
 # Build a context bundle for an event envelope
-curl -X POST localhost:8100/internal/build-context -H 'content-type: application/json' \
+curl -X POST localhost:8100/build-context -H 'content-type: application/json' \
   -d '{"execution_id":"wf_1","event":{ ... emitted envelope ... }}'
 ```
 

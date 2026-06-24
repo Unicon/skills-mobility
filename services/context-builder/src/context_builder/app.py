@@ -24,7 +24,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.profiles = load_profiles()
     app.state.lms_client = HttpxLMSClient(settings.lms_base_url)
 
-    @app.post("/internal/build-context")
+    @app.post("/build-context")
     def build(request: BuildRequest) -> dict[str, Any]:
         result = build_context(request, app.state.lms_client, app.state.profiles)
         return result.model_dump()
