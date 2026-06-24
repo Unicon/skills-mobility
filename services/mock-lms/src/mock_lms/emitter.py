@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+import httpx
 from skills_mobility_events import LiveEventEnvelope
 
 
@@ -21,15 +22,28 @@ class Emitter(Protocol):
 
 
 class LocalEmitter:
-    """Captures emitted envelopes in process. The default for dev and tests."""
+    """Captures emitted envelopes in process. The default for dev and tests.
+
+    When ``forward_url`` is set it also POSTs each envelope to the Event
+    Consumer's ``/ingest`` — the local stand-in for the EventBridge → Lambda
+    trigger (ADR-0015). In-process capture is retained either way so tests and
+    the UI reset can still read ``emitted``.
+    """
 
     target = "local-bus"
 
-    def __init__(self) -> None:
+    def __init__(
+        self, forward_url: str | None = None, client: httpx.Client | None = None
+    ) -> None:
         self.emitted: list[LiveEventEnvelope] = []
+        self._client = client or (
+            httpx.Client(base_url=forward_url, timeout=30.0) if forward_url else None
+        )
 
     def emit(self, envelope: LiveEventEnvelope) -> None:
         self.emitted.append(envelope)
+        if self._client is not None:
+            self._client.post("/ingest", json=envelope.model_dump(mode="json"))
 
 
 class EventBridgeEmitter:

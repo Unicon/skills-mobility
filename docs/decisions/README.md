@@ -14,15 +14,16 @@
 | [0006](./0006-other-open-source-usage.md) | Other Open Source Usage | Accepted |
 | [0007](./0007-llm-decision-service-decomposition.md) | LLM Decision Service Decomposition (delivery targets / transformation mappings / workflow actions) | Accepted |
 | [0008](./0008-transformation-mapping-service-decomposition.md) | Transformation Mapping Service Decomposition | Accepted |
-| [0009](./0009-workflow-actions-orchestration-model.md) | Workflow Actions Orchestration Model: Peer vs. Hierarchical | Accepted |
+| [0009](./0009-workflow-actions-orchestration-model.md) | Workflow Actions Orchestration Model: Two-Stage Hierarchical Planning | Accepted |
 | [0010](./0010-llm-model-access-strategy.md) | LLM Model Access Strategy | Accepted |
 | [0011](./0011-orchestration-runtime-technology.md) | Orchestration Runtime Technology | Accepted |
 | [0012](./0012-mcp-client-layer-deferred.md) | MCP Client Layer Deferred from Initial POC Scope | Accepted |
 | [0013](./0013-llm-decision-service-testing-approach.md) | LLM Decision Service Testing Approach | Proposed |
 | [0014](./0014-poc-storage-strategy.md) | POC Storage Strategy | Accepted |
 | [0015](./0015-orchestrator-execution-model.md) | Event Consumer and Orchestrator Worker Execution Model (Lambda + SQS) | Accepted |
+| [0016](./0016-delivery-routing-topology.md) | Delivery Routing Topology and Adapter Boundaries | Proposed |
 
 ## Conventions
 
 - Filename: `NNNN-short-title.md`, numbered sequentially.
-- ADRs are **immutable history**: don't move or delete them. To retire one, set `Status: Superseded by ADR-XXXX` and add the replacement.
+- ADRs in this repo are maintained **in place**. When a decision evolves, update the existing ADR so it stays coherent with the current architecture and index.
