@@ -27,7 +27,7 @@ def test_http_context_builder_posts_and_returns_bundle():
     cb = HttpContextBuilderClient("http://cb", client=client)
     bundle = cb.build_context("e1", {"metadata": {"event_name": "learning_outcome_result_created"}})
 
-    assert captured["path"] == "/internal/build-context"
+    assert captured["path"] == "/build-context"
     assert captured["body"] == {
         "execution_id": "e1",
         "event": {"metadata": {"event_name": "learning_outcome_result_created"}},

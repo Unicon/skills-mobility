@@ -84,16 +84,16 @@ class StubDeliveryRouter:
 
 
 class HttpContextBuilderClient:
-    """Real Context Builder client — POSTs to its /internal/build-context. The
-    CB returns either a bundle or a failure response (both 200); the runner
-    inspects the body, so this just returns the parsed JSON."""
+    """Real Context Builder client — POSTs to its /build-context. The CB returns
+    either a bundle or a failure response (both 200); the executor path inspects
+    the body, so this just returns the parsed JSON."""
 
     def __init__(self, base_url: str, client: httpx.Client | None = None) -> None:
         self._client = client or httpx.Client(base_url=base_url, timeout=30.0)
 
     def build_context(self, execution_id: str, event: dict[str, Any]) -> dict[str, Any]:
         resp = self._client.post(
-            "/internal/build-context", json={"execution_id": execution_id, "event": event}
+            "/build-context", json={"execution_id": execution_id, "event": event}
         )
         body: dict[str, Any] = resp.json()
         return body

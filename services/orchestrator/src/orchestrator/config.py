@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,8 +15,11 @@ class Settings(BaseSettings):
     db_path: str = "orchestrator.db"
     # Issuer identity stamped into the stubbed OBv3 credential.
     issuer_id: str = "did:web:poc.skills-mobility.example"
-    # Delivery configuration handle attached to the execution context (design §4).
-    delivery_config_ref: str = "phase1-learncard-default"
+    # Shared LearnCard delivery config (resolver + router), so it carries the
+    # LEARNCARD_ prefix rather than ORCHESTRATOR_ (per #25 design §4).
+    delivery_config_ref: str = Field(
+        default="phase1-learncard-default", validation_alias="LEARNCARD_DELIVERY_CONFIG_REF"
+    )
     # When set, each seam calls the real service over HTTP; else the Phase-1 stub.
     context_builder_url: str | None = None
     profile_resolver_url: str | None = None  # #19 — unbuilt; HTTP client wires in later
