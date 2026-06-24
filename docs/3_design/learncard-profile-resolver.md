@@ -25,7 +25,7 @@ The resolver is invoked by the Orchestrator directly, not through the Delivery R
 Recommended endpoint:
 
 ```text
-POST /internal/resolve-learncard-profile
+POST /resolve-learncard-profile
 ```
 
 Recommended request shape:

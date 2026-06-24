@@ -7,6 +7,7 @@
 | Doc | Scope |
 |---|---|
 | [`event-consumer.md`](./event-consumer.md) | Workflow ingress boundary: envelope validation, ingress idempotency, execution creation, and handoff to the Orchestrator |
+| [`orchestrator.md`](./orchestrator.md) | Workflow execution runtime: context handoff, plan acquisition, step execution, and correlated execution records across Phase 1 and the target POC |
 | [`poc-requirements.md`](./poc-requirements.md) | Original stakeholder-provided POC requirements, preserved as the starting-point brief even where later ADRs and design docs diverge |
 | [`target-poc-requirements.md`](./target-poc-requirements.md) | Current working system-level requirements for the target POC, reconciled with accepted ADRs and current design docs |
 | [`phase-1-poc-slice.md`](./phase-1-poc-slice.md) | First implementation slice across components: a fast end-to-end pipeline for `skill_mastered` and `course_completed` that later phases can build on |

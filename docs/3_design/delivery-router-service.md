@@ -22,7 +22,7 @@ The simplest useful initial shape is a synchronous internal HTTP/JSON service:
 
 ```
 Orchestrator
-  -> POST /internal/delivery-actions
+  -> POST /delivery-actions
   -> Delivery Router dispatcher
   -> adapter-specific client
   -> target adapter
@@ -37,7 +37,7 @@ One router request should correspond to one delivery action invocation. Retry at
 Recommended endpoint:
 
 ```text
-POST /internal/delivery-actions
+POST /delivery-actions
 ```
 
 Recommended request shape:
@@ -124,7 +124,7 @@ If the downstream adapter fails, the router should preserve structured failure d
 ## 7. Testing
 
 - Unit tests for envelope validation, dispatch rules, timeout/retry policy selection, and result normalization
-- API tests for `POST /internal/delivery-actions`
+- API tests for `POST /delivery-actions`
 - Integration tests against fake adapter endpoints
 - No live vendor dependency in routine tests; adapters should be stubbed or mocked at the router boundary
 

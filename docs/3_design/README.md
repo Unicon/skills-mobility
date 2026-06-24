@@ -8,6 +8,7 @@
 |---|---|
 | [`poc-component-boundaries.md`](./poc-component-boundaries.md) | Top-level boundary matrix for the target POC architecture: component ownership, non-ownership, inputs/outputs, dependencies, observability model, and supporting stores |
 | [`event-consumer.md`](./event-consumer.md) | Design for the **Event Consumer** ingress boundary — runtime shape, logical modules, idempotency behavior, and Orchestrator handoff |
+| [`orchestrator.md`](./orchestrator.md) | Design for the **Orchestrator** — plan acquisition, constrained step execution, Phase 1 stub seams, execution state, and local-vs-AWS invocation model |
 | [`mock-lms.md`](./mock-lms.md) | Design for the **Mock LMS** (Event Producer + LMS Resource APIs + Demo UI) — modules, event model, Actions, data model (CSV roster + generated layer), phasing, local-vs-AWS, build order |
 | [`context-builder.md`](./context-builder.md) | Design for the **Context Builder** — deterministic fetch profiles, chained LMS lookups, bundle assembly, and local-vs-AWS behavior |
 | [`delivery-router-service.md`](./delivery-router-service.md) | Design for the Delivery Router Service — internal contract, dispatch model, shared delivery mechanics, and adapter integration points |
@@ -20,7 +21,7 @@
 
 The stakeholder baseline in [`../2_requirements/poc-requirements.md`](../2_requirements/poc-requirements.md) is intentionally preserved. Current design docs should align to [`../2_requirements/target-poc-requirements.md`](../2_requirements/target-poc-requirements.md) and the ADRs rather than assuming the stakeholder baseline must be rewritten.
 
-Component-specific design docs currently cover the **Mock LMS**, the **Context Builder**, the **Delivery Router Service**, the **LearnCard Profile Resolver**, the **LearnCard Issuer Adapter**, and the **LearnCard Wallet Adapter**. Follow-up component docs should stay consistent with the boundary matrix as they are added. The Mock LMS *requirements* are split across three docs in [`../2_requirements/`](../2_requirements/) (event-producer / apis / ui); design is kept as one document because the parts interact closely.
+Component-specific design docs currently cover the **Orchestrator**, the **Mock LMS**, the **Context Builder**, the **Delivery Router Service**, the **LearnCard Profile Resolver**, the **LearnCard Issuer Adapter**, and the **LearnCard Wallet Adapter**. Follow-up component docs should stay consistent with the boundary matrix as they are added. The Mock LMS *requirements* are split across three docs in [`../2_requirements/`](../2_requirements/) (event-producer / apis / ui); design is kept as one document because the parts interact closely.
 
 ### `architecture/`
 
