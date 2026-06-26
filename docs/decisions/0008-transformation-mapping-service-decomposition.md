@@ -225,7 +225,7 @@ This decision should be revisited if:
 ## References
 
 - [ADR 0007: LLM Decision Service Decomposition](0007-llm-decision-service-decomposition.md)
-- [ADR 0005: Schema Mapping Language](0005-schema-mapping-langauge.md)
+- [ADR 0005: Schema Mapping Language](0005-schema-mapping-language.md)
 - [ADR 0004: LIF Component Usage in the Initial POC](0004-lif-usage.md)
 - [LIF Microservices Overview](https://github.com/LIF-Initiative/lif-core/blob/main/docs/overview/services-overview.md)
 - [DCC Credential Co-Writer (Live Tool)](https://co-writer.dcconsortium.org/)

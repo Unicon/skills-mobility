@@ -3,6 +3,8 @@
 - Status: Proposed
 - Date: 2026-06-18
 
+> **Note (2026-06-25):** This ADR scopes the evaluation corpus and scorecard to the two loops defined in ADR-0008. ADR-0017 introduces a third transformation phase for the primary POC path. References to "Loop 1 and Loop 2" and "both transformation loops" in this ADR should be read as the historical two-loop baseline; the evaluation corpus and per-phase scorecard rows will need to be extended accordingly.
+
 ## Context
 
 ADRs 0007, 0008, and 0009 define **four LLM Decision Service types** in the POC:
