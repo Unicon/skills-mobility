@@ -2,7 +2,7 @@
 
 Status: Draft
 Date: 2026-06-25
-Related: [Requirements](../2_requirements/admin-ui.md) · [Mock LMS Design](./mock-lms.md) · [Orchestrator Design](./orchestrator.md) · [Event Consumer Design](./event-consumer.md) · [POC Component Boundary Matrix](./poc-component-boundaries.md) · [ADR-0001](../decisions/0001-repo-structure.md) · [ADR-0002](../decisions/0002-frontend-architecture.md) · [ADR-0014](../decisions/0014-poc-storage-strategy.md) · [ADR-0017](../decisions/0017-admin-ui-frontend-stack.md)
+Related: [Requirements](../2_requirements/admin-ui.md) · [Mock LMS Design](./mock-lms.md) · [Orchestrator Design](./orchestrator.md) · [Event Consumer Design](./event-consumer.md) · [POC Component Boundary Matrix](./poc-component-boundaries.md) · [ADR-0001](../decisions/0001-repo-structure.md) · [ADR-0002](../decisions/0002-frontend-architecture.md) · [ADR-0014](../decisions/0014-poc-storage-strategy.md) · [ADR-0018](../decisions/0018-admin-ui-frontend-stack.md)
 
 ## 1. Overview
 
@@ -45,9 +45,11 @@ The Orchestrator executes a run (planner path → executor path, [Orchestrator d
 
 Like `apps/mock-lms`, the dev server proxies API paths to the backend so the SPA is same-origin in development. Vite proxies the Orchestrator read routes (e.g. `/executions`, `/healthz`) to the local Orchestrator (`:8300`). In production the SPA is static on S3 + CloudFront and reaches the Orchestrator read API through the same edge.
 
-### Why polling (MVP)
+### Why polling now, and designed to become SSE
 
-Polling is the lightest transport that works against static S3 + CloudFront hosting and a synchronous Orchestrator that already returns the whole `ExecutionView` per fetch. Because Phase 1 runs the workflow synchronously, a freshly triggered workflow is already terminal by the time the operator pivots to it; polling mainly keeps the list current and supports the later case where execution becomes asynchronous (the [ADR-0015](../decisions/0015-orchestrator-execution-model.md) queue-driven planner/executor split). A pub/sub or SSE push channel is the documented upgrade path if real-time freshness is later needed; it is out of scope for the MVP.
+Polling is the lightest transport that works against static S3 + CloudFront hosting and a synchronous Orchestrator that already returns the whole `ExecutionView` per fetch. Because Phase 1 runs the workflow synchronously, a freshly triggered workflow is already terminal by the time the operator pivots to it — there is no incremental progress to stream, so SSE would earn nothing yet while still requiring an event source on the Orchestrator and an unresolved long-lived-connection story on Lambda + CloudFront.
+
+So the MVP polls **deliberately, behind a seam built for the swap.** The UI consumes executions through a single subscription abstraction (§4); polling is its first implementation. The clean trigger to adopt **SSE** is when the Orchestrator moves to the [ADR-0015](../decisions/0015-orchestrator-execution-model.md) queue-driven planner/executor split and emits per-step progress — at that point execution is asynchronous, a workflow is *worth* watching as it advances, and SSE (server→client only, plain HTTP, composes with static hosting) becomes the natural upgrade. The work below is structured so that swap is a single-file change that never touches the views. WebSockets remain a further option only if robust multi-client fan-out is later needed; the Admin UI is read-only, so SSE is the expected target.
 
 ## 3. Data contract
 
@@ -94,17 +96,28 @@ Two endpoints and two fields the Admin UI needs do not exist yet (Admin UI [FR-A
 
 The Admin UI build is gated on these; see [requirements §9](../2_requirements/admin-ui.md). Until they land, the UI can render levels 2–3 against `GET /executions/{id}` by `execution_id`.
 
-## 4. Polling model
+## 4. Data subscription model (polling now, SSE-ready)
+
+The views never call `fetch` or own a transport. They consume executions through one **subscription seam** — a small hook/store such as `useExecution(id)` (single workflow) and `useExecutionList()` (the list) — whose contract is *"give me the latest `ExecutionView`(s) and tell me when they change."* This is the abstraction the SSE upgrade slots behind; everything else is an implementation detail of the seam, not of the components.
+
+```text
+components ── read ──► subscription seam ──► transport adapter
+  (list, workflow,        useExecution(id)        polling now ─┐
+   step panel)            useExecutionList()       SSE later  ─┴─► Orchestrator read API
+```
+
+**Current implementation — polling adapter:**
 
 - The list view polls `GET /executions` on a fixed interval while mounted.
 - The per-workflow view fetches `GET /executions/{id}` on open and re-polls **only while `status` is non-terminal**, stopping at `completed`/`failed` (Admin UI FR-AU-15).
 - Step detail reads from the in-memory `ExecutionView.steps[]`; no per-step request.
 - Interval is a single tunable constant (target a few seconds, NFR-AU-2); kept conservative since Phase 1 runs are effectively instantaneous.
-- **Upgrade path:** when the Orchestrator moves to the [ADR-0015](../decisions/0015-orchestrator-execution-model.md) async worker model, replace the per-workflow poll with an SSE/WebSocket subscription behind the same view-model — the component contract (an `ExecutionView` stream) does not change.
+
+**The upgrade is contained to the adapter.** When the Orchestrator adopts the [ADR-0015](../decisions/0015-orchestrator-execution-model.md) async worker model and emits per-step progress, the seam grows an SSE adapter (an `EventSource` on a new `GET /executions/{id}/stream`, with the existing `GET` as initial-state + reconnect backfill). The hook contract — an `ExecutionView` that updates over time — is unchanged, so no component, view-model, or test that consumes the seam is touched. Until then, the polling adapter satisfies the same contract. This is the one place a transport decision lives, and it is deliberately drawn so the decision can change later without rippling outward.
 
 ## 5. UI architecture and design system
 
-Per [ADR-0017](../decisions/0017-admin-ui-frontend-stack.md):
+Per [ADR-0018](../decisions/0018-admin-ui-frontend-stack.md):
 
 - **Animation:** **Motion** (`framer-motion` / `motion/react`) — MIT-licensed and free; only the separate Motion+ product is paid and is not needed. Same library `apps/mock-lms` already uses.
 - **Components:** **Radix Primitives** (headless) styled with our own CSS. **Base UI** is an acceptable alternative primitive layer on a per-component basis. No component framework owns the visual layer — our CSS does.
@@ -114,7 +127,7 @@ This keeps the Admin UI consistent with the Mock LMS's hand-authored CSS aesthet
 
 ## 6. Token architecture
 
-A three-layer token system, consumed by both apps and (later) Figma — the layer through which the "mission-control" identity is preserved rather than re-invented ([ADR-0017](../decisions/0017-admin-ui-frontend-stack.md)):
+A three-layer token system, consumed by both apps and (later) Figma — the layer through which the "mission-control" identity is preserved rather than re-invented ([ADR-0018](../decisions/0018-admin-ui-frontend-stack.md)):
 
 1. **Base / primitive** — [Open Props](https://open-props.style) scales (spacing, sizing, type scale, radii, shadows, easings) + [Radix Colors](https://www.radix-ui.com/colors) 12-step light/dark scales. Both are free, pure CSS variables, no Tailwind. Open Props fills what the Mock LMS lacks today (it hand-rolls a handful of values); Radix Colors supplies systematic color ramps.
 2. **Semantic** — our names, mapped onto the base layer: `--bg`, `--panel`, `--gold`, `--live`, the event-type telemetry colors `--evt-*`, and the scale aliases `--space-*`, `--radius-*`, `--text-*`. This is the contract components and both apps consume.
@@ -144,7 +157,7 @@ Three levels (Admin UI [§3](../2_requirements/admin-ui.md)), with steps as mast
 ## 9. Local vs AWS, and auth
 
 - **Local:** Vite dev server proxies the Orchestrator read routes to `:8300`, same-origin like `apps/mock-lms`. The Orchestrator serves from SQLite ([ADR-0014](../decisions/0014-poc-storage-strategy.md)).
-- **AWS:** static SPA on S3 + CloudFront ([ADR-0002](../decisions/0002-frontend-architecture.md)); the read API is the Orchestrator's deployed read surface (DynamoDB-backed store per ADR-0014 in the AWS-shaped target). The polling client is unchanged.
+- **AWS:** static SPA on S3 + CloudFront ([ADR-0002](../decisions/0002-frontend-architecture.md)); the read API is the Orchestrator's deployed read surface (DynamoDB-backed store per ADR-0014 in the AWS-shaped target). The subscription seam's polling adapter is unchanged; an SSE adapter would additionally need a long-lived-connection-capable surface (an open item for the async-execution phase, §4).
 - **Auth:** CloudFront-layer per [ADR-0002](../decisions/0002-frontend-architecture.md), resolved behind a single boundary; a single demo user with full read capability, no role split.
 
 ## 10. Build order
@@ -152,11 +165,12 @@ Three levels (Admin UI [§3](../2_requirements/admin-ui.md)), with steps as mast
 1. `packages/contracts`: the `ExecutionView`/`StepResult` TS types + a typed Orchestrator read client. *(Depends on the prerequisite read-API additions, §3.)*
 2. `packages/ui`: extract tokens (three layers) + the JSON viewer, event-type colors, and copyable-id primitive from `apps/mock-lms`; migrate `apps/mock-lms` onto them.
 3. `apps/admin` scaffold: Vite + React + the shared packages + same-origin dev proxy.
-4. Workflow list + correlation-id pivot (against the list / lookup endpoints).
-5. Per-workflow detail: header, gate-decision panel, step timeline.
-6. Per-step detail panel + raw JSON viewer.
-7. Polling/refresh with terminal-state stop.
+4. The subscription seam (`useExecution`/`useExecutionList`, §4) with its polling adapter and terminal-state stop — established before the views so every feature consumes the seam, not a transport.
+5. Workflow list + correlation-id pivot (against the list / lookup endpoints).
+6. Per-workflow detail: header, gate-decision panel, step timeline.
+7. Per-step detail panel + raw JSON viewer.
 8. CloudFront-layer auth + S3/CloudFront deploy ([ADR-0002](../decisions/0002-frontend-architecture.md)).
+9. *(Later, gated on async Orchestrator execution)* SSE adapter behind the same seam — see §4.
 
 Steps 1–2 (`packages/*` extraction and the `apps/admin` scaffold) are gated on these specs merging and the Orchestrator read-API prerequisites; they are **not** part of the specs PR.
 
@@ -164,7 +178,7 @@ Steps 1–2 (`packages/*` extraction and the `apps/admin` scaffold) are gated on
 
 Per the pyramid ([AGENTS.md](../../AGENTS.md)):
 
-- **Unit** — the view-model/polling logic (terminal-state stop, list reconciliation), the status→token mapping, and the shared JSON viewer / event-type color helpers in `packages/ui`.
+- **Unit** — the subscription seam and its polling adapter (terminal-state stop, list reconciliation) tested against the hook contract so an SSE adapter can later reuse the same tests; the status→token mapping; and the shared JSON viewer / event-type color helpers in `packages/ui`.
 - **Integration** — the typed read client in `packages/contracts` against a faked Orchestrator read API (fixture `ExecutionView`s), including the not-found and correlation-pivot paths.
 - **End-to-end (Playwright)** — happy path only: trigger a workflow (or seed an execution), pivot by `correlation_id`, open the workflow, expand a step, view raw JSON. No exhaustive corner cases.
 

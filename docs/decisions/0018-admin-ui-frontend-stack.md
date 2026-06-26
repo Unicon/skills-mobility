@@ -1,4 +1,4 @@
-# 0017. Admin UI Frontend Stack and Design-Token Architecture
+# 0018. Admin UI Frontend Stack and Design-Token Architecture
 
 - Status: Accepted
 - Date: 2026-06-25

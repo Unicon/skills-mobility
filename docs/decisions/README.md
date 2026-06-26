@@ -22,7 +22,7 @@
 | [0014](./0014-poc-storage-strategy.md) | POC Storage Strategy | Accepted |
 | [0015](./0015-orchestrator-execution-model.md) | Event Consumer and Orchestrator Worker Execution Model (Lambda + SQS) | Accepted |
 | [0016](./0016-delivery-routing-topology.md) | Delivery Routing Topology and Adapter Boundaries | Proposed |
-| [0017](./0017-admin-ui-frontend-stack.md) | Admin UI Frontend Stack and Design-Token Architecture (Radix + Open Props + Radix Colors + Motion; no Tailwind/shadcn) | Accepted |
+| [0018](./0018-admin-ui-frontend-stack.md) | Admin UI Frontend Stack and Design-Token Architecture (Radix + Open Props + Radix Colors + Motion; no Tailwind/shadcn) | Accepted |
 
 ## Conventions
 

@@ -2,7 +2,7 @@
 
 Status: Draft
 Date: 2026-06-25
-Related: [Requirements overview](./README.md) · [Mock LMS UI](./mock-lms-ui.md) · [Orchestrator Requirements](./orchestrator.md) · [Event Consumer Requirements](./event-consumer.md) · [Design](../3_design/admin-ui.md) · [ADR-0002](../decisions/0002-frontend-architecture.md) · [ADR-0009](../decisions/0009-workflow-actions-orchestration-model.md) · [ADR-0014](../decisions/0014-poc-storage-strategy.md) · [ADR-0015](../decisions/0015-orchestrator-execution-model.md) · [ADR-0017](../decisions/0017-admin-ui-frontend-stack.md)
+Related: [Requirements overview](./README.md) · [Mock LMS UI](./mock-lms-ui.md) · [Orchestrator Requirements](./orchestrator.md) · [Event Consumer Requirements](./event-consumer.md) · [Design](../3_design/admin-ui.md) · [ADR-0002](../decisions/0002-frontend-architecture.md) · [ADR-0009](../decisions/0009-workflow-actions-orchestration-model.md) · [ADR-0014](../decisions/0014-poc-storage-strategy.md) · [ADR-0015](../decisions/0015-orchestrator-execution-model.md) · [ADR-0018](../decisions/0018-admin-ui-frontend-stack.md)
 
 ## 1. Purpose
 
@@ -30,7 +30,7 @@ Two facts about the current Orchestrator anchor this spec:
 
 - **FR-AU-1** The Admin UI SHALL treat the Orchestrator's read API over its execution store as its sole data source. It SHALL NOT compute, infer, or synthesize workflow state the Orchestrator does not provide.
 - **FR-AU-2** For the MVP, the Admin UI SHALL obtain fresh data by **polling** the Orchestrator read API. A live in-flight workflow SHALL be reflected by periodic re-fetch, not by a push channel.
-- **FR-AU-3** A pub/sub or server-push model (e.g. SSE or WebSockets) for real-time freshness is a documented **later upgrade** and is **out of scope** for the MVP (see [§8](#8-out-of-scope)).
+- **FR-AU-3** The Admin UI SHALL consume execution data through a transport-agnostic subscription seam so that polling can later be replaced by a **server-push** transport without changing the views (see [design §4](../3_design/admin-ui.md)). **SSE** is the intended upgrade — server→client only, which suits this read-only surface; the trigger is the Orchestrator gaining asynchronous, per-step-progress execution ([ADR-0015](../decisions/0015-orchestrator-execution-model.md)). The push transport itself is **out of scope** for the MVP (see [§8](#8-out-of-scope)).
 
 ## 3. Information architecture
 
@@ -86,7 +86,7 @@ The Orchestrator today exposes only `GET /executions/{execution_id}` and does no
 - **NFR-AU-1 (Lightweight):** React SPA deployed as static assets on S3 + CloudFront, the same model as `apps/mock-lms` ([ADR-0002](../decisions/0002-frontend-architecture.md)).
 - **NFR-AU-2 (Freshness):** With polling, an in-progress workflow SHOULD reflect new state within a few seconds of the operator opening or holding the view. Exact interval is a design choice ([design §4](../3_design/admin-ui.md)).
 - **NFR-AU-3 (Legible):** Every workflow, step, decision, and result is inspectable as raw JSON and tied to copyable ids.
-- **NFR-AU-4 (Consistent identity):** The Admin UI SHALL re-express the Mock LMS "mission-control" aesthetic through shared design tokens rather than inventing a separate visual identity ([ADR-0017](../decisions/0017-admin-ui-frontend-stack.md)).
+- **NFR-AU-4 (Consistent identity):** The Admin UI SHALL re-express the Mock LMS "mission-control" aesthetic through shared design tokens rather than inventing a separate visual identity ([ADR-0018](../decisions/0018-admin-ui-frontend-stack.md)).
 
 ## 8. Out of scope
 
