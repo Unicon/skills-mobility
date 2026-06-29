@@ -10,6 +10,13 @@ The **Admin UI** (`apps/admin`) is the POC's operability and observability surfa
 
 For a stakeholder demo, the presenter triggers a workflow in the Mock LMS, copies the run's `correlation_id` (Mock LMS [FR-UI8](./mock-lms-ui.md)), and follows that *same* workflow here — seeing how the Orchestrator planned and executed it.
 
+**Two identifiers, deliberately distinct.** They are not the same value and serve different roles:
+
+- **`correlation_id`** — stamped by the Mock LMS, one per Action run, and carried on every event that run emits ([Mock LMS design §4](../3_design/mock-lms.md)). It is the *demo-visible* id the presenter copies and the thread that ties an emission to everything downstream.
+- **`execution_id`** — minted by the Event Consumer when it accepts an event and creates the workflow record ([Event Consumer design §4](../3_design/event-consumer.md)); it is the *primary key* of one Orchestrator workflow run.
+
+One execution carries both, so the presenter's `correlation_id` resolves to exactly one `execution_id`. That resolution is what the [correlation-id pivot](#4-functional-requirements) (FR-AU-8) depends on — and surfacing `correlation_id` in the Orchestrator read model is one of the prerequisites in [§5](#5-read-api-requirements-on-the-orchestrator).
+
 The Admin UI exists to answer, per workflow:
 
 - **What happened** — the workflow execution timeline and terminal outcome.
@@ -25,7 +32,7 @@ The **Orchestrator is the backend that powers the Admin UI.** Its execution reco
 
 Two facts about the current Orchestrator anchor this spec:
 
-- The Orchestrator **mocks the entire workflow end-to-end** and **returns the full per-step outcome synchronously in the `POST /run-workflow` response** (the `ExecutionView`). This synchronous per-step outcome is the most certain data available and is the canonical shape the Admin UI renders.
+- The Orchestrator **returns the full per-step outcome of the end-to-end workflow synchronously in the `POST /run-workflow` response** (the `ExecutionView`). This synchronous per-step outcome is the most certain data available and is the canonical shape the Admin UI renders. (In Phase 1 the per-step work is stubbed, but that is a property of the step implementations, not of the read model the Admin UI consumes — see [Orchestrator design](../3_design/orchestrator.md).)
 - The Orchestrator **also persists execution to SQLite** and serves it back via `GET /executions/{execution_id}`. The Admin UI reads from this persisted store rather than from the trigger response, because the presenter inspects workflows *after* they run, from a different app.
 
 - **FR-AU-1** The Admin UI SHALL treat the Orchestrator's read API over its execution store as its sole data source. It SHALL NOT compute, infer, or synthesize workflow state the Orchestrator does not provide.
