@@ -19,11 +19,11 @@ The Admin UI is a **read-only client** of the Orchestrator. It owns no store of 
 ┌──────────────── apps/admin (React SPA, S3+CloudFront) ───────────────────┐
 │  Workflow list + correlation pivot → per-workflow timeline → step detail   │
 └───────────────────────────────┬───────────────────────────▲──────────────┘
-                                 │ poll read API              │ JSON (ExecutionView)
+                                 │ poll read API              │ JSON (execution read model)
                                  ▼                            │
 ┌──────────────────── services/orchestrator (FastAPI) ────────┴────────────┐
 │  GET /executions            (list — prerequisite, §3)                      │
-│  GET /executions/{id}       (ExecutionView: status, gate, steps, result)   │
+│  GET /executions/{id}       (execution read model: status, gate, steps, result)   │
 │  GET /executions?correlation_id=…  (pivot lookup — prerequisite, §3)       │
 │        └── reads ──► SQLite execution store (workflow_execution, _step_…)   │
 └───────────────────────────────────────────────────────────────────────────┘
@@ -37,9 +37,9 @@ The Admin UI is a **read-only client** of the Orchestrator. It owns no store of 
 The Orchestrator executes a run (planner path → executor path, [Orchestrator design §8](./orchestrator.md)) and persists `workflow_execution` + `workflow_step_execution` rows. The Admin UI does not participate in execution; it reads the persisted result:
 
 1. The operator opens the Admin UI → it **polls** the list endpoint for recent executions.
-2. The operator selects a workflow (or pastes a `correlation_id`) → the UI fetches that execution's `ExecutionView`.
+2. The operator selects a workflow (or pastes a `correlation_id`) → the UI fetches that execution's read model.
 3. While the workflow is non-terminal, the UI re-fetches on an interval until `status` is `completed`/`failed`.
-4. Selecting a step renders its detail from the already-fetched `ExecutionView.steps[]` — no extra request.
+4. Selecting a step renders its detail from the already-fetched read model's `steps[]` — no extra request.
 
 ### Same-origin dev proxy
 
@@ -47,13 +47,13 @@ Like `apps/mock-lms`, the dev server proxies API paths to the backend so the SPA
 
 ### Why polling now, and designed to become SSE
 
-Polling is the lightest transport that works against static S3 + CloudFront hosting and a synchronous Orchestrator that already returns the whole `ExecutionView` per fetch. Because Phase 1 runs the workflow synchronously, a freshly triggered workflow is already terminal by the time the operator pivots to it — there is no incremental progress to stream, so SSE would earn nothing yet while still requiring an event source on the Orchestrator and an unresolved long-lived-connection story on Lambda + CloudFront.
+Polling is the lightest transport that works against static S3 + CloudFront hosting and a synchronous Orchestrator that already returns the whole execution read model per fetch. Because Phase 1 runs the workflow synchronously, a freshly triggered workflow is already terminal by the time the operator pivots to it — there is no incremental progress to stream, so SSE would earn nothing yet while still requiring an event source on the Orchestrator and an unresolved long-lived-connection story on Lambda + CloudFront.
 
 So the MVP polls **deliberately, behind a seam built for the swap.** The UI consumes executions through a single subscription abstraction (§4); polling is its first implementation. The clean trigger to adopt **SSE** is when the Orchestrator moves to the [ADR-0015](../decisions/0015-orchestrator-execution-model.md) queue-driven planner/executor split and emits per-step progress — at that point execution is asynchronous, a workflow is *worth* watching as it advances, and SSE (server→client only, plain HTTP, composes with static hosting) becomes the natural upgrade. The work below is structured so that swap is a single-file change that never touches the views. WebSockets remain a further option only if robust multi-client fan-out is later needed; the Admin UI is read-only, so SSE is the expected target.
 
 ## 3. Data contract
 
-The per-workflow and per-step views render the Orchestrator's `ExecutionView` (`GET /executions/{execution_id}`):
+The per-workflow and per-step views render the Orchestrator's **execution read model** (`GET /executions/{execution_id}`) — its execution-logs metadata, whose concrete type name is still being settled in the Orchestrator, so this doc refers to it generically:
 
 ```jsonc
 {
@@ -97,15 +97,15 @@ Several endpoints and fields the Admin UI needs do not exist yet (Admin UI [FR-A
 |---|---|---|
 | Workflow list (level 1) | `GET /executions?limit=…` → `[{ execution_id, correlation_id, event_type, status, updated_at, step_progress }]`, ordered by `updated_at` desc, default cap (e.g. 50); pagination/filtering deferred (FR-AU-16) | Not yet implemented |
 | Correlation-group pivot (FR-AU-8/17) | `GET /executions?correlation_id=…` → **list** of 0..N executions in the group (a bulk Action run fans out to many under one id), not a single record | Not yet implemented |
-| `correlation_id` + timestamps in `ExecutionView` | add `correlation_id`, `created_at`, `updated_at` (the store already persists them) | Not yet implemented |
+| `correlation_id` + timestamps in the execution read model | add `correlation_id`, `created_at`, `updated_at` (the store already persists them) | Not yet implemented |
 | Resolved step inputs (FR-AU-12/18a) | add `inputs` to `StepResult` — inline for small payloads, artifact ref for large | Not yet implemented |
-| Decision-artifact collection (FR-AU-11/18b) | a `decisions[]`/`artifacts[]` collection on `ExecutionView` beyond `gate_decision` | Not yet implemented |
+| Decision-artifact collection (FR-AU-11/18b) | a `decisions[]`/`artifacts[]` collection on the execution read model beyond `gate_decision` | Not yet implemented |
 
 The Admin UI build is gated on these; see [requirements §9](../2_requirements/admin-ui.md). Until they land, the UI can render levels 2–3 against `GET /executions/{id}` by `execution_id`.
 
 ## 4. Data subscription model (polling now, SSE-ready)
 
-The views never call `fetch` or own a transport. They consume executions through one **subscription seam** — a small hook/store such as `useExecution(id)` (single workflow) and `useExecutionList()` (the list) — whose contract is *"give me the latest `ExecutionView`(s) and tell me when they change."* This is the abstraction the SSE upgrade slots behind; everything else is an implementation detail of the seam, not of the components.
+The views never call `fetch` or own a transport. They consume executions through one **subscription seam** — a small hook/store such as `useExecution(id)` (single workflow) and `useExecutionList()` (the list) — whose contract is *"give me the latest execution read model(s) and tell me when they change."* This is the abstraction the SSE upgrade slots behind; everything else is an implementation detail of the seam, not of the components.
 
 ```text
 components ── read ──► subscription seam ──► transport adapter
@@ -117,10 +117,10 @@ components ── read ──► subscription seam ──► transport adapter
 
 - The list view polls `GET /executions` on a fixed interval while mounted.
 - The per-workflow view fetches `GET /executions/{id}` on open and re-polls **only while `status` is non-terminal**, stopping at `completed`/`failed` (Admin UI FR-AU-15).
-- Step detail reads from the in-memory `ExecutionView.steps[]`; no per-step request.
+- Step detail reads from the in-memory read model's `steps[]`; no per-step request.
 - Interval is a single tunable constant (target a few seconds, NFR-AU-2); kept conservative since Phase 1 runs are effectively instantaneous.
 
-**The upgrade is contained to the adapter.** When the Orchestrator adopts the [ADR-0015](../decisions/0015-orchestrator-execution-model.md) async worker model and emits per-step progress, the seam grows an SSE adapter (an `EventSource` on a new `GET /executions/{id}/stream`, with the existing `GET` as initial-state + reconnect backfill). The hook contract — an `ExecutionView` that updates over time — is unchanged, so no component, view-model, or test that consumes the seam is touched. Until then, the polling adapter satisfies the same contract. This is the one place a transport decision lives, and it is deliberately drawn so the decision can change later without rippling outward.
+**The upgrade is contained to the adapter.** When the Orchestrator adopts the [ADR-0015](../decisions/0015-orchestrator-execution-model.md) async worker model and emits per-step progress, the seam grows an SSE adapter (an `EventSource` on a new `GET /executions/{id}/stream`, with the existing `GET` as initial-state + reconnect backfill). The hook contract — an execution read model that updates over time — is unchanged, so no component, view-model, or test that consumes the seam is touched. Until then, the polling adapter satisfies the same contract. This is the one place a transport decision lives, and it is deliberately drawn so the decision can change later without rippling outward.
 
 ## 5. UI architecture and design system
 
@@ -149,7 +149,7 @@ Mapping the Admin UI's domain onto the existing palette: workflow/step `status` 
 Two shared packages are introduced under `packages/` ([ADR-0001](../decisions/0001-repo-structure.md) dependency rules: `apps/` may depend on `packages/`):
 
 - **`packages/ui`** — the shared design tokens (the three layers above) plus shared primitives, notably the **JSON/envelope viewer**, the **event-type color** mapping, and the **copyable correlation-id** affordance — all currently living only inside `apps/mock-lms`. These are **re-authored for accessibility on extraction, not lifted verbatim** (NFR-AU-5): the Mock LMS copyable id is a clickable `span`, so the shared version becomes a real `<button>` (keyboard-operable, visible copy-failure feedback), and the JSON viewer must degrade gracefully on malformed or very large payloads (FR-AU-22).
-- **`packages/contracts`** — shared TypeScript types and typed API clients (the `ExecutionView`/`StepResult` shapes here; the emission/envelope shapes for the Mock LMS), giving both apps one source of truth for backend contracts.
+- **`packages/contracts`** — shared TypeScript types and typed API clients (the execution-read-model / `StepResult` shapes here; the emission/envelope shapes for the Mock LMS), giving both apps one source of truth for backend contracts.
 
 The actual extraction of these packages and the migration of `apps/mock-lms` onto them is **implementation work, deferred to a later round** (after these specs merge). This design records the target so the Admin UI is built against it rather than duplicating Mock LMS code that later has to be un-duplicated.
 
@@ -170,7 +170,7 @@ Three levels (Admin UI [§3](../2_requirements/admin-ui.md)), with steps as mast
 
 ## 10. Build order
 
-1. `packages/contracts`: the `ExecutionView`/`StepResult` TS types + a typed Orchestrator read client. *(Depends on the prerequisite read-API additions, §3.)*
+1. `packages/contracts`: the execution-read-model / `StepResult` TS types + a typed Orchestrator read client. *(Depends on the prerequisite read-API additions, §3.)*
 2. `packages/ui`: extract tokens (three layers) + the JSON viewer, event-type colors, and copyable-id primitive from `apps/mock-lms`; migrate `apps/mock-lms` onto them.
 3. `apps/admin` scaffold: Vite + React + the shared packages + same-origin dev proxy.
 4. The subscription seam (`useExecution`/`useExecutionList`, §4) with its polling adapter and terminal-state stop — established before the views so every feature consumes the seam, not a transport.
@@ -187,7 +187,7 @@ Steps 1–2 (`packages/*` extraction and the `apps/admin` scaffold) are gated on
 Per the pyramid ([AGENTS.md](../../AGENTS.md)):
 
 - **Unit** — the subscription seam and its polling adapter (terminal-state stop, list reconciliation) tested against the hook contract so an SSE adapter can later reuse the same tests; the status→token mapping; and the shared JSON viewer / event-type color helpers in `packages/ui`.
-- **Integration** — the typed read client in `packages/contracts` against a faked Orchestrator read API (fixture `ExecutionView`s), including the not-found and correlation-pivot paths.
+- **Integration** — the typed read client in `packages/contracts` against a faked Orchestrator read API (fixture execution read models), including the not-found and correlation-pivot paths.
 - **End-to-end (Playwright)** — happy path only: trigger a workflow (or seed an execution), pivot by `correlation_id`, open the workflow, expand a step, view raw JSON. No exhaustive corner cases.
 
-Tests use fixture `ExecutionView`s rather than a live Orchestrator, consistent with the deterministic-fixtures approach used elsewhere in the repo.
+Tests use fixture execution read models rather than a live Orchestrator, consistent with the deterministic-fixtures approach used elsewhere in the repo.
