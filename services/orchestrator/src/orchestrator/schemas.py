@@ -97,6 +97,27 @@ class StepResult(BaseModel):
     finished_at: str = ""
 
 
+class StepProgress(BaseModel):
+    """Completed/total step counts for an execution-list row (#28 G6)."""
+
+    completed: int = 0
+    total: int = 0
+
+
+class ExecutionSummary(BaseModel):
+    """Compact projection for the execution list / correlation lookup (#28 G1/G2).
+    Deliberately omits the full step log and result — the Admin UI fetches the
+    full ExecutionMetadata per execution when it drills in."""
+
+    execution_id: str
+    correlation_id: str = ""
+    event_type: str | None = None
+    status: WorkflowStatus
+    step_progress: StepProgress = StepProgress()
+    created_at: str = ""
+    updated_at: str = ""
+
+
 class ExecutionMetadata(BaseModel):
     """The correlated execution state + audit record for GET /executions/{id}
     (FR-OR-19) — the Orchestrator's execution-log metadata, not a UI view."""

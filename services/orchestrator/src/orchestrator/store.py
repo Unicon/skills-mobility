@@ -13,7 +13,14 @@ import sqlite3
 from datetime import UTC, datetime
 from typing import Any
 
-from orchestrator.schemas import DeliveryPhasePlan, ExecutionMetadata, GateDecision, StepResult
+from orchestrator.schemas import (
+    DeliveryPhasePlan,
+    ExecutionMetadata,
+    ExecutionSummary,
+    GateDecision,
+    StepProgress,
+    StepResult,
+)
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS workflow_execution (
@@ -189,3 +196,38 @@ class ExecutionStore:
             created_at=row["created_at"] or "",
             updated_at=row["updated_at"] or "",
         )
+
+    def list_executions(
+        self, limit: int = 50, correlation_id: str | None = None
+    ) -> list[ExecutionSummary]:
+        """Recent executions (newest first), optionally filtered to one Action
+        run's correlation id. Compact rows with completed/total step counts
+        computed server-side (#28 G1/G2/G6)."""
+        sql = (
+            "SELECT e.execution_id, e.correlation_id, e.event_type, e.status, "
+            "e.created_at, e.updated_at, "
+            "(SELECT COUNT(*) FROM workflow_step_execution s "
+            " WHERE s.execution_id = e.execution_id) AS total, "
+            "(SELECT COUNT(*) FROM workflow_step_execution s "
+            " WHERE s.execution_id = e.execution_id AND s.status = 'succeeded') AS completed "
+            "FROM workflow_execution e "
+        )
+        params: list[Any] = []
+        if correlation_id is not None:
+            sql += "WHERE e.correlation_id = ? "
+            params.append(correlation_id)
+        sql += "ORDER BY e.updated_at DESC, e.execution_id DESC LIMIT ?"
+        params.append(limit)
+        rows = self._conn.execute(sql, tuple(params)).fetchall()
+        return [
+            ExecutionSummary(
+                execution_id=r["execution_id"],
+                correlation_id=r["correlation_id"] or "",
+                event_type=r["event_type"],
+                status=r["status"],
+                step_progress=StepProgress(completed=r["completed"], total=r["total"]),
+                created_at=r["created_at"] or "",
+                updated_at=r["updated_at"] or "",
+            )
+            for r in rows
+        ]
