@@ -75,8 +75,21 @@ def _phase1_steps() -> list[PlanStep]:
             },
             "resolved_profile",
         ),
-        _step(2, "generate_issuer_payload_mapping", {}, "issuer_mapping"),
-        _step(3, "generate_issuer_payload_synthesis", {}, "issuer_synthesis"),
+        _step(
+            2,
+            "generate_issuer_payload_mapping",
+            {"delivery_target": InputBinding(source="literal", value="learncard_issuer")},
+            "issuer_mapping",
+        ),
+        _step(
+            3,
+            "generate_issuer_payload_synthesis",
+            {
+                "delivery_target": InputBinding(source="literal", value="learncard_issuer"),
+                "mapping": InputBinding(source="step", step_id=2),
+            },
+            "issuer_synthesis",
+        ),
         _step(
             4,
             "execute_issuer_payload_translation",
@@ -98,7 +111,12 @@ def _phase1_steps() -> list[PlanStep]:
             {"issuer_payload": InputBinding(source="step", step_id=4)},
             "issued",
         ),
-        _step(6, "generate_wallet_payload_mapping", {}, "wallet_mapping"),
+        _step(
+            6,
+            "generate_wallet_payload_mapping",
+            {"delivery_target": InputBinding(source="literal", value="learncard_wallet")},
+            "wallet_mapping",
+        ),
         _step(
             7,
             "execute_wallet_payload_translation",
