@@ -43,7 +43,7 @@ The Orchestrator executes a run (planner path → executor path, [Orchestrator d
 
 ### Same-origin dev proxy
 
-Like `apps/mock-lms`, the dev server proxies API paths to the backend so the SPA is same-origin in development. Vite proxies the Orchestrator read routes (e.g. `/executions`, `/healthz`) to the local Orchestrator (`:8300`). In production the SPA is static on S3 + CloudFront and reaches the Orchestrator read API through the same edge.
+Like `apps/mock-lms`, the dev server proxies API paths to the backend so the SPA is same-origin in development. Vite proxies the Orchestrator read routes (e.g. `/executions`, `/healthz`) to the local Orchestrator (`:8400`). In production the SPA is static on S3 + CloudFront and reaches the Orchestrator read API **through the same CloudFront edge, so it stays same-origin** — no CORS configuration is needed. If the read API is ever served from a different origin, the Orchestrator would need to allow the SPA origin via CORS; the same-origin edge routing is the intended design precisely to avoid that.
 
 ### Why polling now, and designed to become SSE
 
@@ -89,9 +89,11 @@ Two shapes in that example are **MVP-only and grow** with the orchestration mode
 - **`gate_decision` → a decision-artifact collection.** Phase 1 records only the pre-target gate. The contract is rendered as a collection (FR-AU-11) so it can hold the target audit set — selected delivery targets, the delivery-phase plan with confidence/rationale, policy-validation results, per-decision model/prompt metadata, delivery results. Per [ADR-0009](../decisions/0009-workflow-actions-orchestration-model.md) Workflow Actions is two-stage, so a continue-path run yields *two* Workflow Actions artifacts, not one.
 - **`StepResult` has no `inputs`.** The implemented step record carries `output`/`error`/timing but not the resolved inputs FR-AU-12 requires. The viewer treats inputs as a first-class field once the read model provides them.
 
+These are **forward-compatible rendering choices on the UI side, not fields to code against today.** In Phase 1 the read model returns a single `gate_decision` (there is no `artifacts[]`/`decisions[]` array yet), `attempt` is always `1` (no retry path exists), and per-step `decision`/`confidence`/`rationale` and list `step_progress` are not yet emitted. Render them defensively (absent-by-default) rather than assuming the shape the target POC will grow into.
+
 ### Required read-API additions (prerequisites)
 
-Several endpoints and fields the Admin UI needs do not exist yet (Admin UI [FR-AU-16…18b](../2_requirements/admin-ui.md)). They are stated here as the contract the Orchestrator must provide:
+Several endpoints and fields the Admin UI needs do not exist yet (Admin UI [FR-AU-16…18b](../2_requirements/admin-ui.md)). They are stated here as the contract the Orchestrator must provide, and tracked on the Orchestrator side in [issue #28](https://github.com/Unicon/skills-mobility/issues/28) (G1–G7; G1–G4 MVP-blocking, G3/G4 landing in #22):
 
 | Need | Proposed shape | Status |
 |---|---|---|
@@ -120,13 +122,13 @@ components ── read ──► subscription seam ──► transport adapter
 - Step detail reads from the in-memory read model's `steps[]`; no per-step request.
 - Interval is a single tunable constant (target a few seconds, NFR-AU-2); kept conservative since Phase 1 runs are effectively instantaneous.
 
-**The upgrade is contained to the adapter.** When the Orchestrator adopts the [ADR-0015](../decisions/0015-orchestrator-execution-model.md) async worker model and emits per-step progress, the seam grows an SSE adapter (an `EventSource` on a new `GET /executions/{id}/stream`, with the existing `GET` as initial-state + reconnect backfill). The hook contract — an execution read model that updates over time — is unchanged, so no component, view-model, or test that consumes the seam is touched. Until then, the polling adapter satisfies the same contract. This is the one place a transport decision lives, and it is deliberately drawn so the decision can change later without rippling outward.
+**The upgrade is contained to the adapter.** When the Orchestrator adopts the [ADR-0015](../decisions/0015-orchestrator-execution-model.md) async worker model and emits per-step progress (tracked as **G8** in [issue #28](https://github.com/Unicon/skills-mobility/issues/28)), the seam grows an SSE adapter (an `EventSource` on a new `GET /executions/{id}/stream`, with the existing `GET` as initial-state + reconnect backfill). The hook contract — an execution read model that updates over time — is unchanged, so no component, view-model, or test that consumes the seam is touched. Until then, the polling adapter satisfies the same contract. This is the one place a transport decision lives, and it is deliberately drawn so the decision can change later without rippling outward.
 
 ## 5. UI architecture and design system
 
 Per [ADR-0018](../decisions/0018-admin-ui-frontend-stack.md):
 
-- **Animation:** **Motion** (`framer-motion` / `motion/react`) — MIT-licensed and free; only the separate Motion+ product is paid and is not needed. Same library `apps/mock-lms` already uses.
+- **Animation:** **Motion** — the same library `apps/mock-lms` already uses; MIT-licensed and free (only the separate Motion+ product is paid, and is not needed). Standardize on the current `motion` package (`motion/react`); `apps/mock-lms` migrates off `framer-motion` during its `packages/ui` migration so both apps share one import ([ADR-0018](../decisions/0018-admin-ui-frontend-stack.md)).
 - **Components:** **Radix Primitives** (headless) styled with our own CSS. **Base UI** is an acceptable alternative primitive layer on a per-component basis. No component framework owns the visual layer — our CSS does.
 - **Explicitly not used:** **shadcn/ui** and **Tailwind**. Styling is plain CSS driven by design tokens.
 
@@ -134,15 +136,15 @@ This keeps the Admin UI consistent with the Mock LMS's hand-authored CSS aesthet
 
 ## 6. Token architecture
 
-A three-layer token system, consumed by both apps and (later) Figma — the layer through which the "mission-control" identity is preserved rather than re-invented ([ADR-0018](../decisions/0018-admin-ui-frontend-stack.md)):
+A three-layer token system, consumed by both apps and (later) Figma — the layer through which the Mock LMS's current visual identity is preserved rather than re-invented, and re-themed if that identity changes later ([ADR-0018](../decisions/0018-admin-ui-frontend-stack.md)). The **layering** is the decision here; the specific token names/values below are illustrative of the current look, not fixed by this spec:
 
 1. **Base / primitive** — [Open Props](https://open-props.style) scales (spacing, sizing, type scale, radii, shadows, easings) + [Radix Colors](https://www.radix-ui.com/colors) 12-step light/dark scales. Both are free, pure CSS variables, no Tailwind. Open Props fills what the Mock LMS lacks today (it hand-rolls a handful of values); Radix Colors supplies systematic color ramps.
-2. **Semantic** — our names, mapped onto the base layer: `--bg`, `--panel`, `--gold`, `--live`, the event-type telemetry colors `--evt-*`, and the scale aliases `--space-*`, `--radius-*`, `--text-*`. This is the contract components and both apps consume.
+2. **Semantic** — our names, mapped onto the base layer (illustrative of the current look, not fixed here): e.g. `--bg`, `--panel`, `--gold`, `--live`, the event-type telemetry colors `--evt-*`, and the scale aliases `--space-*`, `--radius-*`, `--text-*`. This is the contract components and both apps consume.
 3. **Component** — component-local variables that reference the semantic layer.
 
-The current Mock LMS [`index.css`](../../apps/mock-lms/src/index.css) is the **de-facto semantic token source**: warm near-black panels (`--bg`/`--panel`), the gold credential signal (`--gold`/`--gold-bright`), live-green status (`--live`), per-event telemetry colors (`--evt-skill`/`--evt-course`/`--evt-badge`/`--evt-credential`), `--danger`, the Archivo + JetBrains Mono pairing, and motifs like the pulsing live `.dot`, the `.copyable` affordance, and the JSON `pre` highlighting. The Admin UI re-expresses these through the shared semantic layer; the mission-control look is the throughline, applied to a workflow-timeline surface instead of a course console.
+The current Mock LMS [`index.css`](../../apps/mock-lms/src/index.css) is the **de-facto semantic token source** today, e.g.: warm near-black panels (`--bg`/`--panel`), an accent signal (`--gold`/`--gold-bright`), live-green status (`--live`), per-event telemetry colors (`--evt-skill`/`--evt-course`/`--evt-badge`/`--evt-credential`), `--danger`, the Archivo + JetBrains Mono pairing, and motifs like the pulsing live `.dot`, the `.copyable` affordance, and the JSON `pre` highlighting. The Admin UI re-expresses whatever this identity is through the shared semantic layer, applied to a workflow-timeline surface instead of a course console; if the look is later revised, it changes at the semantic layer without touching components. (These tokens are the current example, not a commitment to this specific palette.)
 
-Mapping the Admin UI's domain onto the existing palette: workflow/step `status` reuses `--live` (succeeded/completed), `--danger` (failed), and dim ink (pending/skipped); `event_type` reuses the `--evt-*` colors so a workflow's type reads the same here as its emission did in the Mock LMS.
+Mapping the Admin UI's domain onto the current palette: workflow/step `status` reuses `--live` (succeeded/completed), `--danger` (failed), and dim ink (pending/skipped); `event_type` reuses the `--evt-*` colors so a workflow's type reads the same here as its emission did in the Mock LMS.
 
 ## 7. Shared-code plan
 
@@ -159,28 +161,32 @@ Three levels (Admin UI [§3](../2_requirements/admin-ui.md)), with steps as mast
 
 - **Workflow list** — a table/rail of recent executions: `correlation_id` (copyable), `event_type` (telemetry-colored), `status` (incl. a distinct `failed` treatment, FR-AU-23), a timestamp, and step progress. A **correlation-id input** at the top accepts an id pasted from the Mock LMS and resolves it to its correlation group: one match opens the workflow, several scope the list to the group, none shows an empty state (FR-AU-8). Polls the list endpoint.
 - **Per-workflow detail** — header band (status, `event_type`, copyable `execution_id` + `correlation_id`, `plan_id`, final outcome); a **decision-artifacts panel** rendering the recorded artifacts as a collection (Phase 1: the gate decision's `decision` / `confidence` / `rationale`; later, the delivery-target/plan/policy/model artifacts of FR-AU-11) as the reasoning log; and the **ordered step timeline**, each row showing `action_id`, `status`, and timing, with the failing step highlighted for a `failed` run.
-- **Per-step detail** — selecting a step row opens a side panel (Radix Dialog/Collapsible — focus-trapped and keyboard-operable per NFR-AU-5) with the step's resolved inputs, raw `output` JSON (shared viewer), `error`, `attempt`, and timing. The decision artifacts and final `result` are inspectable as raw JSON the same way.
+- **Per-step detail** — selecting a step row opens a side panel (Radix Dialog/Collapsible — focus-trapped and keyboard-operable per NFR-AU-5) with the step's resolved inputs, raw `output` JSON (shared viewer), `error`, `attempt`, and timing. **When a step is itself an LLM Decision Service** (e.g. delivery-target selection, field mapping/synthesis), its per-step detail SHALL also surface that step's `decision` / `confidence` / `rationale`, the same reasoning shape shown at the workflow level — so reasoning is visible at the step that produced it, not only in the workflow header (FR-AU-12). In Phase 1 these steps are deterministic stubs, so this surface is empty or stubbed until the real LLM services land. The decision artifacts and final `result` are inspectable as raw JSON the same way.
 - **Cross-cutting states** — every level has defined empty/error/loading states (FR-AU-22): empty list, unreachable/erroring read API, no-match and many-match pivots, and graceful handling of malformed or oversized JSON in the viewer.
 
 ## 9. Local vs AWS, and auth
 
-- **Local:** Vite dev server proxies the Orchestrator read routes to `:8300`, same-origin like `apps/mock-lms`. The Orchestrator serves from SQLite ([ADR-0014](../decisions/0014-poc-storage-strategy.md)).
-- **AWS:** static SPA on S3 + CloudFront ([ADR-0002](../decisions/0002-frontend-architecture.md)); the read API is the Orchestrator's deployed read surface (DynamoDB-backed store per ADR-0014 in the AWS-shaped target). The subscription seam's polling adapter is unchanged; an SSE adapter would additionally need a long-lived-connection-capable surface (an open item for the async-execution phase, §4).
+- **Local:** Vite dev server proxies the Orchestrator read routes to `:8400`, same-origin like `apps/mock-lms`. The Orchestrator serves from SQLite ([ADR-0014](../decisions/0014-poc-storage-strategy.md)).
+- **AWS:** static SPA on S3 + CloudFront ([ADR-0002](../decisions/0002-frontend-architecture.md)); the read API is the Orchestrator's deployed read surface (DynamoDB-backed store per ADR-0014 in the AWS-shaped target), reached through the **same CloudFront edge** to stay same-origin (see §2 — no CORS otherwise). The subscription seam's polling adapter is unchanged; an SSE adapter would additionally need a long-lived-connection-capable surface (an open item for the async-execution phase, §4).
 - **Auth:** CloudFront-layer per [ADR-0002](../decisions/0002-frontend-architecture.md), resolved behind a single boundary; a single demo user with full read capability, no role split.
 
 ## 10. Build order
+
+**Predecessors (must land before step 1):**
+- A **JS/TS workspace-tooling decision** (workspace manager, package entry points, TS project references, token publishing) — deferred by ADR-0001 and called out in [ADR-0018](../decisions/0018-admin-ui-frontend-stack.md); `packages/contracts` and `packages/ui` (steps 1–2) cannot be created without it. Resolve it (preferably a short follow-up ADR) first.
+- The Orchestrator **read-API additions** the contract depends on (§3 / FR-AU-16…18b), tracked on the Orchestrator side.
 
 1. `packages/contracts`: the execution-read-model / `StepResult` TS types + a typed Orchestrator read client. *(Depends on the prerequisite read-API additions, §3.)*
 2. `packages/ui`: extract tokens (three layers) + the JSON viewer, event-type colors, and copyable-id primitive from `apps/mock-lms`; migrate `apps/mock-lms` onto them.
 3. `apps/admin` scaffold: Vite + React + the shared packages + same-origin dev proxy.
 4. The subscription seam (`useExecution`/`useExecutionList`, §4) with its polling adapter and terminal-state stop — established before the views so every feature consumes the seam, not a transport.
 5. Workflow list + correlation-id pivot (against the list / lookup endpoints).
-6. Per-workflow detail: header, gate-decision panel, step timeline.
+6. Per-workflow detail: header, decision-artifacts panel, step timeline.
 7. Per-step detail panel + raw JSON viewer.
 8. CloudFront-layer auth + S3/CloudFront deploy ([ADR-0002](../decisions/0002-frontend-architecture.md)).
 9. *(Later, gated on async Orchestrator execution)* SSE adapter behind the same seam — see §4.
 
-Steps 1–2 (`packages/*` extraction and the `apps/admin` scaffold) are gated on these specs merging and the Orchestrator read-API prerequisites; they are **not** part of the specs PR.
+Steps 1–2 (`packages/*` extraction and the `apps/admin` scaffold) are gated on these specs merging, the workspace-tooling decision, and the Orchestrator read-API prerequisites; they are **not** part of the specs PR.
 
 ## 11. Testing
 
