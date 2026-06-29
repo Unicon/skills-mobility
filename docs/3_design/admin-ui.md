@@ -95,7 +95,7 @@ Several endpoints and fields the Admin UI needs do not exist yet (Admin UI [FR-A
 
 | Need | Proposed shape | Status |
 |---|---|---|
-| Workflow list (level 1) | `GET /executions` → `[{ execution_id, correlation_id, event_type, status, updated_at, step_progress }]` | Not yet implemented |
+| Workflow list (level 1) | `GET /executions?limit=…` → `[{ execution_id, correlation_id, event_type, status, updated_at, step_progress }]`, ordered by `updated_at` desc, default cap (e.g. 50); pagination/filtering deferred (FR-AU-16) | Not yet implemented |
 | Correlation-group pivot (FR-AU-8/17) | `GET /executions?correlation_id=…` → **list** of 0..N executions in the group (a bulk Action run fans out to many under one id), not a single record | Not yet implemented |
 | `correlation_id` + timestamps in `ExecutionView` | add `correlation_id`, `created_at`, `updated_at` (the store already persists them) | Not yet implemented |
 | Resolved step inputs (FR-AU-12/18a) | add `inputs` to `StepResult` — inline for small payloads, artifact ref for large | Not yet implemented |
