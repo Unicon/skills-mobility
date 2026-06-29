@@ -102,9 +102,12 @@ class ExecutionMetadata(BaseModel):
     (FR-OR-19) — the Orchestrator's execution-log metadata, not a UI view."""
 
     execution_id: str
+    correlation_id: str = ""  # surfaced for the Admin UI cross-app pivot (#28 G3)
     event_type: str | None = None
     status: WorkflowStatus
     gate_decision: dict[str, Any] | None = None
     plan_id: str | None = None
     steps: list[StepResult] = []
     result: dict[str, Any] = {}
+    created_at: str = ""  # #28 G4 — list ordering + timestamp column
+    updated_at: str = ""

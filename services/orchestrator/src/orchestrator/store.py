@@ -179,10 +179,13 @@ class ExecutionStore:
         ]
         return ExecutionMetadata(
             execution_id=row["execution_id"],
+            correlation_id=row["correlation_id"] or "",
             event_type=row["event_type"],
             status=row["status"],
             gate_decision=json.loads(row["gate_decision"]) if row["gate_decision"] else None,
             plan_id=row["plan_id"],
             steps=steps,
             result=json.loads(row["result"]) if row["result"] else {},
+            created_at=row["created_at"] or "",
+            updated_at=row["updated_at"] or "",
         )

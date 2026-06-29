@@ -17,6 +17,9 @@ def test_run_workflow_completes_and_persists(client, sample_event):
     assert len(body["steps"]) == 8
     assert all(s["status"] == "succeeded" for s in body["steps"])
     assert body["result"]["recipient_profile_id"].startswith("@")
+    # Read-model fields the Admin UI needs (#28 G3/G4): correlation id + timestamps.
+    assert body["correlation_id"] == "corr_1"
+    assert body["created_at"] and body["updated_at"]
 
     got = client.get("/executions/exec_42")
     assert got.status_code == 200
