@@ -49,6 +49,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
 
 def run() -> None:
+    import logging
+
     import uvicorn
 
-    uvicorn.run(create_app(), host="127.0.0.1", port=8100)
+    settings = get_settings()
+    # Emit the FR-CB15 fetch logs (uvicorn doesn't configure app loggers).
+    logging.basicConfig(level=settings.log_level.upper())
+    uvicorn.run(create_app(settings), host="127.0.0.1", port=8100)

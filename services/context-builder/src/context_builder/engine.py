@@ -17,11 +17,14 @@ into a failure response (FR-CB11).
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from context_builder.lms_client import LMSClient
 from context_builder.profiles import FetchProfile, Step
 from context_builder.schemas import FetchError
+
+logger = logging.getLogger(__name__)
 
 _MISSING = object()
 
@@ -114,6 +117,7 @@ def _error(url: str, status_code: int | None, message: str) -> dict[str, Any]:
 
 def _fetch(client: LMSClient, url: str) -> Any:
     resp = client.get(url)
+    logger.info("LMS fetch: GET %s -> %s", url, resp.status_code)  # FR-CB15: each call attempted
     if resp.status_code >= 400:
         message = str(resp.data.get("detail", "")) if isinstance(resp.data, dict) else ""
         return _error(url, resp.status_code, message)
@@ -139,6 +143,11 @@ def _run_for_each(
             continue
         url = _fill(step.endpoint, step.params, event, responses, item)
         if url is _MISSING:
+            # An item whose params can't be resolved is intentionally skipped (the
+            # for_each collects only resolvable items) — so the result list can be
+            # shorter than the source list. Unlike a single-step fetch failure, this
+            # is not surfaced as an error object; it means "this item didn't apply".
+            logger.info("for_each '%s': skipped item with unresolvable url", step.output_key)
             continue
         out.append(_fetch(client, url))
     return out

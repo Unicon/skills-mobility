@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     # Base URL of the Mock LMS Resource APIs the fetch profiles read.
     lms_base_url: str = "http://127.0.0.1:8000"
 
+    # Root log level for the service entrypoint (INFO, DEBUG, WARNING, ...).
+    log_level: str = "INFO"
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -53,9 +53,10 @@ steps:
       root_account_id: { source: event, path: metadata.root_account_id }
       user_uuid: { source: event, path: body.user_uuid }
 
-  # The learner's submission, keyed by the resolved Canvas user_id (first match).
+  # The learner's submission, keyed by the resolved Canvas user_id (first match),
+  # with the rubric assessment included (design §6).
   - output_key: submission
-    endpoint: "/api/v1/courses/{course_id}/assignments/{assignment_id}/submissions/{user_id}"
+    endpoint: "/api/v1/courses/{course_id}/assignments/{assignment_id}/submissions/{user_id}?include[]=rubric_assessment"
     params:
       course_id: { source: event, path: body.result_context_id }
       assignment_id: { source: event, path: body.associated_asset_id }

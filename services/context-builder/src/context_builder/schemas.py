@@ -32,6 +32,8 @@ class ContextBundle(BaseModel):
     """Successful (or partial) result — one bundle of named source responses."""
 
     execution_id: str
+    event_id: str = ""  # carried from the event for downstream auditability (FR-CB7)
+    correlation_id: str = ""  # carried from the event for downstream auditability (FR-CB7)
     event_type: str
     fetch_profile_id: str
     source_data: dict[str, Any]
