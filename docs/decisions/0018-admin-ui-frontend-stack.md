@@ -10,13 +10,15 @@
 
 The first SPA, `apps/mock-lms`, was built with hand-authored CSS and a distinctive dark "mission-control" aesthetic (warm near-black panels, gold credential signal, live-green status, per-event telemetry colors, Archivo + JetBrains Mono). It uses Motion for animation and hand-rolls everything else — including behavior primitives (a modal, copyable ids, a JSON viewer) and a small set of design values.
 
-Building the second SPA (`apps/admin`) is the moment to settle the shared stack, so the two apps converge instead of diverging and so the visual identity is captured as reusable tokens rather than duplicated CSS. ADR-0002 is Accepted and treated as immutable; this ADR extends it with the stack and token decisions rather than rewriting it.
+Building the second SPA (`apps/admin`) is the moment to settle the shared stack, so the two apps converge instead of diverging and so the visual identity is captured as reusable tokens rather than duplicated CSS. ADR-0002 is Accepted; this ADR adds the stack and token decisions in a new, referencing ADR rather than reopening it. (The repo's own ADR-governance wording is currently inconsistent — the decisions README says ADRs are "maintained in place," while `AGENTS.md` and the docs README treat them as immutable/superseded. That inconsistency should be reconciled separately; either reading is satisfied by adding a new referencing ADR here.)
 
 ## Decision
 
 ### Animation
 
-Keep **Motion** (`framer-motion` / `motion/react`). It is MIT-licensed and free; only the separate **Motion+** product is paid, and the POC does not need it. The Mock LMS already uses it, so both apps share one animation library.
+Keep **Motion** — the same library the Mock LMS already uses. It is MIT-licensed and free; only the separate **Motion+** product is paid, and the POC does not need it.
+
+Standardize on the current **`motion`** package (`import { … } from "motion/react"`), which is the renamed continuation of `framer-motion` (the official docs now install `motion`). The Mock LMS currently depends on `framer-motion` and imports from it; to avoid the two apps starting with split imports, `apps/mock-lms` migrates from `framer-motion` to `motion` as part of its `packages/ui` migration (build-order step 2 in the design doc). Until that migration lands, the Admin UI MAY use either import path, but the **target is a single `motion` dependency across both apps** — not a permanent `framer-motion`/`motion` split.
 
 ### Components
 
@@ -40,6 +42,8 @@ Introduce two shared packages under `packages/` ([ADR-0001](./0001-repo-structur
 - **`packages/contracts`** — shared TypeScript types and typed API clients (orchestrator `ExecutionView`/`StepResult`; Mock LMS emission/envelope shapes).
 
 The extraction of these packages and the migration of `apps/mock-lms` onto them is implementation work, deferred to a later round; this ADR records the target structure.
+
+**Open dependency — JS/TS workspace tooling.** [ADR-0001](./0001-repo-structure.md) deferred JS/TS monorepo workspace tooling (the Python side uses a `uv` workspace; the JS side is currently per-app). Introducing `packages/*` that both apps consume forces that deferred decision. It is **not settled here** and SHALL be resolved before extraction — preferably in a short follow-up ADR — covering at least: workspace manager (npm workspaces vs pnpm/yarn), the package names and public entry points, TypeScript project references / build order, and how the CSS token layer is published and consumed by both apps (e.g. a plain CSS import vs a build step). This ADR settles the *libraries and the token architecture*; it does not settle the *workspace plumbing*.
 
 ## Rationale
 
@@ -69,4 +73,4 @@ The extraction of these packages and the migration of `apps/mock-lms` onto them 
 - **Tailwind + shadcn/ui.** Fast to assemble, but would clash with the Mock LMS's existing plain-CSS aesthetic (forcing a rewrite or a split styling model) and pull in utility-class conventions the team did not want for the POC.
 - **Continue hand-rolling everything (no primitive library).** Matches the Mock LMS as-is, but re-implementing accessible dialogs/popovers/tabs by hand for the Admin UI is avoidable effort and a likely source of a11y bugs.
 - **A full design-system/component library (e.g. MUI, Mantine).** Heavier and visually opinionated; would override the existing identity and add more than the POC needs.
-- **Extend ADR-0002 in place instead of a new ADR.** Rejected: ADR-0002 is Accepted and ADRs are immutable history (decisions README); these are new cross-cutting decisions and belong in a new, referencing ADR.
+- **Extend ADR-0002 in place instead of a new ADR.** Rejected: these are new cross-cutting decisions (stack, tokens, shared packages) distinct from ADR-0002's two-SPA/hosting/auth charter, so they belong in a new ADR that references it. This also stays safe under either reading of the repo's (currently inconsistent) ADR-governance wording — see Context.

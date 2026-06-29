@@ -2,7 +2,7 @@
 
 Status: Draft
 Date: 2026-06-25
-Related: [Requirements](../2_requirements/admin-ui.md) · [Mock LMS Design](./mock-lms.md) · [Orchestrator Design](./orchestrator.md) · [Event Consumer Design](./event-consumer.md) · [POC Component Boundary Matrix](./poc-component-boundaries.md) · [ADR-0001](../decisions/0001-repo-structure.md) · [ADR-0002](../decisions/0002-frontend-architecture.md) · [ADR-0014](../decisions/0014-poc-storage-strategy.md) · [ADR-0018](../decisions/0018-admin-ui-frontend-stack.md)
+Related: [Requirements](../2_requirements/admin-ui.md) · [Mock LMS Design](./mock-lms.md) · [Orchestrator Design](./orchestrator.md) · [Event Consumer Design](./event-consumer.md) · [POC Component Boundary Matrix](./poc-component-boundaries.md) · [ADR-0001](../decisions/0001-repo-structure.md) · [ADR-0002](../decisions/0002-frontend-architecture.md) · [ADR-0009](../decisions/0009-workflow-actions-orchestration-model.md) · [ADR-0014](../decisions/0014-poc-storage-strategy.md) · [ADR-0018](../decisions/0018-admin-ui-frontend-stack.md)
 
 ## 1. Overview
 
@@ -84,15 +84,22 @@ The per-workflow and per-step views render the Orchestrator's `ExecutionView` (`
 
 This mirrors the Orchestrator's implemented read model (`GET /executions/{id}`) over its persisted execution state ([Orchestrator design §9](./orchestrator.md)). The `output`, `gate_decision`, and `result` fields are opaque JSON by design ([Orchestrator FR-OR-22](../2_requirements/orchestrator.md)) and are rendered through the shared JSON viewer rather than typed per action.
 
+Two shapes in that example are **MVP-only and grow** with the orchestration model:
+
+- **`gate_decision` → a decision-artifact collection.** Phase 1 records only the pre-target gate. The contract is rendered as a collection (FR-AU-11) so it can hold the target audit set — selected delivery targets, the delivery-phase plan with confidence/rationale, policy-validation results, per-decision model/prompt metadata, delivery results. Per [ADR-0009](../decisions/0009-workflow-actions-orchestration-model.md) Workflow Actions is two-stage, so a continue-path run yields *two* Workflow Actions artifacts, not one.
+- **`StepResult` has no `inputs`.** The implemented step record carries `output`/`error`/timing but not the resolved inputs FR-AU-12 requires. The viewer treats inputs as a first-class field once the read model provides them.
+
 ### Required read-API additions (prerequisites)
 
-Two endpoints and two fields the Admin UI needs do not exist yet (Admin UI [FR-AU-16…18](../2_requirements/admin-ui.md)). They are stated here as the contract the Orchestrator must provide:
+Several endpoints and fields the Admin UI needs do not exist yet (Admin UI [FR-AU-16…18b](../2_requirements/admin-ui.md)). They are stated here as the contract the Orchestrator must provide:
 
 | Need | Proposed shape | Status |
 |---|---|---|
 | Workflow list (level 1) | `GET /executions` → `[{ execution_id, correlation_id, event_type, status, updated_at, step_progress }]` | Not yet implemented |
-| Correlation-id pivot (FR-AU-8) | `GET /executions?correlation_id=…` (or `GET /executions/by-correlation/{id}`) → the matching execution | Not yet implemented |
+| Correlation-group pivot (FR-AU-8/17) | `GET /executions?correlation_id=…` → **list** of 0..N executions in the group (a bulk Action run fans out to many under one id), not a single record | Not yet implemented |
 | `correlation_id` + timestamps in `ExecutionView` | add `correlation_id`, `created_at`, `updated_at` (the store already persists them) | Not yet implemented |
+| Resolved step inputs (FR-AU-12/18a) | add `inputs` to `StepResult` — inline for small payloads, artifact ref for large | Not yet implemented |
+| Decision-artifact collection (FR-AU-11/18b) | a `decisions[]`/`artifacts[]` collection on `ExecutionView` beyond `gate_decision` | Not yet implemented |
 
 The Admin UI build is gated on these; see [requirements §9](../2_requirements/admin-ui.md). Until they land, the UI can render levels 2–3 against `GET /executions/{id}` by `execution_id`.
 
@@ -141,7 +148,7 @@ Mapping the Admin UI's domain onto the existing palette: workflow/step `status` 
 
 Two shared packages are introduced under `packages/` ([ADR-0001](../decisions/0001-repo-structure.md) dependency rules: `apps/` may depend on `packages/`):
 
-- **`packages/ui`** — the shared design tokens (the three layers above) plus shared primitives, notably the **JSON/envelope viewer**, the **event-type color** mapping, and the **copyable correlation-id** affordance — all currently living only inside `apps/mock-lms`.
+- **`packages/ui`** — the shared design tokens (the three layers above) plus shared primitives, notably the **JSON/envelope viewer**, the **event-type color** mapping, and the **copyable correlation-id** affordance — all currently living only inside `apps/mock-lms`. These are **re-authored for accessibility on extraction, not lifted verbatim** (NFR-AU-5): the Mock LMS copyable id is a clickable `span`, so the shared version becomes a real `<button>` (keyboard-operable, visible copy-failure feedback), and the JSON viewer must degrade gracefully on malformed or very large payloads (FR-AU-22).
 - **`packages/contracts`** — shared TypeScript types and typed API clients (the `ExecutionView`/`StepResult` shapes here; the emission/envelope shapes for the Mock LMS), giving both apps one source of truth for backend contracts.
 
 The actual extraction of these packages and the migration of `apps/mock-lms` onto them is **implementation work, deferred to a later round** (after these specs merge). This design records the target so the Admin UI is built against it rather than duplicating Mock LMS code that later has to be un-duplicated.
@@ -150,9 +157,10 @@ The actual extraction of these packages and the migration of `apps/mock-lms` ont
 
 Three levels (Admin UI [§3](../2_requirements/admin-ui.md)), with steps as master-detail inside the workflow view:
 
-- **Workflow list** — a table/rail of recent executions: `correlation_id` (copyable), `event_type` (telemetry-colored), `status`, a timestamp, and step progress. A **correlation-id input** at the top accepts an id pasted from the Mock LMS and navigates to that workflow (FR-AU-8). Polls the list endpoint.
-- **Per-workflow detail** — header band (status, `event_type`, copyable `execution_id` + `correlation_id`, `plan_id`, final outcome); a **gate-decision panel** showing `decision` / `confidence` / `rationale` as the reasoning log; and the **ordered step timeline**, each row showing `action_id`, `status`, and timing, visually echoing the Mock LMS emission timeline.
-- **Per-step detail** — selecting a step row opens a side panel (Radix Dialog/Collapsible) with the step's resolved inputs, raw `output` JSON (shared viewer), `error`, `attempt`, and timing. The gate decision and final `result` are inspectable as raw JSON the same way.
+- **Workflow list** — a table/rail of recent executions: `correlation_id` (copyable), `event_type` (telemetry-colored), `status` (incl. a distinct `failed` treatment, FR-AU-23), a timestamp, and step progress. A **correlation-id input** at the top accepts an id pasted from the Mock LMS and resolves it to its correlation group: one match opens the workflow, several scope the list to the group, none shows an empty state (FR-AU-8). Polls the list endpoint.
+- **Per-workflow detail** — header band (status, `event_type`, copyable `execution_id` + `correlation_id`, `plan_id`, final outcome); a **decision-artifacts panel** rendering the recorded artifacts as a collection (Phase 1: the gate decision's `decision` / `confidence` / `rationale`; later, the delivery-target/plan/policy/model artifacts of FR-AU-11) as the reasoning log; and the **ordered step timeline**, each row showing `action_id`, `status`, and timing, with the failing step highlighted for a `failed` run.
+- **Per-step detail** — selecting a step row opens a side panel (Radix Dialog/Collapsible — focus-trapped and keyboard-operable per NFR-AU-5) with the step's resolved inputs, raw `output` JSON (shared viewer), `error`, `attempt`, and timing. The decision artifacts and final `result` are inspectable as raw JSON the same way.
+- **Cross-cutting states** — every level has defined empty/error/loading states (FR-AU-22): empty list, unreachable/erroring read API, no-match and many-match pivots, and graceful handling of malformed or oversized JSON in the viewer.
 
 ## 9. Local vs AWS, and auth
 
