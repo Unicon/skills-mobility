@@ -73,10 +73,10 @@ def test_executes_steps_in_order_and_threads_data(sample_event):
     assert result["recipient_profile_id"].startswith("@")
 
     # All eight steps persisted as succeeded, in order.
-    view = store.get_execution_view("exec_1")
-    assert view is not None
-    assert [s.step_id for s in view.steps] == list(range(1, 9))
-    assert all(s.status == "succeeded" for s in view.steps)
+    meta = store.get_execution_metadata("exec_1")
+    assert meta is not None
+    assert [s.step_id for s in meta.steps] == list(range(1, 9))
+    assert all(s.status == "succeeded" for s in meta.steps)
 
 
 class _FailingIssuer:
@@ -98,9 +98,9 @@ def test_issuer_failure_short_circuits_before_wallet(sample_event):
     status, _ = execute_plan(_plan(), _ctx(sample_event), deps, store, "exec_2")
 
     assert status == "failed"
-    view = store.get_execution_view("exec_2")
-    assert view is not None
-    action_ids = [s.action_id for s in view.steps]
+    meta = store.get_execution_metadata("exec_2")
+    assert meta is not None
+    action_ids = [s.action_id for s in meta.steps]
     assert "issue_learncard_badge" in action_ids
     assert "deliver_to_learncard_wallet" not in action_ids
-    assert view.steps[-1].status == "failed"
+    assert meta.steps[-1].status == "failed"

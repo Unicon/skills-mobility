@@ -34,7 +34,7 @@ def test_course_completed_path_completes(client, course_event):
 def test_plan_lookup_toggle_and_delete(client, sample_event):
     # A run persists the reusable delivery-phase plan.
     client.post("/run-workflow", json={"execution_id": "exec_p", "event": sample_event})
-    assert client.post("/admin/plan-lookup", json={"enabled": True}).json() == {
+    assert client.put("/admin/plan-lookup-toggle", json={"enabled": True}).json() == {
         "reusable_plan_lookup_enabled": True
     }
     assert client.delete("/admin/plans/phase1-skill_mastered.v1").json() == {"deleted": True}

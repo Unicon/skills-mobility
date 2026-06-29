@@ -148,7 +148,7 @@ A minimal step can therefore look like:
     },
     "learner_id_value": {
       "source": "workflow",
-      "path": "learner_identifier_value"
+      "path": "learner_id_value"
     }
   },
   "produces": "resolved_profile"
@@ -219,7 +219,7 @@ In the example below, `step_id` identifies one specific step occurrence inside o
       "inputs": {
         "delivery_config_ref": { "source": "workflow", "path": "delivery_config_ref" },
         "learner_id_type": { "source": "literal", "value": "email" },
-        "learner_id_value": { "source": "workflow", "path": "learner_identifier_value" }
+        "learner_id_value": { "source": "workflow", "path": "learner_id_value" }
       },
       "produces": "resolved_profile"
     },

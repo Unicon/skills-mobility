@@ -71,6 +71,7 @@ def _phase1_steps() -> list[PlanStep]:
             {
                 "learner_id_type": InputBinding(source="literal", value="email"),
                 "learner_id_value": InputBinding(source="workflow", path="learner_id_value"),
+                "delivery_config_ref": InputBinding(source="workflow", path="delivery_config_ref"),
             },
             "resolved_profile",
         ),
@@ -83,6 +84,11 @@ def _phase1_steps() -> list[PlanStep]:
                 "bundle": InputBinding(source="workflow", path="bundle"),
                 "issuer_id": InputBinding(source="workflow", path="issuer_id"),
                 "resolved_profile": InputBinding(source="step", step_id=1),
+                # Seam bindings for the real transformation services (Phase-1 stubs
+                # ignore them, but the executor wiring must be in place — FR-OR-14).
+                "delivery_target": InputBinding(source="literal", value="learncard_issuer"),
+                "mapping": InputBinding(source="step", step_id=2),
+                "synthesis": InputBinding(source="step", step_id=3),
             },
             "issuer_payload",
         ),
@@ -99,6 +105,10 @@ def _phase1_steps() -> list[PlanStep]:
             {
                 "issued": InputBinding(source="step", step_id=5),
                 "resolved_profile": InputBinding(source="step", step_id=1),
+                # Seam bindings for the real transformation services (FR-OR-15) —
+                # wallet pass has no synthesis (per the #25 FR-OR-15 table).
+                "delivery_target": InputBinding(source="literal", value="learncard_wallet"),
+                "mapping": InputBinding(source="step", step_id=6),
             },
             "wallet_payload",
         ),

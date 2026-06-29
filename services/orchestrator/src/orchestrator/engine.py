@@ -14,7 +14,7 @@ from orchestrator import planner
 from orchestrator.actions import ActionDeps
 from orchestrator.clients import ContextBuilderClient, DeliveryRouterClient, ProfileResolverClient
 from orchestrator.executor import execute_plan
-from orchestrator.schemas import ExecutionView, WorkflowStartRequest
+from orchestrator.schemas import ExecutionMetadata, WorkflowStartRequest
 from orchestrator.store import ExecutionStore
 
 
@@ -28,7 +28,7 @@ def run_workflow(
     issuer_id: str,
     delivery_config_ref: str,
     reusable_plan_lookup: bool = False,
-) -> ExecutionView:
+) -> ExecutionMetadata:
     metadata = request.event.get("metadata", {})
     execution_id = request.execution_id
     event_type = planner.event_type_of(request.event)
@@ -46,7 +46,7 @@ def run_workflow(
     if "context_builder_error" in bundle:
         store.set_result(execution_id, {"error": "context_builder_failed"})
         store.set_status(execution_id, "failed")
-        return _view(store, execution_id)
+        return _metadata(store, execution_id)
 
     gate = planner.pre_target_gate(event_type)
     store.record_gate_decision(execution_id, gate)
@@ -55,7 +55,7 @@ def run_workflow(
             execution_id, {"outcome": "terminated_before_delivery", "rationale": gate.rationale}
         )
         store.set_status(execution_id, "completed")
-        return _view(store, execution_id)
+        return _metadata(store, execution_id)
 
     targets = planner.select_delivery_targets()
     key = planner.applicability_key(event_type, targets)
@@ -81,10 +81,10 @@ def run_workflow(
     status, result = execute_plan(plan, workflow_ctx, deps, store, execution_id)
     store.set_result(execution_id, result)
     store.set_status(execution_id, status)
-    return _view(store, execution_id)
+    return _metadata(store, execution_id)
 
 
-def _view(store: ExecutionStore, execution_id: str) -> ExecutionView:
-    view = store.get_execution_view(execution_id)
-    assert view is not None  # just created in this call
-    return view
+def _metadata(store: ExecutionStore, execution_id: str) -> ExecutionMetadata:
+    meta = store.get_execution_metadata(execution_id)
+    assert meta is not None  # just created in this call
+    return meta

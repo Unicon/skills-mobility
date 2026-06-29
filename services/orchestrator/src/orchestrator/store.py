@@ -13,7 +13,7 @@ import sqlite3
 from datetime import UTC, datetime
 from typing import Any
 
-from orchestrator.schemas import DeliveryPhasePlan, ExecutionView, GateDecision, StepResult
+from orchestrator.schemas import DeliveryPhasePlan, ExecutionMetadata, GateDecision, StepResult
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS workflow_execution (
@@ -154,7 +154,7 @@ class ExecutionStore:
 
     # --- read model ---------------------------------------------------------
 
-    def get_execution_view(self, execution_id: str) -> ExecutionView | None:
+    def get_execution_metadata(self, execution_id: str) -> ExecutionMetadata | None:
         row = self._conn.execute(
             "SELECT * FROM workflow_execution WHERE execution_id = ?", (execution_id,)
         ).fetchone()
@@ -177,7 +177,7 @@ class ExecutionStore:
             )
             for s in step_rows
         ]
-        return ExecutionView(
+        return ExecutionMetadata(
             execution_id=row["execution_id"],
             event_type=row["event_type"],
             status=row["status"],

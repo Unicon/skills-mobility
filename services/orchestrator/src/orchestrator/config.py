@@ -11,6 +11,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="ORCHESTRATOR_")
 
+    # Local HTTP port. 8400 (not 8300 — that's Consul's default RPC port and
+    # conflicts for anyone running Consul/Docker Desktop). Override: ORCHESTRATOR_PORT.
+    port: int = 8400
     # Execution-state store (ADR-0014: SQLite locally). ":memory:" for ephemeral runs.
     db_path: str = "orchestrator.db"
     # Issuer identity stamped into the stubbed OBv3 credential.

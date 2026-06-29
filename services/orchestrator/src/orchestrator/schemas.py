@@ -7,9 +7,15 @@ Typed envelope fields with opaque JSON where the shape varies by step
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel
+
+GateDecisionType = Literal["continue_to_delivery_targets", "terminate"]
+InputSource = Literal["workflow", "step", "literal"]
+StepType = Literal["call", "wait", "for_each", "terminate"]
+StepStatus = Literal["succeeded", "skipped", "failed"]
+WorkflowStatus = Literal["created", "planning", "ready", "running", "completed", "failed"]
 
 
 class WorkflowStartRequest(BaseModel):
@@ -26,7 +32,7 @@ class GateDecision(BaseModel):
     """Pre-target Workflow Actions decision artifact — execution-scoped, never
     stored for reuse (ADR-0009, FR-OR-20)."""
 
-    decision: str  # "continue_to_delivery_targets" | "terminate"
+    decision: GateDecisionType
     confidence: float = 1.0
     rationale: str = ""
 
@@ -34,7 +40,7 @@ class GateDecision(BaseModel):
 class InputBinding(BaseModel):
     """How the executor resolves one step input (design §4)."""
 
-    source: str  # "workflow" | "step" | "literal"
+    source: InputSource
     path: str | None = None  # source == "workflow": dotted path into workflow context
     step_id: int | None = None  # source == "step": prior step's full output
     value: Any = None  # source == "literal"
@@ -42,7 +48,7 @@ class InputBinding(BaseModel):
 
 class PlanStep(BaseModel):
     step_id: int
-    type: str = "call"  # "call" | "wait" | "for_each" | "terminate" (Phase 1 uses "call")
+    type: StepType = "call"  # Phase 1 uses "call"
     action_id: str
     inputs: dict[str, InputBinding] = {}
     produces: str | None = None
@@ -55,6 +61,10 @@ class PlanGenerator(BaseModel):
 
 
 class PlanApplicability(BaseModel):
+    """The reuse key for a stored delivery-phase plan (ADR-0011): it encodes the
+    conditions under which a previously generated plan may be reused for a new
+    workflow request — same event type, source system, and selected targets."""
+
     event_type: str
     source_system: str = "mock_lms"
     selected_targets: list[str] = []
@@ -79,7 +89,7 @@ class StepResult(BaseModel):
 
     step_id: int
     action_id: str
-    status: str  # "succeeded" | "skipped" | "failed"
+    status: StepStatus
     attempt: int = 1
     output: dict[str, Any] = {}
     error: dict[str, Any] | None = None
@@ -87,12 +97,13 @@ class StepResult(BaseModel):
     finished_at: str = ""
 
 
-class ExecutionView(BaseModel):
-    """The correlated read model for GET /executions/{id} (FR-OR-19)."""
+class ExecutionMetadata(BaseModel):
+    """The correlated execution state + audit record for GET /executions/{id}
+    (FR-OR-19) — the Orchestrator's execution-log metadata, not a UI view."""
 
     execution_id: str
     event_type: str | None = None
-    status: str  # created | planning | ready | running | completed | failed
+    status: WorkflowStatus
     gate_decision: dict[str, Any] | None = None
     plan_id: str | None = None
     steps: list[StepResult] = []

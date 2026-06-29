@@ -1,9 +1,10 @@
 """FastAPI application factory for the Orchestrator.
 
 `POST /run-workflow` runs the planner + executor paths and persists the trail;
-`GET /executions/{id}` returns the correlated execution view. `POST /admin/plan-lookup`
-toggles reusable delivery-phase plan lookup (FR-OR-28) and `DELETE /admin/plans/{id}`
-forces regeneration (FR-OR-29). Seams default to the Phase-1 stubs.
+`GET /executions/{id}` returns the correlated execution metadata.
+`PUT /admin/plan-lookup-toggle` enables/disables reusable delivery-phase plan
+lookup (FR-OR-28) and `DELETE /admin/plans/{id}` forces regeneration (FR-OR-29).
+Seams default to the Phase-1 stubs.
 """
 
 from __future__ import annotations
@@ -54,7 +55,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.post("/run-workflow")
     def run_workflow(request: WorkflowStartRequest) -> dict[str, Any]:
-        view = engine.run_workflow(
+        metadata = engine.run_workflow(
             request,
             store=app.state.store,
             context_builder=app.state.context_builder,
@@ -64,20 +65,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             delivery_config_ref=settings.delivery_config_ref,
             reusable_plan_lookup=app.state.reusable_plan_lookup_enabled,
         )
-        return view.model_dump()
+        return metadata.model_dump()
 
     @app.get("/executions/{execution_id}")
     def get_execution(execution_id: str) -> dict[str, Any]:
         store: ExecutionStore = app.state.store
-        view = store.get_execution_view(execution_id)
-        if view is None:
+        metadata = store.get_execution_metadata(execution_id)
+        if metadata is None:
             raise HTTPException(
                 status_code=404,
                 detail={"errors": [{"message": f"execution {execution_id} not found"}]},
             )
-        return view.model_dump()
+        return metadata.model_dump()
 
-    @app.post("/admin/plan-lookup", tags=["admin"])
+    @app.put("/admin/plan-lookup-toggle", tags=["admin"])
     def set_plan_lookup(toggle: PlanLookupToggle) -> dict[str, Any]:
         app.state.reusable_plan_lookup_enabled = toggle.enabled
         return {"reusable_plan_lookup_enabled": toggle.enabled}
@@ -97,4 +98,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 def run() -> None:
     import uvicorn
 
-    uvicorn.run(create_app(), host="127.0.0.1", port=8300)
+    settings = get_settings()
+    uvicorn.run(create_app(settings), host="127.0.0.1", port=settings.port)
