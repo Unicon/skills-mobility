@@ -1042,6 +1042,18 @@
       "position": 1,
       "items": [
         {
+          "id": "ACCY-111-MOD-1-P1",
+          "title": "Reading: Leases under ASC 842",
+          "type": "Page",
+          "content_id": "ACCY-111-PAGE-M1-1"
+        },
+        {
+          "id": "ACCY-111-MOD-1-P2",
+          "title": "Reading: Inventory Costing Methods",
+          "type": "Page",
+          "content_id": "ACCY-111-PAGE-M1-2"
+        },
+        {
           "id": "ACCY-111-MOD-1-I1",
           "title": "Module 1 Assessment",
           "type": "Assignment",
@@ -1055,6 +1067,18 @@
       "name": "Module 2: Applying Accounting",
       "position": 2,
       "items": [
+        {
+          "id": "ACCY-111-MOD-2-P1",
+          "title": "Reading: The Accounting Cycle",
+          "type": "Page",
+          "content_id": "ACCY-111-PAGE-M2-1"
+        },
+        {
+          "id": "ACCY-111-MOD-2-P2",
+          "title": "Reading: Revenue Recognition (ASC 606)",
+          "type": "Page",
+          "content_id": "ACCY-111-PAGE-M2-2"
+        },
         {
           "id": "ACCY-111-MOD-2-I1",
           "title": "Module 2 Assessment",
@@ -1070,6 +1094,18 @@
       "position": 1,
       "items": [
         {
+          "id": "ACCY-374-MOD-1-P1",
+          "title": "Reading: Leases under ASC 842",
+          "type": "Page",
+          "content_id": "ACCY-374-PAGE-M1-1"
+        },
+        {
+          "id": "ACCY-374-MOD-1-P2",
+          "title": "Reading: Inventory Costing Methods",
+          "type": "Page",
+          "content_id": "ACCY-374-PAGE-M1-2"
+        },
+        {
           "id": "ACCY-374-MOD-1-I1",
           "title": "Module 1 Assessment",
           "type": "Assignment",
@@ -1083,6 +1119,18 @@
       "name": "Module 2: Applying Law, Governance, & Ethics",
       "position": 2,
       "items": [
+        {
+          "id": "ACCY-374-MOD-2-P1",
+          "title": "Reading: The Accounting Cycle",
+          "type": "Page",
+          "content_id": "ACCY-374-PAGE-M2-1"
+        },
+        {
+          "id": "ACCY-374-MOD-2-P2",
+          "title": "Reading: Revenue Recognition (ASC 606)",
+          "type": "Page",
+          "content_id": "ACCY-374-PAGE-M2-2"
+        },
         {
           "id": "ACCY-374-MOD-2-I1",
           "title": "Module 2 Assessment",
@@ -1098,6 +1146,18 @@
       "position": 1,
       "items": [
         {
+          "id": "ACCY-491-MOD-1-P1",
+          "title": "Reading: Leases under ASC 842",
+          "type": "Page",
+          "content_id": "ACCY-491-PAGE-M1-1"
+        },
+        {
+          "id": "ACCY-491-MOD-1-P2",
+          "title": "Reading: Inventory Costing Methods",
+          "type": "Page",
+          "content_id": "ACCY-491-PAGE-M1-2"
+        },
+        {
           "id": "ACCY-491-MOD-1-I1",
           "title": "Module 1 Assessment",
           "type": "Assignment",
@@ -1111,6 +1171,18 @@
       "name": "Module 2: Applying The Financial Audit",
       "position": 2,
       "items": [
+        {
+          "id": "ACCY-491-MOD-2-P1",
+          "title": "Reading: The Accounting Cycle",
+          "type": "Page",
+          "content_id": "ACCY-491-PAGE-M2-1"
+        },
+        {
+          "id": "ACCY-491-MOD-2-P2",
+          "title": "Reading: Revenue Recognition (ASC 606)",
+          "type": "Page",
+          "content_id": "ACCY-491-PAGE-M2-2"
+        },
         {
           "id": "ACCY-491-MOD-2-I1",
           "title": "Module 2 Assessment",
@@ -1126,6 +1198,18 @@
       "position": 1,
       "items": [
         {
+          "id": "FINC-106-MOD-1-P1",
+          "title": "Reading: Risk, Return, and Diversification",
+          "type": "Page",
+          "content_id": "FINC-106-PAGE-M1-1"
+        },
+        {
+          "id": "FINC-106-MOD-1-P2",
+          "title": "Reading: Capital Structure and WACC",
+          "type": "Page",
+          "content_id": "FINC-106-PAGE-M1-2"
+        },
+        {
           "id": "FINC-106-MOD-1-I1",
           "title": "Module 1 Assessment",
           "type": "Assignment",
@@ -1139,6 +1223,18 @@
       "name": "Module 2: Applying Finance",
       "position": 2,
       "items": [
+        {
+          "id": "FINC-106-MOD-2-P1",
+          "title": "Reading: Time Value of Money",
+          "type": "Page",
+          "content_id": "FINC-106-PAGE-M2-1"
+        },
+        {
+          "id": "FINC-106-MOD-2-P2",
+          "title": "Reading: Discounted Cash Flow Valuation",
+          "type": "Page",
+          "content_id": "FINC-106-PAGE-M2-2"
+        },
         {
           "id": "FINC-106-MOD-2-I1",
           "title": "Module 2 Assessment",
@@ -1154,6 +1250,18 @@
       "position": 1,
       "items": [
         {
+          "id": "FINC-321-MOD-1-P1",
+          "title": "Reading: Risk, Return, and Diversification",
+          "type": "Page",
+          "content_id": "FINC-321-PAGE-M1-1"
+        },
+        {
+          "id": "FINC-321-MOD-1-P2",
+          "title": "Reading: Capital Structure and WACC",
+          "type": "Page",
+          "content_id": "FINC-321-PAGE-M1-2"
+        },
+        {
           "id": "FINC-321-MOD-1-I1",
           "title": "Module 1 Project",
           "type": "Assignment",
@@ -1167,6 +1275,18 @@
       "name": "Module 2",
       "position": 2,
       "items": [
+        {
+          "id": "FINC-321-MOD-2-P1",
+          "title": "Reading: Time Value of Money",
+          "type": "Page",
+          "content_id": "FINC-321-PAGE-M2-1"
+        },
+        {
+          "id": "FINC-321-MOD-2-P2",
+          "title": "Reading: Discounted Cash Flow Valuation",
+          "type": "Page",
+          "content_id": "FINC-321-PAGE-M2-2"
+        },
         {
           "id": "FINC-321-MOD-2-I1",
           "title": "Module 2 Project",
@@ -1182,6 +1302,18 @@
       "position": 1,
       "items": [
         {
+          "id": "FINC-439-MOD-1-P1",
+          "title": "Reading: Risk, Return, and Diversification",
+          "type": "Page",
+          "content_id": "FINC-439-PAGE-M1-1"
+        },
+        {
+          "id": "FINC-439-MOD-1-P2",
+          "title": "Reading: Capital Structure and WACC",
+          "type": "Page",
+          "content_id": "FINC-439-PAGE-M1-2"
+        },
+        {
           "id": "FINC-439-MOD-1-I1",
           "title": "Module 1 Project",
           "type": "Assignment",
@@ -1196,6 +1328,18 @@
       "position": 2,
       "items": [
         {
+          "id": "FINC-439-MOD-2-P1",
+          "title": "Reading: Time Value of Money",
+          "type": "Page",
+          "content_id": "FINC-439-PAGE-M2-1"
+        },
+        {
+          "id": "FINC-439-MOD-2-P2",
+          "title": "Reading: Discounted Cash Flow Valuation",
+          "type": "Page",
+          "content_id": "FINC-439-PAGE-M2-2"
+        },
+        {
           "id": "FINC-439-MOD-2-I1",
           "title": "Module 2 Project",
           "type": "Assignment",
@@ -1206,46 +1350,214 @@
   ],
   "pages": [
     {
+      "id": "ACCY-111-PAGE-M1-1",
+      "course_id": "ACCY-111",
+      "url": "m1-p1",
+      "title": "Reading: Leases under ASC 842",
+      "body": "ASC 842 brings most leases onto the balance sheet as a right-of-use asset and a corresponding lease liability. Classification as a finance or operating lease determines whether the income-statement effect is front-loaded interest plus amortization or a single straight-line lease expense."
+    },
+    {
+      "id": "ACCY-111-PAGE-M1-2",
+      "course_id": "ACCY-111",
+      "url": "m1-p2",
+      "title": "Reading: Inventory Costing Methods",
+      "body": "FIFO, LIFO, and weighted-average assign costs to inventory and cost of goods sold differently. In a period of rising prices, FIFO reports the highest ending inventory and gross margin, while LIFO reports the lowest \u2014 so method choice materially affects the financial statements and taxes."
+    },
+    {
+      "id": "ACCY-111-PAGE-M2-1",
+      "course_id": "ACCY-111",
+      "url": "m2-p1",
+      "title": "Reading: The Accounting Cycle",
+      "body": "The accounting cycle runs from recording transactions in journals through posting to the ledger, preparing an unadjusted trial balance, making adjusting entries, and producing the financial statements. This module focuses on the adjusting-entry step, where accruals and deferrals align revenue and expense with the period in which they are earned or incurred."
+    },
+    {
+      "id": "ACCY-111-PAGE-M2-2",
+      "course_id": "ACCY-111",
+      "url": "m2-p2",
+      "title": "Reading: Revenue Recognition (ASC 606)",
+      "body": "ASC 606 recognizes revenue when control of a good or service transfers to the customer, using a five-step model: identify the contract, identify the performance obligations, determine the transaction price, allocate it to the obligations, and recognize revenue as each obligation is satisfied."
+    },
+    {
       "id": "ACCY-111-PAGE-syllabus",
       "course_id": "ACCY-111",
       "url": "syllabus",
       "title": "Course Syllabus",
-      "body": "Foundations of Accounting, assessed across two modules and a final."
+      "body": "Introduction to Accounting: foundations of accounting, assessed across two modules and a comprehensive final. Each module pairs instructional readings with a graded assessment aligned to a learning outcome."
+    },
+    {
+      "id": "ACCY-374-PAGE-M1-1",
+      "course_id": "ACCY-374",
+      "url": "m1-p1",
+      "title": "Reading: Leases under ASC 842",
+      "body": "ASC 842 brings most leases onto the balance sheet as a right-of-use asset and a corresponding lease liability. Classification as a finance or operating lease determines whether the income-statement effect is front-loaded interest plus amortization or a single straight-line lease expense."
+    },
+    {
+      "id": "ACCY-374-PAGE-M1-2",
+      "course_id": "ACCY-374",
+      "url": "m1-p2",
+      "title": "Reading: Inventory Costing Methods",
+      "body": "FIFO, LIFO, and weighted-average assign costs to inventory and cost of goods sold differently. In a period of rising prices, FIFO reports the highest ending inventory and gross margin, while LIFO reports the lowest \u2014 so method choice materially affects the financial statements and taxes."
+    },
+    {
+      "id": "ACCY-374-PAGE-M2-1",
+      "course_id": "ACCY-374",
+      "url": "m2-p1",
+      "title": "Reading: The Accounting Cycle",
+      "body": "The accounting cycle runs from recording transactions in journals through posting to the ledger, preparing an unadjusted trial balance, making adjusting entries, and producing the financial statements. This module focuses on the adjusting-entry step, where accruals and deferrals align revenue and expense with the period in which they are earned or incurred."
+    },
+    {
+      "id": "ACCY-374-PAGE-M2-2",
+      "course_id": "ACCY-374",
+      "url": "m2-p2",
+      "title": "Reading: Revenue Recognition (ASC 606)",
+      "body": "ASC 606 recognizes revenue when control of a good or service transfers to the customer, using a five-step model: identify the contract, identify the performance obligations, determine the transaction price, allocate it to the obligations, and recognize revenue as each obligation is satisfied."
     },
     {
       "id": "ACCY-374-PAGE-syllabus",
       "course_id": "ACCY-374",
       "url": "syllabus",
       "title": "Course Syllabus",
-      "body": "Foundations of Law, Governance, & Ethics, assessed across two modules and a final."
+      "body": "Law, Governance, & Ethics: foundations of law, governance, & ethics, assessed across two modules and a comprehensive final. Each module pairs instructional readings with a graded assessment aligned to a learning outcome."
+    },
+    {
+      "id": "ACCY-491-PAGE-M1-1",
+      "course_id": "ACCY-491",
+      "url": "m1-p1",
+      "title": "Reading: Leases under ASC 842",
+      "body": "ASC 842 brings most leases onto the balance sheet as a right-of-use asset and a corresponding lease liability. Classification as a finance or operating lease determines whether the income-statement effect is front-loaded interest plus amortization or a single straight-line lease expense."
+    },
+    {
+      "id": "ACCY-491-PAGE-M1-2",
+      "course_id": "ACCY-491",
+      "url": "m1-p2",
+      "title": "Reading: Inventory Costing Methods",
+      "body": "FIFO, LIFO, and weighted-average assign costs to inventory and cost of goods sold differently. In a period of rising prices, FIFO reports the highest ending inventory and gross margin, while LIFO reports the lowest \u2014 so method choice materially affects the financial statements and taxes."
+    },
+    {
+      "id": "ACCY-491-PAGE-M2-1",
+      "course_id": "ACCY-491",
+      "url": "m2-p1",
+      "title": "Reading: The Accounting Cycle",
+      "body": "The accounting cycle runs from recording transactions in journals through posting to the ledger, preparing an unadjusted trial balance, making adjusting entries, and producing the financial statements. This module focuses on the adjusting-entry step, where accruals and deferrals align revenue and expense with the period in which they are earned or incurred."
+    },
+    {
+      "id": "ACCY-491-PAGE-M2-2",
+      "course_id": "ACCY-491",
+      "url": "m2-p2",
+      "title": "Reading: Revenue Recognition (ASC 606)",
+      "body": "ASC 606 recognizes revenue when control of a good or service transfers to the customer, using a five-step model: identify the contract, identify the performance obligations, determine the transaction price, allocate it to the obligations, and recognize revenue as each obligation is satisfied."
     },
     {
       "id": "ACCY-491-PAGE-syllabus",
       "course_id": "ACCY-491",
       "url": "syllabus",
       "title": "Course Syllabus",
-      "body": "Foundations of The Financial Audit, assessed across two modules and a final."
+      "body": "The Financial Audit: foundations of the financial audit, assessed across two modules and a comprehensive final. Each module pairs instructional readings with a graded assessment aligned to a learning outcome."
+    },
+    {
+      "id": "FINC-106-PAGE-M1-1",
+      "course_id": "FINC-106",
+      "url": "m1-p1",
+      "title": "Reading: Risk, Return, and Diversification",
+      "body": "Expected return compensates investors for bearing risk. Combining imperfectly correlated assets lowers portfolio variance without proportionally lowering return \u2014 the basis of the efficient frontier and the case for diversification."
+    },
+    {
+      "id": "FINC-106-PAGE-M1-2",
+      "course_id": "FINC-106",
+      "url": "m1-p2",
+      "title": "Reading: Capital Structure and WACC",
+      "body": "WACC blends the after-tax cost of debt and the cost of equity by their weights in the capital structure. Moderate leverage can lower WACC through the tax shield, but beyond a point rising financial-distress costs push it back up."
+    },
+    {
+      "id": "FINC-106-PAGE-M2-1",
+      "course_id": "FINC-106",
+      "url": "m2-p1",
+      "title": "Reading: Time Value of Money",
+      "body": "Every valuation rests on the time value of money: a dollar today is worth more than a dollar tomorrow because it can be invested. Present value discounts future cash flows back to today at a rate reflecting their risk; future value compounds them forward."
+    },
+    {
+      "id": "FINC-106-PAGE-M2-2",
+      "course_id": "FINC-106",
+      "url": "m2-p2",
+      "title": "Reading: Discounted Cash Flow Valuation",
+      "body": "DCF values an asset as the present value of its expected future free cash flows plus a terminal value, discounted at the weighted average cost of capital. The output is highly sensitive to the discount rate and the terminal growth assumption, so sensitivity analysis is essential."
     },
     {
       "id": "FINC-106-PAGE-syllabus",
       "course_id": "FINC-106",
       "url": "syllabus",
       "title": "Course Syllabus",
-      "body": "Foundations of Finance, assessed across two modules and a final."
+      "body": "Introduction to Finance: foundations of finance, assessed across two modules and a comprehensive final. Each module pairs instructional readings with a graded assessment aligned to a learning outcome."
+    },
+    {
+      "id": "FINC-321-PAGE-M1-1",
+      "course_id": "FINC-321",
+      "url": "m1-p1",
+      "title": "Reading: Risk, Return, and Diversification",
+      "body": "Expected return compensates investors for bearing risk. Combining imperfectly correlated assets lowers portfolio variance without proportionally lowering return \u2014 the basis of the efficient frontier and the case for diversification."
+    },
+    {
+      "id": "FINC-321-PAGE-M1-2",
+      "course_id": "FINC-321",
+      "url": "m1-p2",
+      "title": "Reading: Capital Structure and WACC",
+      "body": "WACC blends the after-tax cost of debt and the cost of equity by their weights in the capital structure. Moderate leverage can lower WACC through the tax shield, but beyond a point rising financial-distress costs push it back up."
+    },
+    {
+      "id": "FINC-321-PAGE-M2-1",
+      "course_id": "FINC-321",
+      "url": "m2-p1",
+      "title": "Reading: Time Value of Money",
+      "body": "Every valuation rests on the time value of money: a dollar today is worth more than a dollar tomorrow because it can be invested. Present value discounts future cash flows back to today at a rate reflecting their risk; future value compounds them forward."
+    },
+    {
+      "id": "FINC-321-PAGE-M2-2",
+      "course_id": "FINC-321",
+      "url": "m2-p2",
+      "title": "Reading: Discounted Cash Flow Valuation",
+      "body": "DCF values an asset as the present value of its expected future free cash flows plus a terminal value, discounted at the weighted average cost of capital. The output is highly sensitive to the discount rate and the terminal growth assumption, so sensitivity analysis is essential."
     },
     {
       "id": "FINC-321-PAGE-syllabus",
       "course_id": "FINC-321",
       "url": "syllabus",
       "title": "Course Syllabus",
-      "body": "Capital Markets: a digital-credential course issuing badges per module."
+      "body": "Capital Markets: a digital-credential capital markets course that issues a badge per module and a course credential at the capstone. Each module pairs instructional readings with a project evidencing the competency."
+    },
+    {
+      "id": "FINC-439-PAGE-M1-1",
+      "course_id": "FINC-439",
+      "url": "m1-p1",
+      "title": "Reading: Risk, Return, and Diversification",
+      "body": "Expected return compensates investors for bearing risk. Combining imperfectly correlated assets lowers portfolio variance without proportionally lowering return \u2014 the basis of the efficient frontier and the case for diversification."
+    },
+    {
+      "id": "FINC-439-PAGE-M1-2",
+      "course_id": "FINC-439",
+      "url": "m1-p2",
+      "title": "Reading: Capital Structure and WACC",
+      "body": "WACC blends the after-tax cost of debt and the cost of equity by their weights in the capital structure. Moderate leverage can lower WACC through the tax shield, but beyond a point rising financial-distress costs push it back up."
+    },
+    {
+      "id": "FINC-439-PAGE-M2-1",
+      "course_id": "FINC-439",
+      "url": "m2-p1",
+      "title": "Reading: Time Value of Money",
+      "body": "Every valuation rests on the time value of money: a dollar today is worth more than a dollar tomorrow because it can be invested. Present value discounts future cash flows back to today at a rate reflecting their risk; future value compounds them forward."
+    },
+    {
+      "id": "FINC-439-PAGE-M2-2",
+      "course_id": "FINC-439",
+      "url": "m2-p2",
+      "title": "Reading: Discounted Cash Flow Valuation",
+      "body": "DCF values an asset as the present value of its expected future free cash flows plus a terminal value, discounted at the weighted average cost of capital. The output is highly sensitive to the discount rate and the terminal growth assumption, so sensitivity analysis is essential."
     },
     {
       "id": "FINC-439-PAGE-syllabus",
       "course_id": "FINC-439",
       "url": "syllabus",
       "title": "Course Syllabus",
-      "body": "Applied Securities Analysis: a digital-credential course issuing badges per module."
+      "body": "Applied Securities Analysis: a digital-credential applied securities analysis course that issues a badge per module and a course credential at the capstone. Each module pairs instructional readings with a project evidencing the competency."
     }
   ],
   "assignments": [
@@ -1253,7 +1565,7 @@
       "id": "ACCY-111-A-M1",
       "course_id": "ACCY-111",
       "name": "Module 1 Assessment",
-      "description": "Demonstrate the Accounting competency.",
+      "description": "Record the month-end adjusting entries for accrued wages, prepaid insurance, and straight-line depreciation, then prepare an adjusted trial balance. Submit the journal entries with a short explanation of each account's effect on the financial statements.",
       "points_possible": 100.0,
       "due_at": "2026-03-23T01:23:39.341770Z",
       "role": "module",
@@ -1266,7 +1578,7 @@
       "id": "ACCY-111-A-M2",
       "course_id": "ACCY-111",
       "name": "Module 2 Assessment",
-      "description": "Demonstrate a Accounting sub-skill.",
+      "description": "Analyze the attached equipment lease under ASC 842: classify it, record the initial right-of-use asset and lease liability at the present value of the payments, and show how interest and amortization expense flow through the income statement over the term.",
       "points_possible": 100.0,
       "due_at": "2026-01-15T16:49:40.359134Z",
       "role": "module",
@@ -1279,7 +1591,7 @@
       "id": "ACCY-111-A-FINAL",
       "course_id": "ACCY-111",
       "name": "Final Accounting Exam",
-      "description": "Comprehensive Accounting assessment.",
+      "description": "Comprehensive accounting assessment: from the provided trial balance and supporting schedules, prepare the adjusting entries, the income statement, the balance sheet, and the statement of cash flows, and write a brief memo interpreting the results for a non-accounting manager.",
       "points_possible": 100.0,
       "due_at": "2026-02-11T16:52:33.575566Z",
       "role": "final",
@@ -1292,7 +1604,7 @@
       "id": "ACCY-374-A-M1",
       "course_id": "ACCY-374",
       "name": "Module 1 Assessment",
-      "description": "Demonstrate the Law, Governance, & Ethics competency.",
+      "description": "Complete the bank reconciliation from the provided bank statement and cash ledger. Identify deposits in transit, outstanding checks, and any service charges or NSF items, and reconcile to an adjusted cash balance with supporting journal entries.",
       "points_possible": 100.0,
       "due_at": "2026-03-16T08:29:48.337820Z",
       "role": "module",
@@ -1305,7 +1617,7 @@
       "id": "ACCY-374-A-M2",
       "course_id": "ACCY-374",
       "name": "Module 2 Assessment",
-      "description": "Demonstrate a Law, Governance, & Ethics sub-skill.",
+      "description": "Apply the five-step ASC 606 model to the multi-element software contract: identify the performance obligations, allocate the transaction price by standalone selling price, and determine the timing of revenue recognition for each obligation.",
       "points_possible": 100.0,
       "due_at": "2026-03-30T02:15:00.718089Z",
       "role": "module",
@@ -1318,7 +1630,7 @@
       "id": "ACCY-374-A-FINAL",
       "course_id": "ACCY-374",
       "name": "Final Law, Governance, & Ethics Exam",
-      "description": "Comprehensive Law, Governance, & Ethics assessment.",
+      "description": "Comprehensive accounting assessment: from the provided trial balance and supporting schedules, prepare the adjusting entries, the income statement, the balance sheet, and the statement of cash flows, and write a brief memo interpreting the results for a non-accounting manager.",
       "points_possible": 100.0,
       "due_at": "2026-01-17T22:46:36.488768Z",
       "role": "final",
@@ -1331,7 +1643,7 @@
       "id": "ACCY-491-A-M1",
       "course_id": "ACCY-491",
       "name": "Module 1 Assessment",
-      "description": "Demonstrate the The Financial Audit competency.",
+      "description": "Record the month-end adjusting entries for accrued wages, prepaid insurance, and straight-line depreciation, then prepare an adjusted trial balance. Submit the journal entries with a short explanation of each account's effect on the financial statements.",
       "points_possible": 100.0,
       "due_at": "2026-02-10T14:34:09.809627Z",
       "role": "module",
@@ -1344,7 +1656,7 @@
       "id": "ACCY-491-A-M2",
       "course_id": "ACCY-491",
       "name": "Module 2 Assessment",
-      "description": "Demonstrate a The Financial Audit sub-skill.",
+      "description": "Analyze the attached equipment lease under ASC 842: classify it, record the initial right-of-use asset and lease liability at the present value of the payments, and show how interest and amortization expense flow through the income statement over the term.",
       "points_possible": 100.0,
       "due_at": "2026-02-08T15:15:30.599794Z",
       "role": "module",
@@ -1357,7 +1669,7 @@
       "id": "ACCY-491-A-FINAL",
       "course_id": "ACCY-491",
       "name": "Final The Financial Audit Exam",
-      "description": "Comprehensive The Financial Audit assessment.",
+      "description": "Comprehensive accounting assessment: from the provided trial balance and supporting schedules, prepare the adjusting entries, the income statement, the balance sheet, and the statement of cash flows, and write a brief memo interpreting the results for a non-accounting manager.",
       "points_possible": 100.0,
       "due_at": "2026-03-14T15:03:58.333503Z",
       "role": "final",
@@ -1370,7 +1682,7 @@
       "id": "FINC-106-A-M1",
       "course_id": "FINC-106",
       "name": "Module 1 Assessment",
-      "description": "Demonstrate the Finance competency.",
+      "description": "Construct the efficient frontier from the provided asset return and covariance data, identify the tangency portfolio at the given risk-free rate, and explain how the optimal allocation shifts as the risk-free rate changes.",
       "points_possible": 100.0,
       "due_at": "2026-03-23T00:09:25.526494Z",
       "role": "module",
@@ -1383,7 +1695,7 @@
       "id": "FINC-106-A-M2",
       "course_id": "FINC-106",
       "name": "Module 2 Assessment",
-      "description": "Demonstrate a Finance sub-skill.",
+      "description": "Value the bond by discounting its cash flows at the yield to maturity, then quantify its interest-rate risk using modified duration and show the price change for a 50-basis-point move in yield.",
       "points_possible": 100.0,
       "due_at": "2026-03-19T18:27:02.836972Z",
       "role": "module",
@@ -1396,7 +1708,7 @@
       "id": "FINC-106-A-FINAL",
       "course_id": "FINC-106",
       "name": "Final Finance Exam",
-      "description": "Comprehensive Finance assessment.",
+      "description": "Capstone valuation: given the company's financials and market data, build an integrated three-statement model, derive WACC, value the firm by both DCF and a comparables approach, reconcile the two, and recommend an investment decision with the key risks and sensitivities.",
       "points_possible": 100.0,
       "due_at": "2026-01-29T12:09:33.782690Z",
       "role": "final",
@@ -1409,7 +1721,7 @@
       "id": "FINC-321-A-M1",
       "course_id": "FINC-321",
       "name": "Module 1 Project",
-      "description": "Project evidencing a Capital Markets competency.",
+      "description": "Build a discounted-cash-flow model for the target company: project five years of free cash flow, estimate a terminal value, discount at the WACC you derive, and present the implied enterprise and equity value with a sensitivity table over the discount rate and growth rate.",
       "points_possible": 100.0,
       "due_at": "2026-02-18T12:19:03.997510Z",
       "role": "module",
@@ -1422,7 +1734,7 @@
       "id": "FINC-321-A-M2",
       "course_id": "FINC-321",
       "name": "Module 2 Project",
-      "description": "Project evidencing a second Capital Markets competency.",
+      "description": "Evaluate the capital project using NPV and IRR at the stated hurdle rate. Include a payback estimate and a scenario analysis, and give a clear accept/reject recommendation supported by the numbers.",
       "points_possible": 100.0,
       "due_at": "2026-03-17T12:53:46.313668Z",
       "role": "module",
@@ -1435,7 +1747,7 @@
       "id": "FINC-321-A-FINAL",
       "course_id": "FINC-321",
       "name": "Capital Markets Capstone",
-      "description": "Capstone for the Capital Markets credential.",
+      "description": "Capstone valuation: given the company's financials and market data, build an integrated three-statement model, derive WACC, value the firm by both DCF and a comparables approach, reconcile the two, and recommend an investment decision with the key risks and sensitivities.",
       "points_possible": 100.0,
       "due_at": "2026-02-06T20:27:26.592805Z",
       "role": "final",
@@ -1448,7 +1760,7 @@
       "id": "FINC-439-A-M1",
       "course_id": "FINC-439",
       "name": "Module 1 Project",
-      "description": "Project evidencing a Applied Securities Analysis competency.",
+      "description": "Construct the efficient frontier from the provided asset return and covariance data, identify the tangency portfolio at the given risk-free rate, and explain how the optimal allocation shifts as the risk-free rate changes.",
       "points_possible": 100.0,
       "due_at": "2026-04-16T00:37:00.766354Z",
       "role": "module",
@@ -1461,7 +1773,7 @@
       "id": "FINC-439-A-M2",
       "course_id": "FINC-439",
       "name": "Module 2 Project",
-      "description": "Project evidencing a second Applied Securities Analysis competency.",
+      "description": "Value the bond by discounting its cash flows at the yield to maturity, then quantify its interest-rate risk using modified duration and show the price change for a 50-basis-point move in yield.",
       "points_possible": 100.0,
       "due_at": "2026-03-13T10:26:35.555532Z",
       "role": "module",
@@ -1474,7 +1786,7 @@
       "id": "FINC-439-A-FINAL",
       "course_id": "FINC-439",
       "name": "Applied Securities Analysis Capstone",
-      "description": "Capstone for the Applied Securities Analysis credential.",
+      "description": "Capstone valuation: given the company's financials and market data, build an integrated three-statement model, derive WACC, value the firm by both DCF and a comparables approach, reconcile the two, and recommend an investment decision with the key risks and sensitivities.",
       "points_possible": 100.0,
       "due_at": "2026-01-18T11:07:29.820462Z",
       "role": "final",
@@ -1489,7 +1801,7 @@
       "id": "ACCY-111-OUT-1",
       "title": "1.0.0 Accounting Principles",
       "display_name": "Apply core principles of accounting",
-      "description": "Learner can independently apply accounting to analyze a problem.",
+      "description": "The learner can independently apply core accounting principles \u2014 accrual accounting, the governing GAAP standards, and the relationships among the financial statements \u2014 to analyze an unfamiliar business scenario and produce correct, well-supported financial information.",
       "code": "1.0.0",
       "mastery_points": 3.0,
       "points_possible": 5.0
@@ -1498,7 +1810,7 @@
       "id": "ACCY-111-OUT-1-2",
       "title": "1.2.0 Prepare a accounting work product",
       "display_name": "Complete a discrete accounting task",
-      "description": "Learner can complete a single bounded accounting task accurately.",
+      "description": "The learner can complete a single bounded accounting task accurately \u2014 such as recording a set of adjusting entries or preparing a bank reconciliation \u2014 applying the correct accounts, amounts, and standard for that task.",
       "code": "1.2.0",
       "mastery_points": 3.0,
       "points_possible": 5.0
@@ -1507,7 +1819,7 @@
       "id": "ACCY-374-OUT-1",
       "title": "1.0.0 Law, Governance, & Ethics Principles",
       "display_name": "Apply core principles of law, governance, & ethics",
-      "description": "Learner can independently apply law, governance, & ethics to analyze a problem.",
+      "description": "The learner can independently apply core accounting principles \u2014 accrual accounting, the governing GAAP standards, and the relationships among the financial statements \u2014 to analyze an unfamiliar business scenario and produce correct, well-supported financial information.",
       "code": "1.0.0",
       "mastery_points": 3.0,
       "points_possible": 5.0
@@ -1516,7 +1828,7 @@
       "id": "ACCY-374-OUT-1-2",
       "title": "1.2.0 Prepare a law, governance, & ethics work product",
       "display_name": "Complete a discrete law, governance, & ethics task",
-      "description": "Learner can complete a single bounded law, governance, & ethics task accurately.",
+      "description": "The learner can complete a single bounded accounting task accurately \u2014 such as recording a set of adjusting entries or preparing a bank reconciliation \u2014 applying the correct accounts, amounts, and standard for that task.",
       "code": "1.2.0",
       "mastery_points": 3.0,
       "points_possible": 5.0
@@ -1525,7 +1837,7 @@
       "id": "ACCY-491-OUT-1",
       "title": "1.0.0 The Financial Audit Principles",
       "display_name": "Apply core principles of the financial audit",
-      "description": "Learner can independently apply the financial audit to analyze a problem.",
+      "description": "The learner can independently apply core accounting principles \u2014 accrual accounting, the governing GAAP standards, and the relationships among the financial statements \u2014 to analyze an unfamiliar business scenario and produce correct, well-supported financial information.",
       "code": "1.0.0",
       "mastery_points": 3.0,
       "points_possible": 5.0
@@ -1534,7 +1846,7 @@
       "id": "ACCY-491-OUT-1-2",
       "title": "1.2.0 Prepare a the financial audit work product",
       "display_name": "Complete a discrete the financial audit task",
-      "description": "Learner can complete a single bounded the financial audit task accurately.",
+      "description": "The learner can complete a single bounded accounting task accurately \u2014 such as recording a set of adjusting entries or preparing a bank reconciliation \u2014 applying the correct accounts, amounts, and standard for that task.",
       "code": "1.2.0",
       "mastery_points": 3.0,
       "points_possible": 5.0
@@ -1543,7 +1855,7 @@
       "id": "FINC-106-OUT-1",
       "title": "1.0.0 Finance Principles",
       "display_name": "Apply core principles of finance",
-      "description": "Learner can independently apply finance to analyze a problem.",
+      "description": "The learner can independently apply core finance principles \u2014 the time value of money, risk and return, and valuation \u2014 to model an unfamiliar decision, reason about its risks and sensitivities, and reach a defensible recommendation.",
       "code": "1.0.0",
       "mastery_points": 3.0,
       "points_possible": 5.0
@@ -1552,7 +1864,7 @@
       "id": "FINC-106-OUT-1-2",
       "title": "1.2.0 Prepare a finance work product",
       "display_name": "Complete a discrete finance task",
-      "description": "Learner can complete a single bounded finance task accurately.",
+      "description": "The learner can complete a single bounded finance task accurately \u2014 such as pricing a bond or computing a project's NPV \u2014 selecting and applying the appropriate method for that task.",
       "code": "1.2.0",
       "mastery_points": 3.0,
       "points_possible": 5.0
@@ -1561,7 +1873,7 @@
       "id": "FINC-321-OUT-1",
       "title": "1.0.0 Capital Markets Competency",
       "display_name": "Demonstrate capital markets competency",
-      "description": "Learner demonstrates capital markets competency to a credential standard.",
+      "description": "The learner can independently apply core finance principles \u2014 the time value of money, risk and return, and valuation \u2014 to model an unfamiliar decision, reason about its risks and sensitivities, and reach a defensible recommendation.",
       "code": "1.0.0",
       "mastery_points": 3.0,
       "points_possible": 5.0
@@ -1570,7 +1882,7 @@
       "id": "FINC-439-OUT-1",
       "title": "1.0.0 Applied Securities Analysis Competency",
       "display_name": "Demonstrate applied securities analysis competency",
-      "description": "Learner demonstrates applied securities analysis competency to a credential standard.",
+      "description": "The learner can independently apply core finance principles \u2014 the time value of money, risk and return, and valuation \u2014 to model an unfamiliar decision, reason about its risks and sensitivities, and reach a defensible recommendation.",
       "code": "1.0.0",
       "mastery_points": 3.0,
       "points_possible": 5.0

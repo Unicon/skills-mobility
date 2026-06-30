@@ -101,6 +101,23 @@ def test_submissions_and_rubrics_carry_realistic_content():
         assert all(ra.criterion_id and ra.comments for ra in s.rubric_assessment)
 
 
+def test_modules_carry_instructional_pages_and_rich_text():
+    # Issue #23 slices 2-4: rich descriptions + instructional pages.
+    catalog = generate(seed=42, csv_dir=DATA).catalog
+
+    # Every module includes Page content-items (so the Context Builder's
+    # module_pages chain returns real pages) alongside the graded assignment.
+    for m in catalog.modules:
+        types = [i.type for i in m.items]
+        assert "Page" in types and "Assignment" in types
+
+    # Pages have substantive instructional bodies; assignments + outcomes are rich.
+    assert all(p.body.strip() for p in catalog.pages)
+    assert any(len(p.body) > 120 for p in catalog.pages)
+    assert all(len(a.description) > 40 for a in catalog.assignments)
+    assert all(len(o.description) > 60 for o in catalog.outcomes)
+
+
 def test_store_resolves_generated_entities():
     catalog = generate(seed=42, csv_dir=DATA).catalog
     store = CatalogStore(catalog)
