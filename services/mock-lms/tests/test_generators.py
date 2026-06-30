@@ -81,6 +81,26 @@ def test_requires_at_least_two_courses():
         generate(seed=42, csv_dir=DATA, n_courses=1)
 
 
+def test_submissions_and_rubrics_carry_realistic_content():
+    # Issue #23: realistic content for the Field Mapping / Field Synthesis services.
+    catalog = generate(seed=42, csv_dir=DATA).catalog
+
+    # Every graded assignment has a rubric with multiple, distinct criteria.
+    rubric_assignment_ids = {r.assignment_id for r in catalog.rubrics}
+    assert {a.id for a in catalog.assignments} <= rubric_assignment_ids
+    for r in catalog.rubrics:
+        assert len(r.criteria) >= 3
+        assert len({c.description for c in r.criteria}) == len(r.criteria)  # varied, not cloned
+        assert all(c.ratings for c in r.criteria)
+
+    # Submissions carry a non-empty body + a per-criterion rubric assessment.
+    assert catalog.submissions
+    for s in catalog.submissions:
+        assert s.body.strip()
+        assert s.rubric_assessment
+        assert all(ra.criterion_id and ra.comments for ra in s.rubric_assessment)
+
+
 def test_store_resolves_generated_entities():
     catalog = generate(seed=42, csv_dir=DATA).catalog
     store = CatalogStore(catalog)

@@ -46,8 +46,10 @@ from mock_lms.catalog import (
     RubricCriterion,
     RubricRating,
     Submission,
+    SubmissionCriterionAssessment,
     User,
 )
+from mock_lms.generators.content import SubjectContent, content_for
 
 # Fixed date window — keeps generation independent of the wall clock.
 _WINDOW_START = datetime(2026, 1, 13, tzinfo=UTC)
@@ -242,7 +244,8 @@ def _due(fake: Faker) -> datetime:
     return fake.date_time_between(_WINDOW_START, _WINDOW_END, tzinfo=UTC)
 
 
-def _rubric(course_id: str, assignment_id: str, title: str) -> Rubric:
+def _rubric(course_id: str, assignment_id: str, title: str, content: SubjectContent) -> Rubric:
+    """Subject-specific rubric (issue #23): real, varied criteria + ratings."""
     return Rubric(
         id=f"{course_id}-RUB-{assignment_id}",
         course_id=course_id,
@@ -250,34 +253,50 @@ def _rubric(course_id: str, assignment_id: str, title: str) -> Rubric:
         title=f"{title} Rubric",
         criteria=[
             RubricCriterion(
-                id=f"{assignment_id}-C1",
-                description="Demonstrates understanding of core concepts",
-                points=5.0,
-                ratings=[
-                    RubricRating(description="Exceeds", points=5.0),
-                    RubricRating(description="Meets", points=3.0),
-                    RubricRating(description="Approaching", points=1.0),
-                ],
-            ),
-            RubricCriterion(
-                id=f"{assignment_id}-C2",
-                description="Applies concepts to a realistic problem",
-                points=5.0,
-                ratings=[
-                    RubricRating(description="Exceeds", points=5.0),
-                    RubricRating(description="Meets", points=3.0),
-                    RubricRating(description="Approaching", points=1.0),
-                ],
-            ),
+                id=f"{assignment_id}-{c.key}",
+                description=c.description,
+                points=c.points,
+                ratings=[RubricRating(description=d, points=p) for d, p in c.ratings],
+            )
+            for c in content.rubric_criteria
         ],
     )
 
 
+def _rubric_assessment(
+    rubric: Rubric, content: SubjectContent, passed: bool, variation: int
+) -> list[SubmissionCriterionAssessment]:
+    """Per-criterion assessment for a submission — top rating when the learner
+    met the standard, a lower one otherwise (Canvas ``rubric_assessment``)."""
+    out: list[SubmissionCriterionAssessment] = []
+    for i, crit in enumerate(rubric.criteria):
+        rating = crit.ratings[0] if passed else crit.ratings[min(1, len(crit.ratings) - 1)]
+        comment = content.grader_comments[(variation + i) % len(content.grader_comments)]
+        out.append(
+            SubmissionCriterionAssessment(
+                criterion_id=crit.id,
+                points=rating.points,
+                rating_description=rating.description,
+                comments=comment,
+            )
+        )
+    return out
+
+
 def _graded_submission(
-    course_id: str, assignment_id: str, user_id: str, score: float, fake: Faker
+    course_id: str,
+    assignment_id: str,
+    user_id: str,
+    score: float,
+    fake: Faker,
+    *,
+    rubric: Rubric,
+    content: SubjectContent,
+    variation: int,
 ) -> Submission:
     submitted = fake.date_time_between(_WINDOW_START, _WINDOW_END, tzinfo=UTC)
     graded = fake.date_time_between(submitted, _WINDOW_END, tzinfo=UTC)
+    passed = score >= _PASS_SCORE
     return Submission(
         id=f"{course_id}-SUB-{assignment_id}-{user_id}",
         course_id=course_id,
@@ -286,6 +305,8 @@ def _graded_submission(
         score=score,
         grade=_grade(score),
         workflow_state="graded",
+        body=content.submission_bodies[variation % len(content.submission_bodies)],
+        rubric_assessment=_rubric_assessment(rubric, content, passed, variation),
         submitted_at=submitted,
         graded_at=graded,
     )
@@ -368,9 +389,11 @@ def _generate_standard(catalog: Catalog, course: Course, rc: _RosterCourse, fake
         Page(id=f"{cid}-PAGE-syllabus", course_id=cid, url="syllabus", title="Course Syllabus",
              body=f"Foundations of {subject}, assessed across two modules and a final.")
     )
-    final_rubric = _rubric(cid, a_final.id, a_final.name)
-    a_final.rubric_id = final_rubric.id
-    catalog.rubrics.append(final_rubric)
+    content = content_for(course.course_code)
+    rubrics = {a.id: _rubric(cid, a.id, a.name, content) for a in (a_m1, a_m2, a_final)}
+    for a in (a_m1, a_m2, a_final):
+        a.rubric_id = rubrics[a.id].id
+    catalog.rubrics.extend(rubrics.values())
 
     # Learner work: first learner passes, second fails, rest pass — so the final
     # Action can demonstrate both the passing and failing course_completed variant.
@@ -379,7 +402,10 @@ def _generate_standard(catalog: Catalog, course: Course, rc: _RosterCourse, fake
         for assignment in (a_m1, a_m2, a_final):
             score = final_score if assignment is a_final else _PASS_SCORE
             catalog.submissions.append(
-                _graded_submission(cid, assignment.id, learner.id, score, fake)
+                _graded_submission(
+                    cid, assignment.id, learner.id, score, fake,
+                    rubric=rubrics[assignment.id], content=content, variation=idx,
+                )
             )
         for outcome in (competency, sub_competency):
             catalog.outcome_results.append(
@@ -500,14 +526,19 @@ def _generate_digital_credential(
         Page(id=f"{cid}-PAGE-syllabus", course_id=cid, url="syllabus", title="Course Syllabus",
              body=f"{course.name}: a digital-credential course issuing badges per module.")
     )
-    final_rubric = _rubric(cid, a_final.id, a_final.name)
-    a_final.rubric_id = final_rubric.id
-    catalog.rubrics.append(final_rubric)
+    content = content_for(course.course_code)
+    rubrics = {a.id: _rubric(cid, a.id, a.name, content) for a in (a_m1, a_m2, a_final)}
+    for a in (a_m1, a_m2, a_final):
+        a.rubric_id = rubrics[a.id].id
+    catalog.rubrics.extend(rubrics.values())
 
     for assignment in (a_m1, a_m2, a_final):
-        for learner in rc.learners:
+        for idx, learner in enumerate(rc.learners):
             catalog.submissions.append(
-                _graded_submission(cid, assignment.id, learner.id, _PASS_SCORE, fake)
+                _graded_submission(
+                    cid, assignment.id, learner.id, _PASS_SCORE, fake,
+                    rubric=rubrics[assignment.id], content=content, variation=idx,
+                )
             )
 
     catalog.actions.extend(
