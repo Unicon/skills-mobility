@@ -157,3 +157,5 @@ Dependency rules: `apps/` may use `packages/` but not `services/`; `services/` m
 [ ] No AI attribution in commits or PR descriptions
 [ ] Docs/ADRs updated if the change affects structure or decisions
 ```
+
+Before opening a **code PR**, also run the service/PR-shaped [pre-PR checklist](docs/pr-checklist.md) (logging, README, `.env.example`, port, enums, tests, doc/code alignment) — it captures recurring review feedback so it's handled up front.
