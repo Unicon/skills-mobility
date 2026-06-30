@@ -125,7 +125,7 @@ Dependency rules: `apps/` may use `packages/` but not `services/`; `services/` m
 
 **Pull requests:** use the `gh` CLI. Describe *what* changed and *why*; call out interesting decisions/tradeoffs. Mark in-progress work as a draft (`--draft`) and/or `WIP:` in the title.
 
-**Decisions:** capture significant architecture decisions as ADRs under `docs/decisions/` (`NNNN-short-title.md`); ADRs are immutable history — supersede, don't rewrite.
+**Decisions:** capture significant architecture decisions as ADRs under `docs/decisions/` (`NNNN-short-title.md`). Amend ADRs in place as decisions evolve so they stay coherent with the current architecture; mark `Status: Superseded by ADR-XXXX` only when a decision is wholly replaced rather than refined.
 
 ## AWS boundary
 
