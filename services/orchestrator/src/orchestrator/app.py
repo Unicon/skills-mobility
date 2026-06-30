@@ -96,7 +96,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
 
 def run() -> None:
+    import logging
+
     import uvicorn
 
     settings = get_settings()
+    # Configure the root logger so the engine/executor INFO logs are emitted
+    # (uvicorn doesn't configure app loggers). Level via ORCHESTRATOR_LOG_LEVEL.
+    logging.basicConfig(level=settings.log_level.upper())
     uvicorn.run(create_app(settings), host="127.0.0.1", port=settings.port)

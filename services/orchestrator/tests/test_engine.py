@@ -4,6 +4,7 @@ the context-builder failure path, and reusable delivery-phase plan lookup
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from orchestrator import engine, planner
@@ -38,6 +39,17 @@ def test_gate_continue_runs_full_plan(sample_event):
     assert meta.gate_decision["decision"] == "continue_to_delivery_targets"
     assert meta.plan_id == "phase1-skill_mastered.v1"
     assert len(meta.steps) == 8
+
+
+def test_engine_logs_key_transitions(sample_event, caplog):
+    # The audit-traceability contract wants the run's key transitions visible.
+    with caplog.at_level(logging.INFO, logger="orchestrator"):
+        _run(sample_event, store=ExecutionStore(":memory:"))
+    log = " ".join(caplog.messages)
+    assert "gate decision" in log
+    assert "delivery-phase plan generated" in log
+    assert "workflow completed" in log
+    assert "step 1" in log  # executor logs each step
 
 
 def test_gate_terminate_skips_delivery():

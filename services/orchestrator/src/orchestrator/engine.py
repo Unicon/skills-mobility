@@ -8,6 +8,7 @@ so the run is inspectable step by step.
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 
 from orchestrator import planner
@@ -16,6 +17,8 @@ from orchestrator.clients import ContextBuilderClient, DeliveryRouterClient, Pro
 from orchestrator.executor import execute_plan
 from orchestrator.schemas import ExecutionMetadata, WorkflowStartRequest
 from orchestrator.store import ExecutionStore
+
+logger = logging.getLogger(__name__)
 
 
 def run_workflow(
@@ -32,6 +35,7 @@ def run_workflow(
     metadata = request.event.get("metadata", {})
     execution_id = request.execution_id
     event_type = planner.event_type_of(request.event)
+    logger.info("workflow start: execution_id=%s event_type=%s", execution_id, event_type)
 
     store.create_execution(
         execution_id,
@@ -44,17 +48,20 @@ def run_workflow(
     # Planner path: context → pre-target gate → targets → delivery-phase plan.
     bundle = context_builder.build_context(execution_id, request.event)
     if "context_builder_error" in bundle:
+        logger.warning("context builder failed: execution_id=%s", execution_id)
         store.set_result(execution_id, {"error": "context_builder_failed"})
         store.set_status(execution_id, "failed")
         return _metadata(store, execution_id)
 
     gate = planner.pre_target_gate(event_type)
     store.record_gate_decision(execution_id, gate)
+    logger.info("gate decision: execution_id=%s decision=%s", execution_id, gate.decision)
     if gate.decision != "continue_to_delivery_targets":
         store.set_result(
             execution_id, {"outcome": "terminated_before_delivery", "rationale": gate.rationale}
         )
         store.set_status(execution_id, "completed")
+        logger.info("workflow terminated pre-delivery: execution_id=%s", execution_id)
         return _metadata(store, execution_id)
 
     targets = planner.select_delivery_targets()
@@ -63,6 +70,11 @@ def run_workflow(
     if plan is None:
         plan = planner.delivery_phase_plan(event_type, targets, datetime.now(UTC).isoformat())
         store.save_plan(plan, key)
+        logger.info("delivery-phase plan generated: execution_id=%s plan_id=%s", execution_id,
+                    plan.plan_id)
+    else:
+        logger.info("delivery-phase plan reused: execution_id=%s plan_id=%s", execution_id,
+                    plan.plan_id)
     store.set_plan(execution_id, plan.plan_id)
     store.set_status(execution_id, "ready")
 
@@ -81,6 +93,7 @@ def run_workflow(
     status, result = execute_plan(plan, workflow_ctx, deps, store, execution_id)
     store.set_result(execution_id, result)
     store.set_status(execution_id, status)
+    logger.info("workflow %s: execution_id=%s", status, execution_id)
     return _metadata(store, execution_id)
 
 

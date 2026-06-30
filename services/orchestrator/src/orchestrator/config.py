@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     delivery_router_url: str | None = None  # #19 — unbuilt; HTTP client wires in later
     # Reusable delivery-phase plan lookup, off by default (FR-OR-28); toggle at runtime.
     reusable_plan_lookup_enabled: bool = False
+    # Root log level for the service entrypoint (INFO, DEBUG, WARNING, ...).
+    log_level: str = "INFO"
 
 
 @lru_cache

@@ -7,12 +7,15 @@ still persisted as if it were a queue-driven worker transition (FR-OR-8).
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from typing import Any
 
 from orchestrator.actions import ACTIONS, ActionDeps
 from orchestrator.schemas import DeliveryPhasePlan, InputBinding, PlanStep, StepResult
 from orchestrator.store import ExecutionStore
+
+logger = logging.getLogger(__name__)
 
 
 def _now() -> str:
@@ -83,6 +86,10 @@ def execute_plan(
                 started_at=started,
                 finished_at=_now(),
             ),
+        )
+        logger.info(
+            "step %s: execution_id=%s action=%s status=%s",
+            step.step_id, execution_id, step.action_id, "failed" if failed else "succeeded",
         )
         if failed:
             return "failed", {}
