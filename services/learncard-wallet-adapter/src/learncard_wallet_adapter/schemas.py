@@ -42,3 +42,13 @@ class DeliverResponse(BaseModel):
     external_reference_id: str | None = None
     result: DeliverResult | None = None
     error: ErrorInfo | None = None
+
+
+class DeliveredCredential(BaseModel):
+    # Read-back proof for the Admin UI (#53, ADR-0020): is the credential (by its
+    # delivery `uri`) present in the recipient wallet, and the resolved VC to render.
+    delivered: bool
+    recipient_profile_id: str | None = None
+    sent_at: str | None = None
+    credential: dict[str, Any] | None = None
+    error: str | None = None

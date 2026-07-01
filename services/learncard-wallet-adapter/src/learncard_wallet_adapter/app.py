@@ -15,18 +15,25 @@ import httpx
 from fastapi import FastAPI
 from learncard_api import LearnCardClient, LearnCardSettings
 
-from learncard_wallet_adapter import delivery, resultmap
+from learncard_wallet_adapter import delivery, readback, resultmap
 from learncard_wallet_adapter.config import Settings, get_settings
-from learncard_wallet_adapter.schemas import DeliverRequest, DeliverResponse
+from learncard_wallet_adapter.schemas import DeliveredCredential, DeliverRequest, DeliverResponse
 
 logger = logging.getLogger("learncard_wallet_adapter")
 
 
 def create_app(
-    settings: Settings | None = None, client: LearnCardClient | None = None
+    settings: Settings | None = None,
+    client: LearnCardClient | None = None,
+    recipient_client: LearnCardClient | None = None,
 ) -> FastAPI:
     settings = settings or get_settings()
     client = client or LearnCardClient(LearnCardSettings())
+    # Read-back uses the recipient's own read token (distinct identity from the
+    # sender), against the same LearnCard base URL.
+    recipient_client = recipient_client or LearnCardClient(
+        LearnCardSettings(api_token=settings.recipient_api_token)
+    )
     app = FastAPI(
         title="LearnCard Wallet Adapter",
         version="0.1.0",
@@ -34,6 +41,7 @@ def create_app(
     )
     app.state.settings = settings
     app.state.client = client
+    app.state.recipient_client = recipient_client
 
     @app.post("/internal/deliver-to-learncard-wallet")
     def deliver_to_wallet(req: DeliverRequest) -> DeliverResponse:
@@ -56,6 +64,18 @@ def create_app(
             uri,
         )
         return resultmap.to_success(uri)
+
+    @app.get("/internal/delivered-credential")
+    def delivered_credential(uri: str) -> DeliveredCredential:
+        """Read-back for the Admin UI: is the credential `uri` in the recipient
+        wallet, and what is it? `uri` is a delivery `external_reference_id`."""
+        try:
+            result = readback.read_delivered(recipient_client, uri)
+        except httpx.HTTPError as exc:
+            logger.warning("read-back failed uri=%s: %s", uri, exc)
+            return DeliveredCredential(delivered=False, error=str(exc))
+        logger.info("read-back uri=%s delivered=%s", uri, result.delivered)
+        return result
 
     @app.get("/healthz", tags=["meta"])
     def healthz() -> dict[str, str]:

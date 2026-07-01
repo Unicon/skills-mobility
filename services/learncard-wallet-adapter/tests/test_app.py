@@ -93,3 +93,73 @@ def test_healthz() -> None:
 
     resp = _client(handle).get("/healthz")
     assert resp.json() == {"status": "ok"}
+
+
+# --- read-back (#53) ---
+
+READBACK = "/internal/delivered-credential"
+
+
+def _readback_client(handler: Callable[[httpx.Request], httpx.Response]) -> TestClient:
+    """Inject a recipient client (read token) driving the read-back; the sender
+    client must not be touched during a read-back."""
+    def _no_send(request: httpx.Request) -> httpx.Response:
+        raise AssertionError(f"unexpected sender call: {request.url}")
+
+    sender = LearnCardClient(
+        LearnCardSettings(api_url="https://net.example/api", api_token="send"),
+        transport=httpx.MockTransport(_no_send),
+    )
+    recipient = LearnCardClient(
+        LearnCardSettings(api_url="https://net.example/api", api_token="recip"),
+        transport=httpx.MockTransport(handler),
+    )
+    return TestClient(create_app(Settings(), sender, recipient))
+
+
+def test_read_back_delivered_resolves_the_vc() -> None:
+    vc = {"type": ["VerifiableCredential"], "credentialSubject": {"id": "did:web:x:learner"}}
+    sent = "2026-07-01T02:32:23.023Z"
+    incoming = [
+        {"uri": "lc:other", "to": "smi-demo-learner", "from": "x", "sent": sent},
+        {"uri": CREDENTIAL_URI, "to": "smi-demo-learner", "from": "smi-demo-issuer", "sent": sent},
+    ]
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/credentials/incoming"):
+            return httpx.Response(200, json=incoming)
+        if request.url.path.endswith("/storage/resolve"):
+            assert request.url.params["uri"] == CREDENTIAL_URI
+            return httpx.Response(200, json=vc)
+        raise AssertionError(f"unexpected path {request.url.path}")
+
+    body = _readback_client(handle).get(READBACK, params={"uri": CREDENTIAL_URI}).json()
+    assert body == {
+        "delivered": True,
+        "recipient_profile_id": "smi-demo-learner",
+        "sent_at": sent,
+        "credential": vc,
+        "error": None,
+    }
+
+
+def test_read_back_not_found_does_not_resolve() -> None:
+    def handle(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/credentials/incoming"):
+            return httpx.Response(200, json=[])
+        raise AssertionError("resolve must not run when the uri is absent")
+
+    body = _readback_client(handle).get(READBACK, params={"uri": CREDENTIAL_URI}).json()
+    assert body["delivered"] is False
+    assert body["credential"] is None
+
+
+def test_read_back_error_is_normalized() -> None:
+    def handle(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500, json={"message": "boom"})
+
+    resp = _readback_client(handle).get(READBACK, params={"uri": CREDENTIAL_URI})
+    assert resp.status_code == 200  # never leaks the vendor error
+    body = resp.json()
+    assert body["delivered"] is False
+    assert body["error"]
