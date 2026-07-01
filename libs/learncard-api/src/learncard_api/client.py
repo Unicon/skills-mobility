@@ -38,16 +38,21 @@ class LearnCardClient:
             transport=transport,
         )
 
-    def get(self, path: str, **kwargs: Any) -> dict[str, Any]:
-        resp = self._client.get(path, **kwargs)
+    def request(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
+        """Low-level call: attaches auth (via the client), raises on error, and
+        returns the raw response. Use this when the endpoint returns something
+        other than a JSON object — e.g. ``POST /credential/send/{profileId}``
+        replies with a bare JSON string (the credential URI)."""
+        resp = self._client.request(method, path, **kwargs)
         resp.raise_for_status()
-        body: dict[str, Any] = resp.json()
+        return resp
+
+    def get(self, path: str, **kwargs: Any) -> dict[str, Any]:
+        body: dict[str, Any] = self.request("GET", path, **kwargs).json()
         return body
 
     def post(self, path: str, json: Any | None = None, **kwargs: Any) -> dict[str, Any]:
-        resp = self._client.post(path, json=json, **kwargs)
-        resp.raise_for_status()
-        body: dict[str, Any] = resp.json()
+        body: dict[str, Any] = self.request("POST", path, json=json, **kwargs).json()
         return body
 
     def close(self) -> None:

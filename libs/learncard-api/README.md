@@ -31,6 +31,16 @@ with LearnCardClient(LearnCardSettings()) as client:
     client.post("/send", json={"type": "boost", "recipient": "learner@example.com"})
 ```
 
+`get`/`post` parse a JSON **object** response. Some endpoints reply with a bare
+JSON string — e.g. `POST /credential/send/{profileId}` returns the credential
+URI — so use `request(...)` for the raw `httpx.Response` and read `.json()`
+yourself:
+
+```python
+resp = client.request("POST", f"/credential/send/{profile_id}", json={"credential": vc})
+uri = resp.json()  # str
+```
+
 ## Develop
 
 ```bash

@@ -52,3 +52,16 @@ def test_raises_on_error_response() -> None:
     with _client(httpx.MockTransport(handle)) as client:  # noqa: SIM117
         with pytest.raises(httpx.HTTPStatusError):
             client.get("/profile")
+
+
+def test_request_returns_raw_response_for_bare_string_body() -> None:
+    # POST /credential/send/{profileId} replies with a bare JSON string (the URI).
+    uri = "lc:network:network.learncard.com/trpc:credential:abc-123"
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=uri)
+
+    with _client(httpx.MockTransport(handle)) as client:
+        resp = client.request("POST", "/credential/send/@learner", json={"credential": {}})
+
+    assert resp.json() == uri
