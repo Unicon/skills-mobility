@@ -120,6 +120,12 @@ services/mock-lms/seed-data/
 coverage.xml
 
 # ==========================================
+# Node / TypeScript
+# ==========================================
+node_modules/
+*.tsbuildinfo
+
+# ==========================================
 # Claude Code — personal local settings
 # ==========================================
 .claude/settings.local.json
