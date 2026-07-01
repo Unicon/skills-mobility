@@ -7,11 +7,12 @@ It is the one TypeScript **service** in the stack (the LearnCard SDK forces a
 Node/TS runtime — AGENTS.md / ADR-0003). It does **not** resolve recipient
 profiles (that's the Profile Resolver) or route (that's the Delivery Router).
 
-> **Status: toolchain + skeleton (this PR).** The service builds, runs, and serves
-> the contract, but the actual LearnCard SDK call is a clearly-marked stub —
-> issuance is **blocked on #39** (LearnCard dev credentials: `SECURE_SEED` + a
-> service profile). Until configured, `/healthz` reports `configured: false` and
-> issuance returns a normalized `failed` result.
+> **Status: wired to the LearnCard SDK.** `issueCredential` initializes the issuer
+> wallet from `SECURE_SEED` (memoized) and signs the unsigned OBv3 via
+> `invoke.issueCredential` — verified live (a real `DataIntegrityProof` is attached).
+> Until `SECURE_SEED` + `PROFILE_ID` are set, `/healthz` reports `configured: false`
+> and issuance returns a normalized `failed` result. Seed/profile come from the demo
+> provisioning step (`tools/learncard-demo`, ADR-0020).
 
 ## Layout
 
@@ -20,7 +21,7 @@ src/
   server.ts    entry: builds the app and listens
   api.ts       POST /internal/issue-learncard-badge + /healthz
   schemas.ts   zod request schema + response type (router-facing contract)
-  learncard.ts LearnCard SDK init + issueCredential wrapper (STUB until #39)
+  learncard.ts LearnCard SDK init (memoized) + issueCredential signing wrapper
   resultmap.ts normalize SDK results/errors → response shape
   config.ts    env config (PORT, LOG_LEVEL, SECURE_SEED, PROFILE_ID, PROFILE_NAME)
   logger.ts    minimal LOG_LEVEL-gated logger
@@ -45,16 +46,17 @@ test/          vitest unit tests (schema validation, result normalization)
 ```bash
 cd services/learncard-issuer-adapter
 npm install
-cp .env.example .env        # fill SECURE_SEED + PROFILE_ID once #39 lands
+cp .env.example .env        # SECURE_SEED + PROFILE_ID from tools/learncard-demo
 npm run dev                 # tsx watch — serves on :8500 (Swagger N/A; see contract above)
 npm run build               # tsc → dist/
 npm run typecheck           # tsc --noEmit
 npm test                    # vitest
 ```
 
-`curl localhost:8500/healthz` → `{"status":"ok","configured":false}` until credentials are set.
+`curl localhost:8500/healthz` → `{"status":"ok","configured":true}` once `SECURE_SEED` + `PROFILE_ID` are set.
 
-## Next (issue #42, after #39)
+## Downstream
 
-Add `@learncard/init`, implement `learncard.ts` (init from seed → ensure service
-profile → `invoke.issueCredential`), and wire to the Delivery Router (#44).
+The signed credential returned here flows back through the Delivery Router (#44)
+to the Wallet Adapter (#43), which delivers it to the recipient's LearnCard
+wallet by `profileId`. Issuance signs only; it never delivers.
