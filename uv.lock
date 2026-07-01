@@ -11,6 +11,7 @@ members = [
     "context-builder",
     "event-consumer",
     "learncard-api",
+    "learncard-profile-resolver",
     "mock-lms",
     "skills-mobility",
     "skills-mobility-events",
@@ -343,6 +344,29 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.27" },
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pydantic-settings", specifier = ">=2" },
+]
+
+[[package]]
+name = "learncard-profile-resolver"
+version = "0.1.0"
+source = { editable = "services/learncard-profile-resolver" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "learncard-api" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "uvicorn" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "learncard-api", editable = "libs/learncard-api" },
+    { name = "pydantic", specifier = ">=2.7" },
+    { name = "pydantic-settings", specifier = ">=2.4" },
+    { name = "uvicorn", specifier = ">=0.30" },
 ]
 
 [[package]]
