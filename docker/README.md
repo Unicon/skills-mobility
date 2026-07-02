@@ -1,0 +1,88 @@
+# Local docker-compose environment
+
+Brings up the whole pipeline — the Phase-1 spine **plus the LearnCard delivery
+layer** — as containers you can build + run with one command. (Asked for by Mary;
+scoped "spine now, grow as the delivery PRs merge.")
+
+```bash
+docker compose up --build     # from the repo root
+```
+
+Then: mock-lms `http://localhost:8000`, context-builder `:8100`, event-consumer
+`:8200`, orchestrator `:8400`, issuer-adapter `:8500`, wallet-adapter `:8600`,
+profile-resolver `:8700`, delivery-router `:8800` (each serves `/healthz`).
+
+The LearnCard adapters/resolver need secrets (tokens + issuer seed) from the demo
+provisioning step — see **Secrets** below. Without them the stack still comes up,
+but LearnCard issuance/delivery/resolution report unconfigured.
+
+## How it's wired
+
+```
+mock-lms (8000) --emits--> event-consumer (8200) --hands off--> orchestrator (8400)
+     ^                                                                  |
+     |                                                          builds context
+     +------------------ context-builder (8100) <----------------------+
+                                                                        |
+                          resolve learner + deliver credential         v
+   profile-resolver (8700) <---------------------------------- orchestrator
+   delivery-router (8800) <------------------------------------ orchestrator
+        |  routes by action
+        +--> learncard-issuer-adapter (8500)  --sign OBv3-->  LearnCard network
+        +--> learncard-wallet-adapter (8600)  --deliver--->   LearnCard network
+```
+
+Set via compose env (services reach each other by service name):
+
+| Service | Env | Points at |
+| --- | --- | --- |
+| mock-lms | `MOCK_LMS_EVENT_CONSUMER_URL` | `http://event-consumer:8200` |
+| event-consumer | `EVENT_CONSUMER_ORCHESTRATOR_URL` | `http://orchestrator:8400` |
+| context-builder | `CONTEXT_BUILDER_LMS_BASE_URL` | `http://mock-lms:8000` |
+| orchestrator | `ORCHESTRATOR_CONTEXT_BUILDER_URL` | `http://context-builder:8100` |
+| orchestrator | `ORCHESTRATOR_PROFILE_RESOLVER_URL` | `http://profile-resolver:8700` |
+| orchestrator | `ORCHESTRATOR_DELIVERY_ROUTER_URL` | `http://delivery-router:8800` |
+| delivery-router | `DELIVERY_ROUTER_LEARNCARD_ISSUER_URL` | `http://learncard-issuer-adapter:8500` |
+| delivery-router | `DELIVERY_ROUTER_LEARNCARD_WALLET_URL` | `http://learncard-wallet-adapter:8600` |
+
+SQLite state for event-consumer, orchestrator and profile-resolver lives in named volumes.
+
+## Secrets
+
+The LearnCard layer reads secrets via compose interpolation from a **gitignored
+root `.env`** (copy [`.env.example`](../.env.example)). They come from the demo
+provisioning step (`tools/learncard-demo`, ADR-0020) — `provision.mjs` derives the
+fixed demo wallets from committed non-secret labels and emits the tokens/seed:
+
+- `LEARNCARD_API_TOKEN` — sender bearer for profile-resolver + wallet-adapter.
+- `SECURE_SEED` — issuer adapter signing seed.
+- `LEARNCARD_DEMO_RECIPIENT_PROFILE_ID` / `LEARNCARD_ISSUER_PROFILE_ID` — fixed
+  demo handles (default to `smi-demo-learner` / `smi-demo-issuer`).
+
+## The image pattern
+
+One shared image (`Dockerfile.python`) builds the whole uv workspace
+(`uv sync --all-packages --frozen`); each service is the *same* image run with a
+different `command`. The commands run `uvicorn` on `0.0.0.0` (the `run()`
+entrypoints bind `127.0.0.1` — right for local dev, unreachable across
+containers) and call `logging.basicConfig(INFO)` first, so the services' own
+app-level logs (gate decisions, ingress, LMS fetches) show in `docker compose
+logs`, not just uvicorn's access lines.
+
+The **LearnCard Issuer Adapter** is the one non-Python service (Node/TS), so it
+has its own image (`docker/Dockerfile.node`: `npm ci` + `tsc` build, `express`
+listens on `0.0.0.0`).
+
+## Depends on (branches → main)
+
+This compose references the delivery services' code + the orchestrator's delivery
+wiring, so it is only buildable once these are on `main`: the LearnCard stack
+(#48/#49/#50/#51/#56), the demo provisioning (#54), and the orchestrator seam
+wiring (#58) + demo-recipient resolution (#59). Until then `docker compose config`
+validates, but `up --build` needs those merged (the shared Python image installs
+the workspace via `uv sync --frozen`, which needs their `uv.lock` members).
+
+## Not included
+
+The mock-lms React UI runs separately (`cd apps/mock-lms && npm run dev`) — this
+compose is the backend pipeline.

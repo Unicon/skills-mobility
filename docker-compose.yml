@@ -1,0 +1,142 @@
+# Local multi-service dev/demo environment: the Phase-1 spine + LearnCard delivery.
+#
+# One shared Python image (docker/Dockerfile.python), run once per service via
+# `command` (binding 0.0.0.0); the Node issuer adapter has its own image
+# (docker/Dockerfile.node). Services reach each other by compose service name.
+# Run:  docker compose up --build
+#
+# LearnCard secrets (LEARNCARD_API_TOKEN, SECURE_SEED, …) come from the demo
+# provisioning step (tools/learncard-demo, ADR-0020) via a gitignored root .env
+# — see .env.example and docker/README.md. Without them the stack still comes up,
+# but the LearnCard adapters/resolver report unconfigured.
+name: skills-mobility
+
+x-python: &python
+  build:
+    context: .
+    dockerfile: docker/Dockerfile.python
+  image: skills-mobility-python:local
+  restart: unless-stopped
+
+services:
+  mock-lms:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('mock_lms.app:create_app', factory=True, host='0.0.0.0', port=8000)"]
+    environment:
+      MOCK_LMS_EVENT_CONSUMER_URL: http://event-consumer:8200
+    ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  event-consumer:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('event_consumer.app:create_app', factory=True, host='0.0.0.0', port=8200)"]
+    environment:
+      EVENT_CONSUMER_ORCHESTRATOR_URL: http://orchestrator:8400
+      EVENT_CONSUMER_DB_PATH: /data/event-consumer.db
+    volumes: ["event-consumer-data:/data"]
+    ports: ["8200:8200"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8200/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  context-builder:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('context_builder.app:create_app', factory=True, host='0.0.0.0', port=8100)"]
+    environment:
+      CONTEXT_BUILDER_LMS_BASE_URL: http://mock-lms:8000
+    ports: ["8100:8100"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8100/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  orchestrator:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('orchestrator.app:create_app', factory=True, host='0.0.0.0', port=8400)"]
+    environment:
+      ORCHESTRATOR_CONTEXT_BUILDER_URL: http://context-builder:8100
+      ORCHESTRATOR_PROFILE_RESOLVER_URL: http://profile-resolver:8700
+      ORCHESTRATOR_DELIVERY_ROUTER_URL: http://delivery-router:8800
+      LEARNCARD_DEMO_RECIPIENT_PROFILE_ID: ${LEARNCARD_DEMO_RECIPIENT_PROFILE_ID:-smi-demo-learner}
+      ORCHESTRATOR_DB_PATH: /data/orchestrator.db
+    volumes: ["orchestrator-data:/data"]
+    ports: ["8400:8400"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8400/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # --- LearnCard delivery layer (ADR-0016/0020) ---
+
+  profile-resolver:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('learncard_profile_resolver.app:create_app', factory=True, host='0.0.0.0', port=8700)"]
+    environment:
+      LEARNCARD_PROFILE_RESOLVER_DB_PATH: /data/learncard-profile-resolver.db
+      LEARNCARD_API_URL: ${LEARNCARD_API_URL:-https://network.learncard.com/api}
+      LEARNCARD_API_TOKEN: ${LEARNCARD_API_TOKEN:-}
+    volumes: ["profile-resolver-data:/data"]
+    ports: ["8700:8700"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8700/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  delivery-router:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('delivery_router.app:create_app', factory=True, host='0.0.0.0', port=8800)"]
+    environment:
+      DELIVERY_ROUTER_LEARNCARD_ISSUER_URL: http://learncard-issuer-adapter:8500
+      DELIVERY_ROUTER_LEARNCARD_WALLET_URL: http://learncard-wallet-adapter:8600
+    ports: ["8800:8800"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8800/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  learncard-issuer-adapter:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.node
+    image: skills-mobility-node:local
+    restart: unless-stopped
+    environment:
+      PORT: "8500"
+      LOG_LEVEL: info
+      SECURE_SEED: ${SECURE_SEED:-}
+      PROFILE_ID: ${LEARNCARD_ISSUER_PROFILE_ID:-smi-demo-issuer}
+      PROFILE_NAME: ${LEARNCARD_ISSUER_PROFILE_NAME:-SMI Demo Issuer}
+    ports: ["8500:8500"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8500/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  learncard-wallet-adapter:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('learncard_wallet_adapter.app:create_app', factory=True, host='0.0.0.0', port=8600)"]
+    environment:
+      LEARNCARD_API_URL: ${LEARNCARD_API_URL:-https://network.learncard.com/api}
+      LEARNCARD_API_TOKEN: ${LEARNCARD_API_TOKEN:-}
+    ports: ["8600:8600"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8600/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  event-consumer-data:
+  orchestrator-data:
+  profile-resolver-data:
