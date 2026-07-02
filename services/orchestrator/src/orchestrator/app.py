@@ -17,7 +17,11 @@ from pydantic import BaseModel
 from orchestrator import engine
 from orchestrator.clients import (
     ContextBuilderClient,
+    DeliveryRouterClient,
     HttpContextBuilderClient,
+    HttpDeliveryRouterClient,
+    HttpProfileResolverClient,
+    ProfileResolverClient,
     StubContextBuilder,
     StubDeliveryRouter,
     StubProfileResolver,
@@ -47,9 +51,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         else StubContextBuilder()
     )
     app.state.context_builder = context_builder
-    # Profile Resolver + Delivery Router are unbuilt (#19) — Phase-1 stubs for now.
-    app.state.profile_resolver = StubProfileResolver()
-    app.state.delivery_router = StubDeliveryRouter()
+    # Profile Resolver (#51) + Delivery Router (#56): real HTTP clients when their
+    # URLs are set, else the Phase-1 in-process stubs.
+    profile_resolver: ProfileResolverClient = (
+        HttpProfileResolverClient(settings.profile_resolver_url)
+        if settings.profile_resolver_url
+        else StubProfileResolver()
+    )
+    delivery_router: DeliveryRouterClient = (
+        HttpDeliveryRouterClient(settings.delivery_router_url)
+        if settings.delivery_router_url
+        else StubDeliveryRouter()
+    )
+    app.state.profile_resolver = profile_resolver
+    app.state.delivery_router = delivery_router
     # Runtime-toggleable plan lookup (seeded from settings; FR-OR-28).
     app.state.reusable_plan_lookup_enabled = settings.reusable_plan_lookup_enabled
 
