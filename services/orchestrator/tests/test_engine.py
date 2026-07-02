@@ -29,8 +29,38 @@ def _run(event, *, store, reusable=False, execution_id="e1", context_builder=Non
         delivery_router=StubDeliveryRouter(),
         issuer_id="did:web:issuer.example",
         delivery_config_ref="cfg",
+        recipient_profile_id="smi-demo-learner",
         reusable_plan_lookup=reusable,
     )
+
+
+class _SpyResolver:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str]] = []
+        self._inner = StubProfileResolver()
+
+    def resolve(
+        self, learner_id_type: str, learner_id_value: str, ctx: Any, step_id: str
+    ) -> dict[str, Any]:
+        self.calls.append((learner_id_type, learner_id_value))
+        return self._inner.resolve(learner_id_type, learner_id_value, ctx, step_id)
+
+
+def test_resolves_fixed_demo_recipient_by_profile_id(sample_event):
+    # ADR-0020: the POC resolves the fixed demo wallet by handle, never the event's
+    # learner id (WU1125875) nor an email (which LearnCard Search can't match).
+    resolver = _SpyResolver()
+    engine.run_workflow(
+        WorkflowStartRequest(execution_id="e1", event=sample_event),
+        store=ExecutionStore(":memory:"),
+        context_builder=StubContextBuilder(),
+        profile_resolver=resolver,
+        delivery_router=StubDeliveryRouter(),
+        issuer_id="did:web:issuer.example",
+        delivery_config_ref="cfg",
+        recipient_profile_id="smi-demo-learner",
+    )
+    assert resolver.calls == [("profile_id", "smi-demo-learner")]
 
 
 def test_gate_continue_runs_full_plan(sample_event):

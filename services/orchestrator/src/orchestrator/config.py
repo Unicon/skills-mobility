@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     delivery_config_ref: str = Field(
         default="phase1-learncard-default", validation_alias="LEARNCARD_DELIVERY_CONFIG_REF"
     )
+    # Fixed pre-provisioned recipient wallet the POC resolves + delivers to
+    # (ADR-0020). Its LearnCard handle == profileId; shared LearnCard config, so
+    # LEARNCARD_-prefixed. Matches the demo tooling's DEMO_RECIPIENT_PROFILE_ID.
+    demo_recipient_profile_id: str = Field(
+        default="smi-demo-learner", validation_alias="LEARNCARD_DEMO_RECIPIENT_PROFILE_ID"
+    )
     # When set, each seam calls the real service over HTTP; else the Phase-1 stub.
     context_builder_url: str | None = None
     profile_resolver_url: str | None = None  # #51 Profile Resolver
