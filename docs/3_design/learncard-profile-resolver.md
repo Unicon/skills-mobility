@@ -14,9 +14,14 @@ The LearnCard Profile Resolver is a standalone Python Lambda invoked by the Orch
 
 Both the LearnCard Issuer Adapter and the Wallet Adapter require a resolved LearnCard `profileId` before they can operate. Rather than duplicating resolution logic across two services that use different runtimes (TypeScript for the Issuer Adapter, Python for the Wallet Adapter), resolution runs once as a discrete orchestration step. The Orchestrator stores the resolved `profileId` and DID in the execution context; the issuer and wallet steps consume them without re-resolving.
 
-The resolver does not use the LearnCard SDK. All interactions are HTTP calls to the LearnCard REST APIs, authenticated with a scoped bearer token from an AuthGrant. Bearer-token acquisition is shared with the Wallet Adapter through a common `libs/learncard-api` Python package; the profile-endpoint HTTP client is service-specific.
+The resolver does not use the LearnCard SDK. All interactions are HTTP calls to the LearnCard REST APIs, authenticated with a scoped bearer token. The shared `libs/learncard-api` package (built in #40) holds + attaches that pre-minted bearer via a common `LearnCardClient`; the profile-endpoint request/response models are service-specific. Token minting itself is a one-time TS/SDK step (see §4).
 
-**Open question — Search Profiles endpoint.** The LearnCard Search Profiles endpoint ([docs](https://docs.learncard.com/sdks/learncard-network/profiles#get-search-profiles-input)) is the linchpin of the resolution flow. Its supported input fields, matching behavior, and result shape are not fully documented. This endpoint must be tested against a live LearnCard dev environment before the resolver can be implemented. The Create Profile endpoint similarly needs verification before the fallback create path is built.
+> **Resolved by the #41 spike (2026-06-30), and it reshaped this design.** Tested live against `network.learncard.com`:
+> - `GET /search/profiles/{input}` returns an array of `{profileId, did, displayName, ...}` and matches on **handle/displayName only — not email** (`searchProfiles(email)` → 0 results).
+> - A service **cannot create a learner's profile**: regular profiles are self-sovereign, and `createManagedProfile` fails with *"Please make this request using a Profile Manager did"* (needs separate provisioning).
+> - Delivery by `profileId` requires the recipient to **already have an account**; email delivery is a different flow (Boost/Inbox claim), not this resolver's concern.
+>
+> **Consequence:** the original email → search → **create** happy path is not viable. This resolver is scoped to **mapping-store lookup + Search Profiles by handle**; anything else (including email) returns `unresolved`. There is no create path. See the [#41 findings](https://github.com/Unicon/skills-mobility/issues/41).
 
 ## 2. Invocation Model
 
@@ -59,57 +64,63 @@ Recommended response shape:
 }
 ```
 
-`resolution_method` values:
+`status` values: `succeeded` (a profile was resolved — `result` present), `unresolved`
+(no LearnCard profile for this learner — a clean business outcome, `result` and
+`error` both null), `failed` (an API/transport error — `error` present).
+
+`resolution_method` values (present only when `succeeded`):
 
 | Value | Meaning |
 |---|---|
 | `stored` | Returned from the resolver's mapping store; no LearnCard API calls made |
-| `searched` | Found via the LearnCard Search Profiles endpoint |
-| `created` | No match found; a new LearnCard profile was created |
+| `searched` | Found via the LearnCard Search Profiles endpoint (exact handle match) |
+
+There is no `created` method: creating a learner's profile is not supported by
+the LearnCard REST API for a service (see the #41 finding above).
 
 ## 3. Modules
 
 - `api/` — resolver endpoint handler
 - `schemas/` — request and response models
-- `learncard_api/` — thin HTTP client for the Search Profiles and Create Profile endpoints; uses bearer-token auth supplied by `libs/learncard-api`
+- `search/` — thin HTTP client for the Search Profiles endpoint (no Create Profile — see §1 finding); uses `LearnCardClient` from `libs/learncard-api`
 - `store/` — read/write wrapper for the learner-identifier-to-profileId mapping store
 - `config/` — environment/config resolution for API base URLs; bearer-token acquisition is delegated to `libs/learncard-api`
 - `resultmap/` — normalize LearnCard API responses and errors
 
 ## 4. Shared Library: libs/learncard-api
 
-Both the LearnCard Profile Resolver and the LearnCard Wallet Adapter authenticate to LearnCard REST endpoints using a scoped API token derived from an AuthGrant. Rather than duplicate that acquisition logic in two services, it is extracted into a shared Python library at `libs/learncard-api/`.
+Both the LearnCard Profile Resolver and the LearnCard Wallet Adapter call LearnCloud Network REST endpoints with a scoped bearer token. Rather than duplicate the auth + transport wiring in two services, it is extracted into a shared Python library at `libs/learncard-api/` (built in #40).
+
+> **Updated after the #39 spike.** Minting a token from a seed is the LearnCard **JS SDK**'s DID-auth challenge/sign flow — not practical to reproduce in Python. So the scoped bearer is minted **once on the TS side** and supplied to this library as config (`LEARNCARD_API_TOKEN`); the library *holds and attaches* it and does not run the AuthGrant flow. See the [#39 findings](https://github.com/Unicon/skills-mobility/issues/39).
 
 **What the library owns:**
 
-- Acquiring a scoped API token from the LearnCard AuthGrant → API token flow
-- Returning that token to the caller for use as `Authorization: Bearer <token>`
-- Loading the AuthGrant credentials and LearnCard API base URL from the supplied delivery configuration
+- An authenticated `httpx` client (`LearnCardClient`) that attaches `Authorization: Bearer <token>`, targets the configured base URL, and raises on error responses (no silent drops)
+- Loading the API base URL + pre-minted scoped bearer from config (`LEARNCARD_API_URL`, `LEARNCARD_API_TOKEN`)
 
 **What the library does not own:**
 
-- HTTP clients for specific LearnCard endpoints (Search Profiles, Create Profile, credential send) — those are service-specific
+- Minting/acquiring the token (a one-time TS/SDK setup step)
+- Request/response models for specific endpoints (Search/Create Profile, `/send`) — those are service-specific
 - Profile resolution, credential issuance, or delivery logic
 
-**Expected interface:**
+**Interface:**
 
 ```python
-from learncard_api import LearnCardTokenProvider
+from learncard_api import LearnCardClient, LearnCardSettings
 
-provider = LearnCardTokenProvider.from_config(config)
-token = provider.get_token(scope="profiles:read")
-# caller attaches: Authorization: Bearer {token}
+with LearnCardClient(LearnCardSettings()) as client:
+    client.get("/profile")  # then service-specific Search/Create Profile calls
 ```
 
-The required scope differs per service. The Profile Resolver needs a profiles-related scope for the Search Profiles and Create Profile endpoints; the Wallet Adapter is expected to need `credential:write`. Each service passes its required scope at call time. Both scopes need verification against the live LearnCard API before the clients are built.
+The scope is baked into the pre-minted token rather than requested per call. The Profile Resolver's token needs a profiles-related scope for the Search Profiles and Create Profile endpoints; the Wallet Adapter's needs a send/credential scope. The exact scope strings still warrant a check against the live API before the clients are built.
 
 **Configuration inputs:**
 
-- AuthGrant credentials (from Secrets Manager in AWS; `.env` locally)
-- LearnCard API base URL
-- Requested scope
+- `LEARNCARD_API_TOKEN` — pre-minted scoped bearer (Secrets Manager in AWS; `.env` locally)
+- `LEARNCARD_API_URL` — LearnCloud Network REST base
 
-**Expected path:** `libs/learncard-api/`
+**Path:** `libs/learncard-api/`
 
 This library must be implemented before the Profile Resolver reaches its API client steps (build order step 6) and before the Wallet Adapter reaches its API client steps (build order step 4 in [LearnCard Wallet Adapter Design](./learncard-wallet-adapter.md)).
 
@@ -118,14 +129,14 @@ This library must be implemented before the Profile Resolver reaches its API cli
 1. Receive the resolution request from the Orchestrator.
 2. Validate the required contract fields, including `learner_id_type` and `learner_id_value`.
 3. Query the mapping store for an existing entry keyed on `(learner_id_type, learner_id_value)`. If found, return immediately with `resolution_method: stored`.
-4. Resolve the AuthGrant/API-token configuration for LearnCard API access.
-5. Call the LearnCard Search Profiles endpoint with the learner identifier. Interpret the result based on what implementation testing reveals about the endpoint's matching behavior and result shape.
-6. If a matching profile is found: persist the mapping (`learner_id_type + learner_id_value → profile_id + did`) and return with `resolution_method: searched`.
-7. If no profile is found: call the LearnCard Create Profile endpoint to create a new profile for the learner.
-8. Persist the newly created `profile_id` and DID in the mapping store.
-9. Return the resolved result with `resolution_method: created`.
+4. If `learner_id_type` is not a LearnCard handle (`profile_id`) — e.g. an email — return `unresolved`. Search matches only on handle/displayName (#41 finding).
+5. Call `GET /search/profiles/{learner_id_value}` and keep only an **exact** `profileId` match (Search also returns fuzzy displayName hits, which are not resolutions).
+6. If an exact match is found: persist the mapping (`learner_id_type + learner_id_value → profile_id + did`) and return with `resolution_method: searched`. Otherwise return `unresolved`.
 
-Steps 5 and 7 cannot be designed in detail until the Search Profiles and Create Profile endpoints are tested against a live environment (see Build Order step 2).
+There is no create step: creating a learner's profile is not a service operation
+in LearnCard (#41 finding). A learner without a LearnCard profile resolves to
+`unresolved`; how the pipeline handles that (e.g. an email/Inbox claim delivery
+path) is out of scope for this resolver.
 
 ## 6. Mapping Store
 
@@ -137,7 +148,7 @@ For the POC, the expected store is a DynamoDB table owned exclusively by the Pro
 | `profile_id` | Resolved LearnCard profile handle |
 | `did` | Resolved LearnCard DID |
 | `resolved_at` | ISO 8601 timestamp of initial resolution |
-| `resolution_method` | How the profile was first resolved (`searched` or `created`) |
+| `resolution_method` | How the profile was first resolved (`searched`) |
 
 The Issuer Adapter and Wallet Adapter do not read from this table directly. They consume the resolved `profileId` and DID from the execution context that the Orchestrator populates after the resolver step completes.
 
@@ -163,18 +174,18 @@ The `store/` module interface should be pluggable so the DynamoDB and SQLite imp
 - Unit tests around request validation, store lookup/write, and result normalization
 - Adapter-level tests with the LearnCard API client and mapping store mocked
 - Contract tests that verify the Orchestrator-facing request/response shape
-- Integration tests that exercise the Search Profiles and Create Profile endpoints against a real LearnCard dev environment — **these must run and findings must be documented before implementation of steps 5–9 of the Execution Flow**
+- The Search Profiles endpoint was verified live in the #41 spike (findings documented in §1); the client is built to those findings.
 
 Routine test runs should not require live LearnCard access.
 
 ## 9. Build Order
 
-1. Define the resolver request/response schemas.
-2. **Test the LearnCard Search Profiles endpoint in a dev environment.** Confirm what input fields it accepts, what it matches on, and what the result shape looks like. Document findings before writing any client code.
-3. Test the Create Profile endpoint. Confirm the required input fields and the `profileId`/DID shape returned on creation.
-4. Implement the DynamoDB mapping store module and its read/write wrapper.
-5. Implement the `libs/learncard-api` token provider (AuthGrant → bearer token). Required before the API client steps below.
-6. Implement the LearnCard API client for Search Profiles and Create Profile based on findings from steps 2–3, using `libs/learncard-api` for bearer-token acquisition.
-7. Implement the resolution flow (store lookup → search → create → persist).
-8. Add normalized result and error mapping.
-9. Wire the resolver into the Orchestrator as a named plan step type (`resolve_learncard_profile`).
+Steps 1–8 are **implemented** ([#41](https://github.com/Unicon/skills-mobility/issues/41)); step 9 (Orchestrator wiring) is pending #45.
+
+1. ✅ Define the resolver request/response schemas.
+2. ✅ **Spike: Search Profiles + create/email semantics against live LearnCard.** Findings in §1 — Search matches handle/displayName not email; no service create path. This scoped the resolver to lookup + search.
+3. ✅ SQLite mapping store (`SqliteMappingStore`, pluggable via the `MappingStore` protocol so DynamoDB can swap in).
+4. ✅ Search Profiles client (`search.py`), using `libs/learncard-api`'s `LearnCardClient`.
+5. ✅ Resolution flow (store lookup → search-by-handle → `unresolved`; no create).
+6. ✅ Normalized result and error mapping (`succeeded` / `unresolved` / `failed`).
+7. ⏭️ Wire the resolver into the Orchestrator as a named plan step type (`resolve_learncard_profile`) — with #45.

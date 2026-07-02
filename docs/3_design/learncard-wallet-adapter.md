@@ -26,7 +26,7 @@ The LearnCloud Network API authentication docs add one more important detail: fo
 
 This project intentionally keeps wallet delivery as a separate internal action even though LearnCard exposes simpler combined flows. That separation serves auditability, router stability, and future non-LearnCard issuer/wallet support.
 
-The AuthGrant → API token → bearer token acquisition flow is shared with the LearnCard Profile Resolver through a common `libs/learncard-api` Python package. The credential-delivery endpoint client is service-specific.
+The scoped bearer token is shared with the LearnCard Profile Resolver through a common `libs/learncard-api` Python package (built in #40): it *holds and attaches* a pre-minted token — token minting itself is a one-time TS/SDK step (see §4). The credential-delivery endpoint client is service-specific.
 
 ### Recipient Profile Resolution
 
@@ -92,6 +92,8 @@ The current most-specific documented auth path for this adapter is:
 2. generate an API token from that AuthGrant,
 3. call the REST endpoint with `Authorization: Bearer <token>`.
 
+The #39 spike confirmed steps 1–2 require the LearnCard JS SDK (DID-auth), so they run **once on the TS side**; this adapter only performs step 3 with the pre-minted token.
+
 The AuthGrant docs define scopes with the pattern `{resource}:{action}` and list `credential` as a resource with `write` as an available action. Inference: `credential:write` is the likely least-privilege scope for this adapter, but the docs reviewed here do not explicitly tie that exact route to that exact scope.
 
 ## 3. Modules
@@ -106,40 +108,40 @@ The adapter should not contain generic routing logic or business-policy evaluati
 
 ## 4. Shared Library: libs/learncard-api
 
-Both the LearnCard Wallet Adapter and the LearnCard Profile Resolver authenticate to LearnCard REST endpoints using a scoped API token derived from an AuthGrant. Rather than duplicate that acquisition logic in two services, it is extracted into a shared Python library at `libs/learncard-api/`.
+Both the LearnCard Wallet Adapter and the LearnCard Profile Resolver call LearnCloud Network REST endpoints with a scoped bearer token. Rather than duplicate the auth + transport wiring in two services, it is extracted into a shared Python library at `libs/learncard-api/` (built in #40).
+
+> **Updated after the #39 spike.** The spike verified that minting a token from a seed is the LearnCard **JS SDK**'s DID-auth challenge/sign flow — not practical to reproduce in Python. So the scoped bearer is minted **once on the TS side** (the issuer adapter / a setup step) and supplied to this library as config (`LEARNCARD_API_TOKEN`). The library therefore *holds and attaches* the token; it does not run the AuthGrant flow. See the [#39 findings](https://github.com/Unicon/skills-mobility/issues/39).
 
 **What the library owns:**
 
-- Acquiring a scoped API token from the LearnCard AuthGrant → API token flow
-- Returning that token to the caller for use as `Authorization: Bearer <token>`
-- Loading the AuthGrant credentials and LearnCard API base URL from the supplied delivery configuration
+- An authenticated `httpx` client (`LearnCardClient`) that attaches `Authorization: Bearer <token>`, targets the configured base URL, and raises on error responses (no silent drops)
+- Loading the API base URL + pre-minted scoped bearer from config (`LEARNCARD_API_URL`, `LEARNCARD_API_TOKEN`)
 
 **What the library does not own:**
 
-- HTTP clients for specific LearnCard endpoints (credential send, Search Profiles, Create Profile) — those are service-specific
+- Minting/acquiring the token (a one-time TS/SDK setup step)
+- Request/response models for specific endpoints (`/send`, Search/Create Profile) — those are service-specific
 - Profile resolution, credential issuance, or delivery logic
 
-**Expected interface:**
+**Interface:**
 
 ```python
-from learncard_api import LearnCardTokenProvider
+from learncard_api import LearnCardClient, LearnCardSettings
 
-provider = LearnCardTokenProvider.from_config(config)
-token = provider.get_token(scope="credential:write")
-# caller attaches: Authorization: Bearer {token}
+with LearnCardClient(LearnCardSettings()) as client:
+    client.post("/send", json={"type": "boost", "recipient": recipient_profile_id})
 ```
 
-The required scope differs per service. This adapter is expected to need `credential:write`; the Profile Resolver needs a profiles-related scope. Both scopes need verification against the live LearnCard API before the clients are built.
+The scope is baked into the pre-minted token rather than requested per call. This adapter's token needs a send/credential scope (the spike used `*:*`; `credential:write` / `boosts:write` is the expected least-privilege scope).
 
 **Configuration inputs:**
 
-- AuthGrant credentials (from Secrets Manager in AWS; `.env` locally)
-- LearnCard API base URL
-- Requested scope
+- `LEARNCARD_API_TOKEN` — pre-minted scoped bearer (Secrets Manager in AWS; `.env` locally)
+- `LEARNCARD_API_URL` — LearnCloud Network REST base
 
-**Expected path:** `libs/learncard-api/`
+**Path:** `libs/learncard-api/`
 
-This library must be implemented before this adapter reaches its API client steps (build order step 4). See also [LearnCard Profile Resolver Design](./learncard-profile-resolver.md) for the canonical description of this library.
+This library is implemented (#40) and must precede this adapter's API client steps (build order step 4). See also [LearnCard Profile Resolver Design](./learncard-profile-resolver.md).
 
 ## 5. Execution Flow
 
