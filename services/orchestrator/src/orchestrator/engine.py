@@ -13,7 +13,12 @@ from datetime import UTC, datetime
 
 from orchestrator import planner
 from orchestrator.actions import ActionDeps
-from orchestrator.clients import ContextBuilderClient, DeliveryRouterClient, ProfileResolverClient
+from orchestrator.clients import (
+    ContextBuilderClient,
+    DeliveryRouterClient,
+    EnvelopeContext,
+    ProfileResolverClient,
+)
 from orchestrator.executor import execute_plan
 from orchestrator.schemas import ExecutionMetadata, WorkflowStartRequest
 from orchestrator.store import ExecutionStore
@@ -30,6 +35,7 @@ def run_workflow(
     delivery_router: DeliveryRouterClient,
     issuer_id: str,
     delivery_config_ref: str,
+    recipient_profile_id: str,
     reusable_plan_lookup: bool = False,
 ) -> ExecutionMetadata:
     metadata = request.event.get("metadata", {})
@@ -84,10 +90,21 @@ def run_workflow(
         "bundle": bundle,
         "issuer_id": issuer_id,
         "delivery_config_ref": delivery_config_ref,
-        "learner_id_value": metadata.get("user_id", ""),
+        # POC resolves + delivers to the fixed demo recipient wallet, not the event's
+        # learner (ADR-0020); the originating learner stays on the stored event.
+        "learner_id_value": recipient_profile_id,
     }
+    envelope = EnvelopeContext(
+        workflow_id=execution_id,  # Phase 1: one workflow per execution.
+        execution_id=execution_id,
+        correlation_id=request.correlation_id or metadata.get("correlation_id", ""),
+        delivery_config_ref=delivery_config_ref,
+    )
     deps = ActionDeps(
-        profile_resolver=profile_resolver, delivery_router=delivery_router, issuer_id=issuer_id
+        profile_resolver=profile_resolver,
+        delivery_router=delivery_router,
+        issuer_id=issuer_id,
+        envelope=envelope,
     )
     store.set_status(execution_id, "running")
     status, result = execute_plan(plan, workflow_ctx, deps, store, execution_id)

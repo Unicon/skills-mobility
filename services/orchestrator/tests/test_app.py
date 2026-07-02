@@ -3,6 +3,33 @@ view, exercise both supported event types, and the plan-admin endpoints."""
 
 from __future__ import annotations
 
+from orchestrator.app import create_app
+from orchestrator.clients import (
+    HttpDeliveryRouterClient,
+    HttpProfileResolverClient,
+    StubDeliveryRouter,
+    StubProfileResolver,
+)
+from orchestrator.config import Settings
+
+
+def test_seams_default_to_stubs_without_urls():
+    app = create_app(Settings(db_path=":memory:"))
+    assert isinstance(app.state.profile_resolver, StubProfileResolver)
+    assert isinstance(app.state.delivery_router, StubDeliveryRouter)
+
+
+def test_seams_use_http_clients_when_urls_set():
+    app = create_app(
+        Settings(
+            db_path=":memory:",
+            profile_resolver_url="http://profile-resolver:8600",
+            delivery_router_url="http://delivery-router:8800",
+        )
+    )
+    assert isinstance(app.state.profile_resolver, HttpProfileResolverClient)
+    assert isinstance(app.state.delivery_router, HttpDeliveryRouterClient)
+
 
 def test_run_workflow_completes_and_persists(client, sample_event):
     resp = client.post("/run-workflow", json={"execution_id": "exec_42", "event": sample_event})
