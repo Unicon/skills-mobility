@@ -64,6 +64,9 @@ services:
       ORCHESTRATOR_CONTEXT_BUILDER_URL: http://context-builder:8100
       ORCHESTRATOR_PROFILE_RESOLVER_URL: http://profile-resolver:8700
       ORCHESTRATOR_DELIVERY_ROUTER_URL: http://delivery-router:8800
+      # The signed OBv3's issuer must be the real (resolvable) demo issuer DID, not
+      # the placeholder default — else the issuer adapter's SDK sign fails resolving it.
+      ORCHESTRATOR_ISSUER_ID: ${LEARNCARD_ISSUER_DID:-did:web:poc.skills-mobility.example}
       LEARNCARD_DEMO_RECIPIENT_PROFILE_ID: ${LEARNCARD_DEMO_RECIPIENT_PROFILE_ID:-smi-demo-learner}
       ORCHESTRATOR_DB_PATH: /data/orchestrator.db
     volumes: ["orchestrator-data:/data"]
@@ -129,6 +132,8 @@ services:
     environment:
       LEARNCARD_API_URL: ${LEARNCARD_API_URL:-https://network.learncard.com/api}
       LEARNCARD_API_TOKEN: ${LEARNCARD_API_TOKEN:-}
+      # Recipient-scoped read token for the delivered-credential read-back (#53/#55).
+      LEARNCARD_RECIPIENT_API_TOKEN: ${LEARNCARD_RECIPIENT_API_TOKEN:-}
     ports: ["8600:8600"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8600/healthz')"]

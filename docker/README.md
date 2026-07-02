@@ -55,7 +55,11 @@ provisioning step (`tools/learncard-demo`, ADR-0020) — `provision.mjs` derives
 fixed demo wallets from committed non-secret labels and emits the tokens/seed:
 
 - `LEARNCARD_API_TOKEN` — sender bearer for profile-resolver + wallet-adapter.
-- `SECURE_SEED` — issuer adapter signing seed.
+- `LEARNCARD_RECIPIENT_API_TOKEN` — recipient read token for the wallet read-back.
+- `SECURE_SEED` — issuer adapter signing seed; derived from the demo label, not
+  emitted by `provision.mjs`: `sha256("skills-mobility-demo:issuer")`.
+- `LEARNCARD_ISSUER_DID` — the issuer's resolvable network DID, stamped as the
+  OBv3 issuer (`ORCHESTRATOR_ISSUER_ID`); signing fails if it isn't resolvable.
 - `LEARNCARD_DEMO_RECIPIENT_PROFILE_ID` / `LEARNCARD_ISSUER_PROFILE_ID` — fixed
   demo handles (default to `smi-demo-learner` / `smi-demo-issuer`).
 
