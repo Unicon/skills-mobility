@@ -6,3 +6,4 @@ The canonical agent instructions live in [AGENTS.md](../AGENTS.md) (tool-agnosti
 
 - When the user types `/<skill-name>`, invoke it via the Skill tool (only skills that are actually available).
 - If you need the user to run an interactive command themselves (e.g. `gcloud auth login`), suggest they prefix it with `!` in the prompt so its output lands in the session.
+- Draft documents (PR descriptions, issue text, chat messages, etc.) go in `.claude/scratch/` under a fixed, predictable filename per draft type (e.g. `pr-description.md`), always overwritten in place — never a new uniquely-named file per instance. This directory is gitignored; nothing placed there needs cleanup before a commit.
