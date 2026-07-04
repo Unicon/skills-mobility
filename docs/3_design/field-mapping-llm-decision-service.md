@@ -38,7 +38,7 @@ Recommended shape:
   "mapping_artifact_schema_version": "v1",
   "transformation_type": "issuer_payload",
   "source_system": "mock_lms",
-  "context_profile_id": "skill_mastered.v1",
+  "fetch_profile_id": "skill_mastered.v1",
   "delivery_target": "learncard_issuer",
   "target_schema_ref": "schema:issuer_payload:v1",
   "jsonata": "{ ... executable JSONata target object ... }",
@@ -122,7 +122,7 @@ The recommended runtime flow is:
 Orchestrator
   -> Field Mapping boundary
       -> accept transient source payloads inline
-      -> resolve source-resource catalogs, context-profile mappings, and target catalogs from service-managed lookup rules
+      -> resolve source-resource catalogs, fetch-profile mappings, and target catalogs from service-managed lookup rules
       -> optionally resolve payload refs when inline transport is not practical
       -> optionally load configured external knowledge inputs, such as skills-framework context, when that mode is enabled
       -> build Bedrock request payload
@@ -162,8 +162,9 @@ The request should be transient-payload-first:
   "event_id": "evt_123",
   "transformation_type": "issuer_payload",
   "source_system": "mock_lms",
-  "context_profile_id": "skill_mastered.issuer_payload.v1",
+  "fetch_profile_id": "skill_mastered.v1",
   "delivery_target": "learncard_issuer",
+  "synthesis_allowed": true,
   "source_payloads": {
     "learner_context": { "...": "transient payload" },
     "credential_template": { "...": "transient payload" },
@@ -172,14 +173,18 @@ The request should be transient-payload-first:
 }
 ```
 
+`transformation_type` and `delivery_target` are independent inputs, not a derived pair. Both are supplied by the Workflow Actions delivery-phase plan as step-level literals (see [Orchestrator Design](./orchestrator.md) §5, Example Phase 1 plan), because that plan is the one place that already knows both which transformation phase a step performs and which delivery target it serves. The Field Mapping service does not derive either field from the other, and the Orchestrator does not maintain a separate mapping table between them.
+
+`synthesis_allowed` is a third literal supplied by the same Workflow Actions delivery-phase plan. It is a permission gate, not a prediction: it authorizes whether Field Synthesis may be used for this phase at all, because the Orchestrator has no mechanism to route a synthesis request for a phase whose plan didn't provision one. See §6 for the resulting classification rule.
+
 The main design choice is that the Orchestrator passes transient source payloads inline by default. That keeps the working data ephemeral inside the execution unless there is a practical reason to materialize it elsewhere.
 
 If a payload is already stored or is too large to pass inline comfortably, the contract may allow an optional payload reference instead. That is a fallback, not the default.
 
-The Orchestrator should not have to know the catalog or data-dictionary reference IDs. Instead, the Field Mapping service should resolve the correct source-resource catalogs, context-profile mappings, and target catalogs from:
+The Orchestrator should not have to know the catalog or data-dictionary reference IDs. Instead, the Field Mapping service should resolve the correct source-resource catalogs, fetch-profile mappings, and target catalogs from:
 
 - `source_system`
-- `context_profile_id`
+- `fetch_profile_id`
 - `delivery_target`
 - `transformation_type`
 
@@ -200,7 +205,7 @@ Recommended POC approach:
 
 Source-resource catalog files (one per resource endpoint) should be built from the **Mock LMS Canvas-style endpoint schemas**. The Mock LMS models Canvas LMS resources (outcomes, assignments, modules, users, submissions, etc.). The Canvas LMS Resource API documentation is the reference for field shapes and descriptions.
 
-The context-profile mapping files in `catalogs/context_profiles/mock_lms/` should be derived from the **Context Builder fetch profiles** defined in the Context Builder design (see [Context Builder Design](./context-builder.md) Section 5). Each fetch profile (for example, `skill_mastered.v1`) declares which resource endpoints it fetches — that list becomes the set of source-resource catalog identifiers in the corresponding context-profile mapping file. The `skill_mastered.v1` profile fetches: outcome, assignment, rubric (conditional), module_context, module_pages, canvas_user, and submission.
+The fetch-profile mapping files in `catalogs/fetch_profiles/mock_lms/` should be derived from the **Context Builder fetch profiles** defined in the Context Builder design (see [Context Builder Design](./context-builder.md) Section 5). Each fetch profile (for example, `skill_mastered.v1`) declares which resource endpoints it fetches — that list becomes the set of source-resource catalog identifiers in the corresponding fetch-profile mapping file. The `skill_mastered.v1` profile fetches: outcome, assignment, rubric (conditional), module_context, module_pages, canvas_user, and submission.
 
 ### Target catalog provenance
 
@@ -209,9 +214,9 @@ The primary `issuer_payload` target catalog for `learncard_issuer` should be bui
 On the source side, the design should distinguish between:
 
 - **source-resource catalogs**, which describe the fields for one source endpoint or resource schema
-- **context-profile mappings**, which relate `source_system + context_profile_id` to the one or more source-resource endpoint schema catalogs used by that deterministic fetch profile
+- **fetch-profile mappings**, which relate `source_system + fetch_profile_id` to the one or more source-resource endpoint schema catalogs used by that deterministic fetch profile
 
-In the current POC, `context_profile_id` should be treated as the identifier for the deterministic Context Builder fetch profile, which will usually align closely with one event type. It should not be embedded into each source-field definition because one context profile can expand to multiple endpoint or resource schemas.
+In the current POC, `fetch_profile_id` should be treated as the identifier for the deterministic Context Builder fetch profile, which will usually align closely with one event type. It should not be embedded into each source-field definition because one fetch profile can expand to multiple endpoint or resource schemas.
 
 Recommended source-resource catalog contents:
 
@@ -224,10 +229,10 @@ Recommended source-resource catalog contents:
 - whether the field is an array
 - example value
 
-Recommended context-profile mapping contents:
+Recommended fetch-profile mapping contents:
 
 - `source_system`
-- `context_profile_id`
+- `fetch_profile_id`
 - list of source resource or endpoint schema identifiers included in the profile
 - any stable payload aliases used for those resources in the `source_payloads` envelope
 
@@ -248,9 +253,9 @@ For the POC, a pragmatic implementation is:
 - prefer OpenAPI 3.1 JSON or YAML files for source-resource catalogs and target catalogs when practical
 - use standard OpenAPI and JSON Schema fields for description, data type, required fields, arrays, and examples
 - use vendor extensions only for POC-specific metadata such as `x-source-system`, `x-resource-schema-id`, `x-transformation-type`, or `x-no-mapping-behavior`
-- keep a separate committed mapping file or table for `source_system + context_profile_id`
+- keep a separate committed mapping file or table for `source_system + fetch_profile_id`
 - a simple loader that seeds local SQLite and the AWS-side equivalent store
-- lookup tables keyed by `source_system + resource_schema_id`, `source_system + context_profile_id`, and `delivery_target + transformation_type`
+- lookup tables keyed by `source_system + resource_schema_id`, `source_system + fetch_profile_id`, and `delivery_target + transformation_type`
 
 The important constraint is that catalog edits are reviewable and versioned. The store should not begin as a manually curated runtime-only database with no committed source of truth.
 
@@ -267,6 +272,15 @@ But that classification does not need to be carried around as a bulky separate r
 - if a target field is represented by a placeholder and an entry exists in the synthesis-request artifact, it is `synthesis`
 
 This design keeps the downstream artifact compact while still leaving enough evidence for testing and debugging. If the team wants explicit per-field classification metadata for evaluation, that can be logged or stored as a secondary artifact without burdening the normal orchestration contract.
+
+### Honoring `synthesis_allowed`
+
+The request's `synthesis_allowed` field constrains this classification asymmetrically, not symmetrically:
+
+- If `synthesis_allowed` is `false`, the service must not classify any field as `synthesis`. Every target field must resolve to `direct` JSONata, falling back to the target catalog's no-mapping behavior rule (`omit`/`null`/`blank`/disallowed) for anything that cannot be mapped directly. This is a hard constraint, not a preference the service can weigh against its own analysis: the Orchestrator has no mechanism to route a synthesis request for a phase whose plan didn't provision a Field Synthesis step, so a `false` value is binding.
+- If `synthesis_allowed` is `true`, the service is not obligated to use synthesis. If its own analysis finds no field genuinely needs it, it may still classify every field as `direct` and report `requires_synthesis: false`. A `true` value permits synthesis; it does not require it.
+
+For the POC, the Workflow Actions delivery-phase plan is expected to pass `synthesis_allowed: false` for wallet-payload requests, because the current plan shape (see [Orchestrator Design](./orchestrator.md) §5) has no Field Synthesis step for the wallet phase. That omission is a property of the plan Workflow Actions produces for this phase, not a rule hardcoded into the Field Mapping service or the Orchestrator's execution engine — the Orchestrator executes whatever steps a plan contains and would run a wallet-phase Field Synthesis step if a future plan included one.
 
 ## 7. LLM Invocation and Prompting Strategy
 
@@ -288,7 +302,7 @@ The request message should include, in structured or clearly delimited form:
 
 - `transformation_type`
 - `source_system`
-- `context_profile_id`
+- `fetch_profile_id`
 - `delivery_target`
 - the source payloads relevant to the current transformation
 - the resolved source-field catalog excerpt relevant to those payloads
@@ -409,7 +423,11 @@ The synchronous response should be small:
 
 This keeps the Orchestrator contract stable and lightweight. The Orchestrator should not need all model metadata inline if it can retrieve that detail through the logged reference.
 
+`requires_synthesis` is a derived convenience field, not an independent source of truth: `requires_synthesis == synthesis_allowed && (placeholder_ids non-empty) && (synthesis_request_ref != null)`. Including `synthesis_allowed` in the derivation makes the §6 constraint self-enforcing at the field level: `requires_synthesis` can never be `true` when the request forbade synthesis, regardless of what `placeholder_ids` or `synthesis_request_ref` happen to contain.
+
 For local debugging only, the boundary may optionally support an inline-expansion mode that returns the stored artifacts directly. That should not be the default production-like path.
+
+The Orchestrator passes `mapping_artifact_ref` through opaquely as the step's output binding; it does not resolve the reference into the underlying JSONata itself. The **Translation Executor** is the component responsible for dereferencing `mapping_artifact_ref` (and the corresponding synthesized values once Field Synthesis has resolved `synthesis_request_ref`) against the artifact store before it runs the JSONata against the source payloads.
 
 ## 11. Validation
 
@@ -471,7 +489,7 @@ At minimum, each invocation record or stored artifact linkage should make it pos
 - `execution_id`
 - `transformation_type`
 - `source_system`
-- `context_profile_id`
+- `fetch_profile_id`
 - `delivery_target`
 - prompt-template version
 - model ID
@@ -513,9 +531,9 @@ field_mapping/
         issuer_payload.openapi.json
       learncard_wallet/
         wallet_payload.openapi.json
-    context_profiles/
+    fetch_profiles/
       mock_lms/
-        <context_profile_id>.json
+        <fetch_profile_id>.json
   catalog_store.py
   artifact_loader.py
   prompt_builder.py
@@ -531,8 +549,8 @@ field_mapping/
 Responsibilities:
 
 - `contracts.py`: request/response schemas
-- `catalogs/`: committed OpenAPI source and target schema files plus committed context-profile mapping files; for the POC this should include one source schema file per Mock LMS resource endpoint and one target schema file for each LearnCard issuer and wallet payload shape
-- `catalog_store.py`: resolve source-resource catalogs, target catalogs, and context-profile mappings
+- `catalogs/`: committed OpenAPI source and target schema files plus committed fetch-profile mapping files; for the POC this should include one source schema file per Mock LMS resource endpoint and one target schema file for each LearnCard issuer and wallet payload shape
+- `catalog_store.py`: resolve source-resource catalogs, target catalogs, and fetch-profile mappings
 - `artifact_loader.py`: resolve source payloads and optional payload refs
 - `prompt_builder.py`: render system prompts and request messages from the loaded inputs
 - `llm_adapter.py`: define the provider-adapter protocol and shared result shape
@@ -549,7 +567,7 @@ Recommended implementation order:
 
 1. Define the transient-payload-first request contract and the ref-returning response contract.
 2. Define the stored mapping-artifact and synthesis-request-artifact schemas.
-3. Build the committed source-resource catalogs, target catalogs, and context-profile mappings.
+3. Build the committed source-resource catalogs, target catalogs, and fetch-profile mappings.
 4. Implement artifact and catalog loading.
 5. Implement JSONata and placeholder validation.
 6. Add a deterministic replay adapter and fixture-driven tests.
@@ -573,4 +591,4 @@ Decisions made during pre-development design review that are not already capture
 
 ### Artifact storage for local development
 
-**File-based JSON storage** is the local development artifact storage approach. Mapping artifacts and synthesis-request artifacts are written to and read from local JSON files keyed by a stable identifier (for example, derived from `source_system`, `context_profile_id`, `transformation_type`, and `delivery_target`). This avoids any running infrastructure dependency during local development and testing while preserving the same logical `artifact_store.py` interface that will be backed by a cloud storage layer in AWS.
+**File-based JSON storage** is the local development artifact storage approach. Mapping artifacts and synthesis-request artifacts are written to and read from local JSON files keyed by a stable identifier (for example, derived from `source_system`, `fetch_profile_id`, `transformation_type`, and `delivery_target`). This avoids any running infrastructure dependency during local development and testing while preserving the same logical `artifact_store.py` interface that will be backed by a cloud storage layer in AWS.

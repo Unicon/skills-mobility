@@ -60,15 +60,16 @@ The request should provide the current transformation's source payloads inline b
 | `execution_id` and correlated identifiers | Tie the request to one workflow execution and its logs |
 | `transformation_type` | Identifies which of the three transformation problems is being mapped |
 | `source_system` | Identifies the upstream system whose field catalog applies to the source payloads |
-| `context_profile_id` | Identifies the deterministic Context Builder fetch profile that produced the source payload shape for this request |
+| `fetch_profile_id` | Identifies the deterministic Context Builder fetch profile that produced the source payload shape for this request |
 | `delivery_target` | Identifies the downstream target context for this transformation |
+| `synthesis_allowed` | A permission gate from the Workflow Actions delivery-phase plan: `false` forbids the service from using Field Synthesis for this phase at all; `true` permits but does not require it |
 | Source payload set | Carries the already-prepared transient source payloads for the current transformation |
 
 Prompt templates, model IDs, temperatures, and other LLM runtime settings are configuration of the service runtime. They are not primary business inputs in the same sense as source artifacts and target schemas.
 
-The Field Mapping service itself should resolve the appropriate source and target catalogs or data dictionaries from its own configuration and storage using `source_system`, `context_profile_id`, `delivery_target`, and `transformation_type`.
+The Field Mapping service itself should resolve the appropriate source and target catalogs or data dictionaries from its own configuration and storage using `source_system`, `fetch_profile_id`, `delivery_target`, and `transformation_type`.
 
-Building the source-resource catalog files, target catalog files, and context-profile mapping files that the service depends on is within the development scope of this service. These catalog files do not pre-exist and must be authored as part of building and testing this service. Source-resource catalog files describe the field shapes of the Mock LMS Canvas-style endpoints. Target catalog files describe the field shapes of the downstream delivery-target schemas. Context-profile mapping files link a `source_system + context_profile_id` to the set of source-resource catalogs that apply for that fetch profile.
+Building the source-resource catalog files, target catalog files, and fetch-profile mapping files that the service depends on is within the development scope of this service. These catalog files do not pre-exist and must be authored as part of building and testing this service. Source-resource catalog files describe the field shapes of the Mock LMS Canvas-style endpoints. Target catalog files describe the field shapes of the downstream delivery-target schemas. Fetch-profile mapping files link a `source_system + fetch_profile_id` to the set of source-resource catalogs that apply for that fetch profile.
 
 ### Request inputs by transformation type
 
@@ -101,13 +102,14 @@ The full stored mapping artifact should contain the actual JSONata and placehold
   - `credential_template`
   - `issuer_payload`
   - `wallet_payload`
-- **FR-FM-3** The request SHALL identify the source system, the Context Builder `context_profile_id` that produced the source payload shape, and the selected delivery target for the current transformation.
+- **FR-FM-3** The request SHALL identify the source system, the Context Builder `fetch_profile_id` that produced the source payload shape, and the selected delivery target for the current transformation.
 - **FR-FM-4** The request SHALL provide the source payloads needed for the selected `transformation_type` inline by default. The service SHALL NOT fetch live LMS resources directly from upstream systems.
 - **FR-FM-5** The service SHALL resolve the applicable source field catalog or source data dictionary, and the applicable target schema or target field catalog, from its own configuration and storage using the request's system and transformation identifiers.
-- **FR-FM-5a** The implementation of this service SHALL include authoring the committed source-resource catalog files (OpenAPI 3.1 files built from the Mock LMS Canvas-style endpoint schemas), target catalog files (built from the delivery-target schemas such as the LearnCard SDK `UnsignedVC` shape), and context-profile mapping files (derived from the Context Builder fetch profiles defined in the Context Builder design). These catalog files are an explicit deliverable of the development effort for this service, not pre-existing inputs.
+- **FR-FM-5a** The implementation of this service SHALL include authoring the committed source-resource catalog files (OpenAPI 3.1 files built from the Mock LMS Canvas-style endpoint schemas), target catalog files (built from the delivery-target schemas such as the LearnCard SDK `UnsignedVC` shape), and fetch-profile mapping files (derived from the Context Builder fetch profiles defined in the Context Builder design). These catalog files are an explicit deliverable of the development effort for this service, not pre-existing inputs.
 - **FR-FM-6** The service SHALL support only two mapping classifications:
   - `direct`
   - `synthesis`
+- **FR-FM-6a** When the request's `synthesis_allowed` is `false`, the service SHALL NOT classify any field as `synthesis`; every field SHALL resolve to `direct` JSONata or the target catalog's no-mapping behavior rule. When `synthesis_allowed` is `true`, the service is not obligated to use synthesis and MAY still classify every field as `direct` if its own analysis finds none is needed.
 - **FR-FM-7** `direct` SHALL mean direct mapping from one or more source artifact fields available in the current transformation's source payload set. Mapping directly from a credential-template field or directly from an issued-badge field is still `direct`.
 - **FR-FM-8** The primary stored mapping artifact SHALL be executable JSONata ready for the deterministic Transformation Executor to run.
 - **FR-FM-9** For fields that require synthesis, the stored mapping artifact SHALL include synthesis placeholders that the deterministic executor can resolve later.
