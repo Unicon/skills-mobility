@@ -2,7 +2,7 @@
 
 Status: Draft
 Date: 2026-06-25
-Related: [Requirements](../2_requirements/field-mapping-llm-decision-service.md) · [POC Component Boundary Matrix](./poc-component-boundaries.md) · [Orchestrator Design](./orchestrator.md) · [Context Builder Design](./context-builder.md) · [ADR-0005](../decisions/0005-schema-mapping-language.md) · [ADR-0007](../decisions/0007-llm-decision-service-decomposition.md) · [ADR-0008](../decisions/0008-transformation-mapping-service-decomposition.md) · [ADR-0010](../decisions/0010-llm-model-access-strategy.md) · [ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md) · [ADR-0017](../decisions/0017-three-transformation-phases.md) · [Amazon Bedrock Quickstart](https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html) · [Bedrock inference prerequisites](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-prereq.html) · [Bedrock structured outputs](https://docs.aws.amazon.com/bedrock/latest/userguide/structured-output.html) · [Bedrock tool use](https://docs.aws.amazon.com/bedrock/latest/userguide/tool-use.html) · [Boto3 Bedrock Runtime `converse`](https://docs.aws.amazon.com/boto3/latest/reference/services/bedrock-runtime/client/converse.html) · [Boto3 credentials guide](https://docs.aws.amazon.com/boto3/latest/guide/credentials.html)
+Related: [Requirements](../2_requirements/field-mapping-llm-decision-service.md) · [POC Component Boundary Matrix](./poc-component-boundaries.md) · [Orchestrator Design](./orchestrator.md) · [Context Builder Design](./context-builder.md) · [ADR-0005](../decisions/0005-schema-mapping-language.md) · [ADR-0007](../decisions/0007-llm-decision-service-decomposition.md) · [ADR-0008](../decisions/0008-transformation-mapping-service-decomposition.md) · [ADR-0010](../decisions/0010-llm-model-access-strategy.md) · [ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md) · [ADR-0017](../decisions/0017-three-transformation-phases.md) · [ADR-0021](../decisions/0021-llm-testing-tooling-extensions.md) · [Amazon Bedrock Quickstart](https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html) · [Bedrock inference prerequisites](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-prereq.html) · [Bedrock structured outputs](https://docs.aws.amazon.com/bedrock/latest/userguide/structured-output.html) · [Bedrock tool use](https://docs.aws.amazon.com/bedrock/latest/userguide/tool-use.html) · [Boto3 Bedrock Runtime `converse`](https://docs.aws.amazon.com/boto3/latest/reference/services/bedrock-runtime/client/converse.html) · [Boto3 credentials guide](https://docs.aws.amazon.com/boto3/latest/guide/credentials.html)
 
 ## 1. Overview
 
@@ -181,12 +181,30 @@ The main design choice is that the Orchestrator passes transient source payloads
 
 If a payload is already stored or is too large to pass inline comfortably, the contract may allow an optional payload reference instead. That is a fallback, not the default.
 
+`delivery_target` applies only to `issuer_payload` and `wallet_payload` requests. `credential_template` requests omit it entirely: it is not present as `null` or an empty string, it is simply absent from the request. This follows [ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md) §8, which establishes that the `credential_template` phase has no `delivery_target`. For example, a `credential_template` request looks like the `issuer_payload` example above with `delivery_target` removed:
+
+```json
+{
+  "execution_id": "exec_123",
+  "event_id": "evt_123",
+  "transformation_type": "credential_template",
+  "source_system": "mock_lms",
+  "fetch_profile_id": "skill_mastered.v1",
+  "synthesis_allowed": true,
+  "source_payloads": {
+    "learner_context": { "...": "transient payload" }
+  }
+}
+```
+
 The Orchestrator should not have to know the catalog or data-dictionary reference IDs. Instead, the Field Mapping service should resolve the correct source-resource catalogs, fetch-profile mappings, and target catalogs from:
 
 - `source_system`
 - `fetch_profile_id`
 - `delivery_target`
 - `transformation_type`
+
+For `credential_template` requests, resolution uses only `source_system`, `fetch_profile_id`, and `transformation_type`; `delivery_target` is omitted for that phase.
 
 Prompt templates, model IDs, temperatures, and any configured knowledge sources should be runtime configuration of the Field Mapping service, not core business inputs on every request.
 
@@ -210,6 +228,10 @@ The fetch-profile mapping files in `catalogs/fetch_profiles/mock_lms/` should be
 ### Target catalog provenance
 
 The primary `issuer_payload` target catalog for `learncard_issuer` should be built from the **LearnCard SDK `UnsignedVC` object schema**. The `UnsignedVC` shape defines the required and optional fields for unsigned Open Badges v3 / BoostCredential payloads, including `credentialSubject.achievement`, `credentialSubject.id`, `issuer`, `issuanceDate`, `name`, `image`, and `display`.
+
+The `credential_template` target catalog has no `delivery_target` subdirectory, since this phase has no `delivery_target` ([ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md) §8). Its target schema should mirror the output of the [DCC Credential Co-writer](https://co-writer.dcconsortium.org/), the Digital Credentials Consortium's tool for generating Open Badges 3.0 / W3C Verifiable Credentials, which the `credential_template` phase is explicitly modeled after. The tool's exact field-level output schema is not available from published documentation, so it is not reproduced here. Capturing that schema, by exercising the live tool with representative sample input, is an explicit development deliverable for this service (see FR-FM-5a), the same way the other catalog files are.
+
+The `wallet_payload` target catalog covers both real wallet delivery targets. The `learncard_wallet` catalog should be built from the LearnCloud Network API's `POST /credential/send/{profileId}` endpoint and the LearnCard SDK's `sendCredential` / `send` methods, already documented in [LearnCard Wallet Adapter Requirements](../2_requirements/learncard-wallet-adapter.md). The `smart_resume` catalog should be built from SmartResume's CredentialConnect API (https://my.smartresume.com/api/v1/docs), which accepts Open Badges 3.0 or Comprehensive Learner Record 2.0 JSON-LD credentials directly via endpoints such as `/api/v1/credentials` and `/api/v1/clr`. Because [Phase 1](../2_requirements/phase-1-poc-slice.md) excludes SmartResume delivery and prioritizes LearnCard-only delivery, the `smart_resume` catalog may be authored after the `learncard_wallet` catalog rather than in the same increment.
 
 On the source side, the design should distinguish between:
 
@@ -379,11 +401,12 @@ For the POC, the concrete adapter implementation should target Bedrock's **Conve
 
 For this service, the Bedrock interaction sequence is:
 
-1. build the prompt and structured-output schema
-2. call the provider adapter, which invokes Bedrock `Converse` through the AWS SDK
-3. parse the returned structured object
-4. validate it against the supplied payload fields and resolved target schema
-5. store the artifacts
+1. screen free-text values in `source_payloads` for prompt-injection attempts (ADR-0021) before they reach the prompt
+2. build the prompt and structured-output schema
+3. call the provider adapter, which invokes Bedrock `Converse` through the AWS SDK
+4. parse the returned structured object
+5. validate it against the supplied payload fields and resolved target schema
+6. store the artifacts
 
 The concrete SDK surface should follow the currently documented Bedrock `Converse` and structured-output APIs at implementation time. The important design point is not one exact SDK call signature; it is that the service uses:
 
@@ -427,7 +450,7 @@ This keeps the Orchestrator contract stable and lightweight. The Orchestrator sh
 
 For local debugging only, the boundary may optionally support an inline-expansion mode that returns the stored artifacts directly. That should not be the default production-like path.
 
-The Orchestrator passes `mapping_artifact_ref` through opaquely as the step's output binding; it does not resolve the reference into the underlying JSONata itself. The **Translation Executor** is the component responsible for dereferencing `mapping_artifact_ref` (and the corresponding synthesized values once Field Synthesis has resolved `synthesis_request_ref`) against the artifact store before it runs the JSONata against the source payloads.
+The Orchestrator passes `mapping_artifact_ref` through opaquely as the step's output binding; it does not resolve the reference into the underlying JSONata itself. The **Transformation Executor** is the component responsible for dereferencing `mapping_artifact_ref` (and the corresponding synthesized values once Field Synthesis has resolved `synthesis_request_ref`) against the artifact store before it runs the JSONata against the source payloads.
 
 ## 11. Validation
 
@@ -436,7 +459,7 @@ The service should validate before reporting success:
 1. parse the structured model response
 2. verify that the artifact shape matches the requested `transformation_type`
 3. verify that placeholder-backed fields have corresponding synthesis requests
-4. parse-check the JSONata against the same dialect assumptions the Transformation Executor will use
+4. parse-check the JSONata against the same dialect assumptions the Transformation Executor will use, once a Transformation Executor design confirms what those assumptions are (no Transformation Executor design exists yet in this repo, so today this is a stated intent, not a verified fact)
 5. verify that the generated JSONata references only fields available in the supplied source payloads
 6. verify that the generated output shape is valid for the resolved target schema
 7. store only validated artifacts as successful results
@@ -444,6 +467,10 @@ The service should validate before reporting success:
 This service should not silently fall back to handwritten Python mappings if the model output is bad. That would defeat the POC's purpose.
 
 Invalid outputs should still be stored as **failed artifacts** or failed invocation records, with their validation errors attached. They should not be reusable as successful mapping artifacts, but they are valuable evidence for prompt tuning, model comparison, and post-run analysis.
+
+### Capability Evaluation (Layer B)
+
+The checks above are hard gates (ADR-0013 Layer A), not a capability verdict. Field Mapping's Layer B capability evaluation, meaning executed-result correctness plus semantic alignment to a human-authored canonical mapping, is implemented as a deterministic custom metric in the shared DeepEval harness (ADR-0021), scored against the frozen evaluation corpus. This is plain code, not an LLM-as-judge metric: no judge-model cost applies, unlike Field Synthesis's `G-Eval` metric.
 
 ## 12. Repair Retry Mode
 
@@ -503,6 +530,7 @@ At minimum, each invocation record or stored artifact linkage should make it pos
 - model-reported `rationale`
 - validation outcome
 - whether repair retry mode was enabled and whether it was used
+- `corpus_scenario_id`, present only for invocations run against the frozen ADR-0013 evaluation corpus (absent for live production invocations), formatted as `{event_type}.{scenario_slug}.v{version}` per [ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md) §8
 
 This data is necessary not just for debugging individual failures, but for comparing:
 
@@ -527,9 +555,13 @@ field_mapping/
         <resource-endpoint-1>.openapi.json
         <resource-endpoint-2>.openapi.json
     targets/
+      credential_template/
+        credential_template.openapi.json
       learncard_issuer/
         issuer_payload.openapi.json
       learncard_wallet/
+        wallet_payload.openapi.json
+      smart_resume/
         wallet_payload.openapi.json
     fetch_profiles/
       mock_lms/
@@ -549,7 +581,7 @@ field_mapping/
 Responsibilities:
 
 - `contracts.py`: request/response schemas
-- `catalogs/`: committed OpenAPI source and target schema files plus committed fetch-profile mapping files; for the POC this should include one source schema file per Mock LMS resource endpoint and one target schema file for each LearnCard issuer and wallet payload shape
+- `catalogs/`: committed OpenAPI source and target schema files plus committed fetch-profile mapping files; for the POC this should include one source schema file per Mock LMS resource endpoint and one target schema file for each of the `credential_template`, LearnCard issuer, LearnCard wallet, and SmartResume wallet target catalogs
 - `catalog_store.py`: resolve source-resource catalogs, target catalogs, and fetch-profile mappings
 - `artifact_loader.py`: resolve source payloads and optional payload refs
 - `prompt_builder.py`: render system prompts and request messages from the loaded inputs
@@ -587,7 +619,7 @@ Decisions made during pre-development design review that are not already capture
 
 ### Starting model
 
-**Claude Haiku 4.5** is the starting model. Bedrock model ID: `anthropic.claude-haiku-4-5`. This is accessed via the Bedrock Converse API. Per the recommended settings in Section 9, temperature should be `0.0` for this service's structured mapping task. The model ID should be runtime configuration so it can be changed without a code change.
+**Claude Haiku 4.5** is the starting model. The exact invocable Bedrock model ID string (which may include a date and version suffix, per AWS's typical Bedrock ID format) should be verified against the current AWS Bedrock model catalog at implementation time rather than hardcoded from this doc, since model ID formats change. This is accessed via the Bedrock Converse API. Per the recommended settings in Section 9, temperature should be `0.0` for this service's structured mapping task. The model ID should be runtime configuration so it can be changed without a code change.
 
 ### Artifact storage for local development
 

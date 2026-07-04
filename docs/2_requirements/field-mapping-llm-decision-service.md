@@ -2,7 +2,7 @@
 
 Status: Draft
 Date: 2026-06-25
-Related: [Requirements overview](./README.md) · [Target POC Requirements](./target-poc-requirements.md) · [Design](../3_design/field-mapping-llm-decision-service.md) · [POC Component Boundary Matrix](../3_design/poc-component-boundaries.md) · [ADR-0005](../decisions/0005-schema-mapping-language.md) · [ADR-0007](../decisions/0007-llm-decision-service-decomposition.md) · [ADR-0008](../decisions/0008-transformation-mapping-service-decomposition.md) · [ADR-0010](../decisions/0010-llm-model-access-strategy.md) · [ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md) · [ADR-0017](../decisions/0017-three-transformation-phases.md) · [Amazon Bedrock Quickstart](https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html) · [Bedrock inference prerequisites](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-prereq.html) · [Bedrock structured outputs](https://docs.aws.amazon.com/bedrock/latest/userguide/structured-output.html) · [Boto3 Bedrock Runtime `converse`](https://docs.aws.amazon.com/boto3/latest/reference/services/bedrock-runtime/client/converse.html) · [Boto3 credentials guide](https://docs.aws.amazon.com/boto3/latest/guide/credentials.html)
+Related: [Requirements overview](./README.md) · [Target POC Requirements](./target-poc-requirements.md) · [Design](../3_design/field-mapping-llm-decision-service.md) · [POC Component Boundary Matrix](../3_design/poc-component-boundaries.md) · [ADR-0005](../decisions/0005-schema-mapping-language.md) · [ADR-0007](../decisions/0007-llm-decision-service-decomposition.md) · [ADR-0008](../decisions/0008-transformation-mapping-service-decomposition.md) · [ADR-0010](../decisions/0010-llm-model-access-strategy.md) · [ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md) · [ADR-0017](../decisions/0017-three-transformation-phases.md) · [ADR-0021](../decisions/0021-llm-testing-tooling-extensions.md) · [Amazon Bedrock Quickstart](https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html) · [Bedrock inference prerequisites](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-prereq.html) · [Bedrock structured outputs](https://docs.aws.amazon.com/bedrock/latest/userguide/structured-output.html) · [Boto3 Bedrock Runtime `converse`](https://docs.aws.amazon.com/boto3/latest/reference/services/bedrock-runtime/client/converse.html) · [Boto3 credentials guide](https://docs.aws.amazon.com/boto3/latest/guide/credentials.html)
 
 ## 1. Purpose
 
@@ -102,7 +102,7 @@ The full stored mapping artifact should contain the actual JSONata and placehold
   - `credential_template`
   - `issuer_payload`
   - `wallet_payload`
-- **FR-FM-3** The request SHALL identify the source system, the Context Builder `fetch_profile_id` that produced the source payload shape, and the selected delivery target for the current transformation.
+- **FR-FM-3** The request SHALL identify the source system and the Context Builder `fetch_profile_id` that produced the source payload shape for the current transformation. The selected delivery target SHALL be identified for `issuer_payload` and `wallet_payload` requests; `credential_template` requests SHALL omit it.
 - **FR-FM-4** The request SHALL provide the source payloads needed for the selected `transformation_type` inline by default. The service SHALL NOT fetch live LMS resources directly from upstream systems.
 - **FR-FM-5** The service SHALL resolve the applicable source field catalog or source data dictionary, and the applicable target schema or target field catalog, from its own configuration and storage using the request's system and transformation identifiers.
 - **FR-FM-5a** The implementation of this service SHALL include authoring the committed source-resource catalog files (OpenAPI 3.1 files built from the Mock LMS Canvas-style endpoint schemas), target catalog files (built from the delivery-target schemas such as the LearnCard SDK `UnsignedVC` shape), and fetch-profile mapping files (derived from the Context Builder fetch profiles defined in the Context Builder design). These catalog files are an explicit deliverable of the development effort for this service, not pre-existing inputs.
@@ -126,7 +126,8 @@ The full stored mapping artifact should contain the actual JSONata and placehold
   - valid JSONata parse for executable expressions,
   - valid placeholder structure for synthesis-backed fields,
   - generated JSONata that references only fields available in the supplied source payload set,
-  - and generated output structure that is valid for the requested target schema.
+  - generated output structure that is valid for the requested target schema,
+  - and presence of `confidence` and `rationale` in the model output.
 - **FR-FM-15** The service SHALL use a managed model-access adapter consistent with ADR-0010. For the POC, the primary provider SHALL be Amazon Bedrock.
 - **FR-FM-16** The service SHALL support configurable model ID, prompt-template version, and generation parameters without requiring a contract change.
 - **FR-FM-17** The service SHALL default to low-temperature generation appropriate for machine-executable structured output.
@@ -143,6 +144,8 @@ The full stored mapping artifact should contain the actual JSONata and placehold
 - **FR-FM-25** The service SHALL support uncached evaluation runs and SHALL default to uncached generation for POC evaluation and test-oriented development.
 - **FR-FM-26** The service SHALL support a configuration switch that enables stored mapping reuse for production-like behavior once the team wants to exercise that path.
 - **FR-FM-27** The service SHALL NOT claim success based only on syntactically valid JSON. JSONata validity and placeholder-structure validity are hard gates for the service.
+- **FR-FM-27a** The service's Layer B capability evaluation against the frozen ADR-0013 corpus SHALL be implemented using the shared DeepEval test harness (ADR-0021), as a deterministic custom metric.
+- **FR-FM-27b** The service SHALL screen free-text values in `source_payloads` for prompt-injection attempts before they are included in a Bedrock prompt (ADR-0021).
 
 ## 7. Local vs AWS Requirements
 
