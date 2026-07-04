@@ -13,6 +13,7 @@
 | [`phase-1-poc-slice.md`](./phase-1-poc-slice.md) | First implementation slice across components: a fast end-to-end pipeline for `skill_mastered` and `course_completed` that later phases can build on |
 | [`context-builder.md`](./context-builder.md) | Deterministic source-data aggregation for the Orchestrator: event-type-based fetch profiles, chained LMS lookups, and the returned context bundle |
 | [`field-mapping-llm-decision-service.md`](./field-mapping-llm-decision-service.md) | LLM-backed mapping-spec generation: direct mappings, synthesis placeholders, and JSONata for one transformation loop invocation |
+| [`admin-ui.md`](./admin-ui.md) | Operability/observability SPA over the Orchestrator: per-workflow execution timeline, per-step status, decision/reasoning logs, correlation-id pivot from the Mock LMS, polling model |
 | **Mock LMS** (source-system component, three parts ↓) | |
 | [`mock-lms-event-producer.md`](./mock-lms-event-producer.md) | Emits credential events (skill mastered, course completed, badge awarded); Actions, payloads, repeatability |
 | [`mock-lms-apis.md`](./mock-lms-apis.md) | Canvas-style **LMS Resource APIs** the Context Builder reads; seeded data model |

@@ -1,0 +1,63 @@
+id: skill_mastered.v1
+event_type: skill_mastered
+version: 1
+steps:
+  - output_key: outcome
+    endpoint: "/api/v1/outcomes/{learning_outcome_id}"
+    params:
+      learning_outcome_id: { source: event, path: body.learning_outcome_id }
+
+  - output_key: assignment
+    endpoint: "/api/v1/courses/{course_id}/assignments/{assignment_id}"
+    params:
+      course_id: { source: event, path: body.result_context_id }
+      assignment_id: { source: event, path: body.associated_asset_id }
+
+  # Rubric only when the assignment carries a rubric_id (conditional chain).
+  - output_key: rubric
+    endpoint: "/api/v1/courses/{course_id}/rubrics/{rubric_id}"
+    condition: { source: response, step: assignment, path: rubric_id, operator: present }
+    params:
+      course_id: { source: event, path: body.result_context_id }
+      rubric_id: { source: response, step: assignment, path: rubric_id }
+
+  # The module whose items include the graded assignment (Canvas module items
+  # reference the assignment by content_id).
+  - output_key: module_context
+    endpoint: "/api/v1/courses/{course_id}/modules?include[]=items"
+    params:
+      course_id: { source: event, path: body.result_context_id }
+    select:
+      where:
+        contains_item:
+          in: items
+          type: Assignment
+          content_id: { source: event, path: body.associated_asset_id }
+
+  # Each Page item in that module → fetch the page by id.
+  - output_key: module_pages
+    endpoint: "/api/v1/courses/{course_id}/pages/{page_id}"
+    for_each:
+      source: response
+      step: module_context
+      path: items
+      where: { type: Page }
+    params:
+      course_id: { source: event, path: body.result_context_id }
+      page_id: { source: foreach_item, path: content_id }
+
+  # Resolve the Canvas user_id from root account + user_uuid (account-user lookup).
+  - output_key: canvas_user
+    endpoint: "/api/v1/accounts/{root_account_id}/users?uuids[]={user_uuid}"
+    params:
+      root_account_id: { source: event, path: metadata.root_account_id }
+      user_uuid: { source: event, path: body.user_uuid }
+
+  # The learner's submission, keyed by the resolved Canvas user_id (first match),
+  # with the rubric assessment included (design §6).
+  - output_key: submission
+    endpoint: "/api/v1/courses/{course_id}/assignments/{assignment_id}/submissions/{user_id}?include[]=rubric_assessment"
+    params:
+      course_id: { source: event, path: body.result_context_id }
+      assignment_id: { source: event, path: body.associated_asset_id }
+      user_id: { source: response, step: canvas_user, path: "0.id" }

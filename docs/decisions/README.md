@@ -23,8 +23,10 @@
 | [0015](./0015-orchestrator-execution-model.md) | Event Consumer and Orchestrator Worker Execution Model (Lambda + SQS) | Accepted |
 | [0016](./0016-delivery-routing-topology.md) | Delivery Routing Topology and Adapter Boundaries | Proposed |
 | [0017](./0017-three-transformation-phases.md) | Three Transformation Phases for the Default Expected POC Path | Accepted |
+| [0018](./0018-admin-ui-frontend-stack.md) | Admin UI Frontend Stack and Design-Token Architecture (Radix + Open Props + Radix Colors + Motion; no Tailwind/shadcn) | Accepted |
+| [0019](./0019-adr-governance-and-lifecycle.md) | ADR Governance and Lifecycle: Living Documents with Visible Reversals | Proposed |
 
 ## Conventions
 
 - Filename: `NNNN-short-title.md`, numbered sequentially.
-- ADRs are immutable history. When a decision evolves materially, add a new ADR that supersedes or refines the earlier one rather than rewriting accepted history in place.
+- ADRs are **living documents** maintained in place during the POC ([ADR-0019](./0019-adr-governance-and-lifecycle.md)). Clarifications/corrections: edit freely. **Reversing an accepted decision:** edit in place but keep it visible — update `Status`, add a `Supersedes: <date> — <what changed>` header line, and keep the prior option under *Options Considered*. Every ADR carries `Status` + `Date`.

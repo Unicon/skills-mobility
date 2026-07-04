@@ -1,0 +1,45 @@
+id: course_completed.v1
+event_type: course_completed
+version: 1
+steps:
+  - output_key: course
+    endpoint: "/api/v1/courses/{course_id}"
+    params:
+      course_id: { source: event, path: body.course.id }
+
+  - output_key: learner_profile
+    endpoint: "/api/v1/users/{user_id}/profile"
+    params:
+      user_id: { source: event, path: metadata.user_id }
+
+  - output_key: enrollment
+    endpoint: "/api/v1/courses/{course_id}/enrollments?user_id={user_id}"
+    params:
+      course_id: { source: event, path: body.course.id }
+      user_id: { source: event, path: metadata.user_id }
+
+  - output_key: modules
+    endpoint: "/api/v1/courses/{course_id}/modules?include[]=items"
+    params:
+      course_id: { source: event, path: body.course.id }
+
+  - output_key: pages
+    endpoint: "/api/v1/courses/{course_id}/pages"
+    params:
+      course_id: { source: event, path: body.course.id }
+
+  - output_key: assignments
+    endpoint: "/api/v1/courses/{course_id}/assignments"
+    params:
+      course_id: { source: event, path: body.course.id }
+
+  - output_key: rubrics
+    endpoint: "/api/v1/courses/{course_id}/rubrics"
+    params:
+      course_id: { source: event, path: body.course.id }
+
+  - output_key: submissions
+    endpoint: "/api/v1/courses/{course_id}/students/submissions?student_ids[]={user_id}"
+    params:
+      course_id: { source: event, path: body.course.id }
+      user_id: { source: event, path: metadata.user_id }
