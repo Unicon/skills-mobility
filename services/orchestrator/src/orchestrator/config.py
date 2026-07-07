@@ -9,7 +9,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="ORCHESTRATOR_")
+    model_config = SettingsConfigDict(
+        env_prefix="ORCHESTRATOR_", env_file=".env", extra="ignore"
+    )
 
     # Local HTTP port. 8400 (not 8300 — that's Consul's default RPC port and
     # conflicts for anyone running Consul/Docker Desktop). Override: ORCHESTRATOR_PORT.
