@@ -1,4 +1,4 @@
-# 0017. Three Transformation Phases for the Primary POC Transformation Path
+# 0017. Three Transformation Phases for the Default Expected POC Path
 
 - Status: Accepted
 - Date: 2026-06-25

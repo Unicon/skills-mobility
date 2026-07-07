@@ -3,6 +3,8 @@
 - Status: Accepted
 - Date: 2026-06-15
 
+> **Note (2026-06-25):** This ADR's two-loop pipeline and three-treatment field classification (direct mapping / synthesis placeholder / template pass-through) are the historical baseline. ADR-0017 introduces a third transformation phase and collapses field classification to two treatments (direct/synthesis). References to "two loops" and the three-treatment model in this ADR should be read accordingly.
+
 ## Context
 
 The Transformation Mappings LLM Decision Service as described in ADR 0007 is responsible for generating the translation instructions that convert source data into the format expected by each selected delivery target. For this POC, the primary source inputs are:
