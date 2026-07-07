@@ -78,13 +78,21 @@ def _phase1_steps() -> list[PlanStep]:
         _step(
             2,
             "generate_issuer_payload_mapping",
-            {"delivery_target": InputBinding(source="literal", value="learncard_issuer")},
+            {
+                # transformation_type and delivery_target are independent plan
+                # literals, not a derived pair (#27 §4); synthesis_allowed is the
+                # plan's permission gate for Field Synthesis this phase (#27 §6).
+                "transformation_type": InputBinding(source="literal", value="issuer_payload"),
+                "delivery_target": InputBinding(source="literal", value="learncard_issuer"),
+                "synthesis_allowed": InputBinding(source="literal", value=True),
+            },
             "issuer_mapping",
         ),
         _step(
             3,
             "generate_issuer_payload_synthesis",
             {
+                "transformation_type": InputBinding(source="literal", value="issuer_payload"),
                 "delivery_target": InputBinding(source="literal", value="learncard_issuer"),
                 "mapping": InputBinding(source="step", step_id=2),
             },
@@ -114,7 +122,14 @@ def _phase1_steps() -> list[PlanStep]:
         _step(
             6,
             "generate_wallet_payload_mapping",
-            {"delivery_target": InputBinding(source="literal", value="learncard_wallet")},
+            {
+                # The wallet phase provisions no Field Synthesis step, so the plan
+                # passes synthesis_allowed=false — a property of this plan, not a
+                # rule hardcoded in the FM service or the executor (#27 §6).
+                "transformation_type": InputBinding(source="literal", value="wallet_payload"),
+                "delivery_target": InputBinding(source="literal", value="learncard_wallet"),
+                "synthesis_allowed": InputBinding(source="literal", value=False),
+            },
             "wallet_mapping",
         ),
         _step(

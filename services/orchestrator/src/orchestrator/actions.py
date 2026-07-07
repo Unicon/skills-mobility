@@ -19,14 +19,6 @@ from typing import Any
 from orchestrator import obv3
 from orchestrator.clients import DeliveryRouterClient, ProfileResolverClient
 
-# The orchestrator's delivery target → the Field Mapping service's
-# `transformation_type` (#27 §4 sends both on every request; ADR-0017 names the
-# three phases). This bridge is the orchestrator's responsibility.
-_TRANSFORMATION_TYPE = {
-    "learncard_issuer": "issuer_payload",
-    "learncard_wallet": "wallet_payload",
-}
-
 
 @dataclass(frozen=True)
 class ActionDeps:
@@ -40,21 +32,33 @@ def _resolve_learncard_profile(inputs: dict[str, Any], deps: ActionDeps) -> dict
 
 
 def _generate_payload_mapping(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
-    """Field Mapping seam (#27). The real service returns this response envelope
-    (design §10); the Phase-1 stub returns the same shape — no synthesis, null
-    artifact refs. Keying off ``delivery_target`` → ``transformation_type`` mirrors
-    the real request so the swap-in is a client call behind this same output.
+    """Field Mapping seam (#27). Returns the §10 response envelope; the Phase-1
+    stub returns the same shape with null artifact refs. ``transformation_type``
+    and ``delivery_target`` arrive as independent plan literals (#27 §4) — the stub
+    derives neither from the other; the real service uses them to resolve its
+    source/target catalogs.
 
-    TODO(#27): when the seam contract settles, send ``source_payloads`` +
-    ``context_profile_id`` (reconcile with the Context Builder's ``fetch_profile_id``)
-    and return the real ``mapping_artifact_ref`` / ``synthesis_request_ref``."""
-    transformation_type = _TRANSFORMATION_TYPE.get(inputs.get("delivery_target", ""), "")
+    ``requires_synthesis`` is derived, never asserted (#27 §10):
+    ``synthesis_allowed and placeholder_ids and synthesis_request_ref is not None``.
+    The stub maps every field directly, so it has no placeholders and no synthesis
+    request — the result is always ``False``, honoring the §6 gate for either
+    ``synthesis_allowed`` value.
+
+    TODO(#27): when the real service lands, send ``source_payloads`` +
+    ``fetch_profile_id`` and return the real ``mapping_artifact_ref`` /
+    ``synthesis_request_ref`` / ``llm_invocation_log_ref``."""
+    synthesis_allowed = bool(inputs.get("synthesis_allowed", False))
+    placeholder_ids: list[str] = []  # Phase-1 stub maps every field directly
+    synthesis_request_ref: str | None = None
+    requires_synthesis = (
+        synthesis_allowed and bool(placeholder_ids) and synthesis_request_ref is not None
+    )
     return {
         "status": "succeeded",
-        "transformation_type": transformation_type,
         "mapping_artifact_ref": None,
-        "synthesis_request_ref": None,
-        "requires_synthesis": False,
+        "synthesis_request_ref": synthesis_request_ref,
+        "requires_synthesis": requires_synthesis,
+        "llm_invocation_log_ref": None,
     }
 
 

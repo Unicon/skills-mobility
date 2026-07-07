@@ -78,15 +78,23 @@ def test_executes_steps_in_order_and_threads_data(sample_event):
     assert [s.step_id for s in meta.steps] == list(range(1, 9))
     assert all(s.status == "succeeded" for s in meta.steps)
 
-    # Field Mapping seam (#27): the mapping steps emit the service's response
-    # envelope shape, keyed by delivery_target → transformation_type.
+    # Field Mapping seam (#27): the mapping steps emit exactly the §10 response
+    # envelope. transformation_type / synthesis_allowed are request literals from
+    # the plan, not response fields; requires_synthesis is derived (false here —
+    # the stub maps every field directly, so no placeholders/synthesis request).
     by_action = {s.action_id: s.output for s in meta.steps}
     issuer_map = by_action["generate_issuer_payload_mapping"]
     wallet_map = by_action["generate_wallet_payload_mapping"]
-    assert issuer_map["transformation_type"] == "issuer_payload"
-    assert wallet_map["transformation_type"] == "wallet_payload"
+    assert issuer_map.keys() == {
+        "status",
+        "mapping_artifact_ref",
+        "synthesis_request_ref",
+        "requires_synthesis",
+        "llm_invocation_log_ref",
+    }
+    assert "transformation_type" not in issuer_map
     assert issuer_map["requires_synthesis"] is False
-    assert {"status", "mapping_artifact_ref", "synthesis_request_ref"} <= issuer_map.keys()
+    assert wallet_map["requires_synthesis"] is False
     # Field Synthesis seam: flat synthesized-values map (empty in Phase 1).
     assert by_action["generate_issuer_payload_synthesis"] == {"synthesized": {}}
 

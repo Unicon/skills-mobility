@@ -45,7 +45,7 @@ src/orchestrator/
 ## What's stubbed (Phase 1)
 
 - **Workflow Actions / Delivery Targets** → deterministic gate (`continue`) + fixed target set.
-- **Field Mapping / Field Synthesis** → contract-shaped stubs (return the #27 response envelope / synthesized-values map, keyed by `delivery_target`→`transformation_type`; no real artifacts yet); **Translation Executor** → the OBv3/wallet-payload builders.
+- **Field Mapping / Field Synthesis** → contract-shaped stubs (return the #27 §10 response envelope / synthesized-values map; the plan supplies `transformation_type`, `delivery_target`, and `synthesis_allowed` as independent literals; no real artifacts yet); **Translation Executor** → the OBv3/wallet-payload builders.
 - **Profile Resolver / Delivery Router (+ LearnCard adapters)** → canned profile/DID + signed VC + accepted delivery (#19 swaps in the real ones).
 
 ## Run / test
