@@ -24,6 +24,7 @@
 | [0016](./0016-delivery-routing-topology.md) | Delivery Routing Topology and Adapter Boundaries | Proposed |
 | [0018](./0018-admin-ui-frontend-stack.md) | Admin UI Frontend Stack and Design-Token Architecture (Radix + Open Props + Radix Colors + Motion; no Tailwind/shadcn) | Accepted |
 | [0019](./0019-adr-governance-and-lifecycle.md) | ADR Governance and Lifecycle: Living Documents with Visible Reversals | Proposed |
+| [0020](./0020-js-ts-workspace-tooling.md) | JS/TS Workspace Tooling and Token Publishing (npm workspaces, single root lockfile, no build step) | Accepted |
 
 ## Conventions
 
