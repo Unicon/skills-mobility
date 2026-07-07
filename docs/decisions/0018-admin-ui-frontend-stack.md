@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-06-25
-- Related: [ADR-0001](./0001-repo-structure.md) · [ADR-0002](./0002-frontend-architecture.md) · [ADR-0019](./0019-js-ts-workspace-tooling.md) · [Admin UI Requirements](../2_requirements/admin-ui.md) · [Admin UI Design](../3_design/admin-ui.md) · [Mock LMS Design](../3_design/mock-lms.md)
+- Related: [ADR-0001](./0001-repo-structure.md) · [ADR-0002](./0002-frontend-architecture.md) · [ADR-0020](./0020-js-ts-workspace-tooling.md) · [Admin UI Requirements](../2_requirements/admin-ui.md) · [Admin UI Design](../3_design/admin-ui.md) · [Mock LMS Design](../3_design/mock-lms.md)
 
 ## Context
 
@@ -25,10 +25,6 @@ Standardize on the current **`motion`** package (`import { … } from "motion/re
 Use **Radix Primitives** (headless, unstyled) styled with our own CSS. **Base UI** is an acceptable alternative primitive layer on a per-component basis. The primitive layer supplies accessible behavior (dialogs, popovers, tabs, collapsibles); our CSS owns all visual styling.
 
 **Not adopted:** **shadcn/ui** and **Tailwind**. Styling is plain CSS driven by design tokens, consistent with the Mock LMS's existing hand-authored CSS.
-
-### React version
-
-Standardize the workspace on **React 19** (baseline added 2026-06-30). The Mock LMS is on React 18.3 today and migrates to 19 as part of its `packages/ui` adoption. Because the JS workspace hoists a single React copy ([ADR-0019](./0019-js-ts-workspace-tooling.md)), both apps share one version rather than diverging; React 19 is the baseline both inherit. Radix Primitives and Motion both support React 19, and the token layer is framework-agnostic CSS.
 
 ### Design tokens — three layers
 

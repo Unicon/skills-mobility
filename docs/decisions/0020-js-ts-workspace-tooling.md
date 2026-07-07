@@ -1,4 +1,4 @@
-# 0019. JS/TS Workspace Tooling and Token Publishing
+# 0020. JS/TS Workspace Tooling and Token Publishing
 
 - Status: Accepted
 - Date: 2026-06-30
@@ -89,7 +89,7 @@ Dependencies install once from the root (`npm install`). Per-app dev and build r
 ### Negative
 
 - The shared packages are **internal-only**: consuming their TypeScript source requires a TS-aware bundler (Vite). They are not independently publishable or usable by a non-Vite consumer as-is. Acceptable — the only consumers are the two in-repo SPAs.
-- npm hoists workspace dependencies to the root, so **React (and other singletons) must be kept at one version across the workspace** to avoid duplicate-copy bugs. The baseline is **React 19** ([ADR-0018](./0018-admin-ui-frontend-stack.md)); `apps/mock-lms` is on React 18.3 today and migrates to 19 as part of workspace adoption rather than the two apps diverging.
+- npm hoists workspace dependencies to the root, so **React (and other singletons) must be kept at one version across the workspace** to avoid duplicate-copy bugs. The baseline is **React 19** ([Admin UI Design §5](../3_design/admin-ui.md)); `apps/mock-lms` is on React 18.3 today and migrates to 19 as part of workspace adoption rather than the two apps diverging.
 - Removing `apps/mock-lms/package-lock.json` and moving installs to the root changes the app's local setup; the migration must update any per-app install instructions.
 
 ## Alternatives considered
