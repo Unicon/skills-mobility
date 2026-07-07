@@ -22,8 +22,10 @@
 | [0014](./0014-poc-storage-strategy.md) | POC Storage Strategy | Accepted |
 | [0015](./0015-orchestrator-execution-model.md) | Event Consumer and Orchestrator Worker Execution Model (Lambda + SQS) | Accepted |
 | [0016](./0016-delivery-routing-topology.md) | Delivery Routing Topology and Adapter Boundaries | Proposed |
+| [0018](./0018-admin-ui-frontend-stack.md) | Admin UI Frontend Stack and Design-Token Architecture (Radix + Open Props + Radix Colors + Motion; no Tailwind/shadcn) | Accepted |
+| [0019](./0019-adr-governance-and-lifecycle.md) | ADR Governance and Lifecycle: Living Documents with Visible Reversals | Proposed |
 
 ## Conventions
 
 - Filename: `NNNN-short-title.md`, numbered sequentially.
-- ADRs in this repo are maintained **in place**. When a decision evolves, update the existing ADR so it stays coherent with the current architecture and index.
+- ADRs are **living documents** maintained in place during the POC ([ADR-0019](./0019-adr-governance-and-lifecycle.md)). Clarifications/corrections: edit freely. **Reversing an accepted decision:** edit in place but keep it visible — update `Status`, add a `Supersedes: <date> — <what changed>` header line, and keep the prior option under *Options Considered*. Every ADR carries `Status` + `Date`.

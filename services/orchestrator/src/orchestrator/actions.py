@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from orchestrator import obv3
-from orchestrator.clients import DeliveryRouterClient, ProfileResolverClient
+from orchestrator.clients import DeliveryRouterClient, EnvelopeContext, ProfileResolverClient
 
 
 @dataclass(frozen=True)
@@ -25,10 +25,16 @@ class ActionDeps:
     profile_resolver: ProfileResolverClient
     delivery_router: DeliveryRouterClient
     issuer_id: str
+    envelope: EnvelopeContext
 
 
 def _resolve_learncard_profile(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
-    return deps.profile_resolver.resolve(inputs.get("learner_id_value", ""))
+    return deps.profile_resolver.resolve(
+        inputs.get("learner_id_type", "email"),
+        inputs.get("learner_id_value", ""),
+        deps.envelope,
+        "resolve_learncard_profile",
+    )
 
 
 def _generate_payload_mapping(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
@@ -85,7 +91,12 @@ def _execute_issuer_payload_translation(inputs: dict[str, Any], deps: ActionDeps
 
 def _issue_learncard_badge(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
     unsigned_vc = inputs["issuer_payload"]["unsigned_vc"]
-    return deps.delivery_router.dispatch("issue_learncard_badge", {"unsigned_vc": unsigned_vc})
+    return deps.delivery_router.dispatch(
+        "issue_learncard_badge",
+        {"unsigned_vc": unsigned_vc},
+        deps.envelope,
+        "issue_learncard_badge",
+    )
 
 
 def _execute_wallet_payload_translation(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
@@ -99,7 +110,12 @@ def _execute_wallet_payload_translation(inputs: dict[str, Any], deps: ActionDeps
 
 
 def _deliver_to_learncard_wallet(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
-    return deps.delivery_router.dispatch("deliver_to_learncard_wallet", inputs["wallet_payload"])
+    return deps.delivery_router.dispatch(
+        "deliver_to_learncard_wallet",
+        inputs["wallet_payload"],
+        deps.envelope,
+        "deliver_to_learncard_wallet",
+    )
 
 
 Action = Callable[[dict[str, Any], ActionDeps], dict[str, Any]]

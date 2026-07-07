@@ -7,9 +7,21 @@ from typing import Any
 
 from orchestrator import planner
 from orchestrator.actions import ActionDeps
-from orchestrator.clients import StubContextBuilder, StubDeliveryRouter, StubProfileResolver
+from orchestrator.clients import (
+    EnvelopeContext,
+    StubContextBuilder,
+    StubDeliveryRouter,
+    StubProfileResolver,
+)
 from orchestrator.executor import execute_plan
 from orchestrator.store import ExecutionStore
+
+_ENVELOPE = EnvelopeContext(
+    workflow_id="exec_1",
+    execution_id="exec_1",
+    correlation_id="corr_1",
+    delivery_config_ref="phase1-learncard-default",
+)
 
 
 class SpyProfileResolver:
@@ -17,9 +29,11 @@ class SpyProfileResolver:
         self.seen: list[str] = []
         self._inner = StubProfileResolver()
 
-    def resolve(self, learner_id: str) -> dict[str, Any]:
-        self.seen.append(learner_id)
-        return self._inner.resolve(learner_id)
+    def resolve(
+        self, learner_id_type: str, learner_id_value: str, ctx: EnvelopeContext, step_id: str
+    ) -> dict[str, Any]:
+        self.seen.append(learner_id_value)
+        return self._inner.resolve(learner_id_type, learner_id_value, ctx, step_id)
 
 
 class SpyDeliveryRouter:
@@ -27,9 +41,11 @@ class SpyDeliveryRouter:
         self.calls: list[tuple[str, dict[str, Any]]] = []
         self._inner = StubDeliveryRouter()
 
-    def dispatch(self, action: str, payload: dict[str, Any]) -> dict[str, Any]:
+    def dispatch(
+        self, action: str, payload: dict[str, Any], ctx: EnvelopeContext, step_id: str
+    ) -> dict[str, Any]:
         self.calls.append((action, payload))
-        return self._inner.dispatch(action, payload)
+        return self._inner.dispatch(action, payload, ctx, step_id)
 
 
 def _ctx(event: dict[str, Any]) -> dict[str, Any]:
@@ -53,7 +69,10 @@ def test_executes_steps_in_order_and_threads_data(sample_event):
     store.create_execution("exec_1", "evt_1", "corr_1", "skill_mastered")
     profile, router = SpyProfileResolver(), SpyDeliveryRouter()
     deps = ActionDeps(
-        profile_resolver=profile, delivery_router=router, issuer_id="did:web:issuer.example"
+        profile_resolver=profile,
+        delivery_router=router,
+        issuer_id="did:web:issuer.example",
+        envelope=_ENVELOPE,
     )
 
     status, result = execute_plan(_plan(), _ctx(sample_event), deps, store, "exec_1")
@@ -100,7 +119,9 @@ def test_executes_steps_in_order_and_threads_data(sample_event):
 
 
 class _FailingIssuer:
-    def dispatch(self, action: str, payload: dict[str, Any]) -> dict[str, Any]:
+    def dispatch(
+        self, action: str, payload: dict[str, Any], ctx: EnvelopeContext, step_id: str
+    ) -> dict[str, Any]:
         if action == "issue_learncard_badge":
             return {"status": "failed", "action": action, "error": {"message": "issuer down"}}
         return {"status": "succeeded", "action": action, "result": {}}
@@ -113,6 +134,7 @@ def test_issuer_failure_short_circuits_before_wallet(sample_event):
         profile_resolver=StubProfileResolver(),
         delivery_router=_FailingIssuer(),
         issuer_id="did:web:issuer.example",
+        envelope=_ENVELOPE,
     )
 
     status, _ = execute_plan(_plan(), _ctx(sample_event), deps, store, "exec_2")
