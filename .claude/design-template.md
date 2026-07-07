@@ -52,6 +52,13 @@ use only the sections a given component needs:
    access").
 10. **Build Order** — a numbered sequence for implementing the component incrementally,
     schema/contract first, before the full action registry or AWS adapters.
+11. **Implementation Decisions** — concrete choices pinned for this component's build
+    (library selection, model choice, storage mechanism) where the design leaves genuine
+    freedom. Content is component-specific — carry over only what's actually relevant (a
+    library choice like `jsonata-python` won't apply outside Field Mapping, but the other
+    services might have relevant libraries of their own). When pinning a Bedrock model
+    choice, defer to the live model catalog at implementation time rather than hardcoding
+    a specific model ID, so the doc doesn't go stale as models change.
 
 ## What "good" looks like
 
