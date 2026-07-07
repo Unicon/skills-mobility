@@ -3,6 +3,8 @@
 - Status: Proposed
 - Date: 2026-06-16
 
+> **Note (2026-06-25):** The invocation counts in the table below reflect the two-loop model from ADR-0008. ADR-0017 introduces a third transformation phase for the primary POC path; Field Mapping and Field Synthesis may each be invoked up to three times on a first-seen execution. Read the counts here as the historical two-loop baseline.
+
 ## Context
 
 ADRs 0007, 0008, and 0009 define up to six LLM invocations per workflow event across four distinct service types:

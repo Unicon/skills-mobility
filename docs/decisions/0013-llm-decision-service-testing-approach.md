@@ -1,7 +1,9 @@
 # 0013. LLM Decision Service Testing Approach
 
 - Status: Proposed
-- Date: 2026-06-18
+- Date: 2026-07-04
+
+> **Note (2026-06-25):** This ADR scopes the evaluation corpus and scorecard to the two loops defined in ADR-0008. ADR-0017 introduces a third transformation phase for the primary POC path. References to "Loop 1 and Loop 2" and "both transformation loops" in this ADR should be read as the historical two-loop baseline; the evaluation corpus and per-phase scorecard rows will need to be extended accordingly.
 
 ## Context
 
@@ -193,6 +195,79 @@ Each service type should receive one of three verdicts:
 
 The exact numeric thresholds for those verdicts should live alongside the evaluation harness rather than in this ADR, but the verdict categories themselves are part of the architecture decision.
 
+### 8. Evaluation Corpus Storage, Format, and Versioning
+
+This ADR originally left the corpus's repo location and fixture versioning as an open question. This section resolves it.
+
+**Location.** The corpus will live in a new uv workspace member, `libs/eval-corpus`, mirroring `libs/events`'s pattern exactly: its own `pyproject.toml`, `src/` layout, hatchling build. Per ADR-0001, `libs/` holds shared Python libraries reused by multiple services. No single service owns this corpus: the Workflow Actions, Delivery Targets, Field Mapping, and Field Synthesis test suites all read from it, and ADR-0001's dependency rules forbid one `services/` package from depending on another, which rules out bundling the corpus inside any one service's own package.
+
+**Format and granularity.** The corpus holds one directory per scenario under `scenarios/`, for example `scenarios/skill_mastered.dual_target/`. Each scenario directory has a small `scenario.yaml` index of scalar fields and relative file references, plus sibling frozen JSON/Markdown payload files for anything large: the event fixture, the context bundle, the canonical mapping per phase, rubric notes, and so on. This follows the Context Builder fetch-profile precedent (`services/context-builder/src/context_builder/fetch_profiles/*.yaml`: hand-authored, one file per named thing, reviewable diffs) rather than the Mock LMS `catalog.json` precedent (machine-generated bulk seed data). The corpus is small and hand-curated by design (§1 above), and splitting large bodies into sibling files keeps each `scenario.yaml` reviewable instead of becoming one unreadable YAML wall per scenario.
+
+**Identifier and versioning.** Each scenario is identified by `corpus_scenario_id = {event_type}.{scenario_slug}.v{version}`, for example `skill_mastered.dual_target.v1`. This extends the Context Builder's `{name}.v{version}` pattern (design doc §5) with a `scenario_slug` segment: this corpus needs multiple scenarios per event type (delivery-outcome combinations, edge cases), while Context Builder has exactly one fetch profile per event type. `version` is an integer bumped in place on change; git history is the changelog. Filenames and directory names omit the version (`scenarios/skill_mastered.dual_target/`, not a `v1`-suffixed directory), matching the fetch-profile convention where only the internal `id`/`version` fields carry it.
+
+**Scenario shape.** A scenario's `scenario.yaml` has a shared `input` section and an `expected` section keyed by service:
+
+```yaml
+id: skill_mastered.dual_target.v1
+event_type: skill_mastered
+scenario_slug: dual_target
+version: 1
+
+input:
+  source_event_fixture: source_event.json
+  context_bundle: context_bundle.json
+  policy_context: policy_context.json
+  available_delivery_targets:
+    - target_id: learncard_issuer
+      metadata_ref: delivery_targets/learncard_issuer.json
+    - target_id: learncard_wallet
+      metadata_ref: delivery_targets/learncard_wallet.json
+  target_schemas:                     # credential_template has no delivery_target (ADR-0017);
+    credential_template: target_schemas/credential_template.json  # issuer/wallet are keyed by target below
+    issuer_payload:
+      learncard_issuer: target_schemas/issuer_payload.learncard_issuer.json
+    wallet_payload:
+      learncard_wallet: target_schemas/wallet_payload.learncard_wallet.json
+  action_registry_snapshot: action_registry_snapshot.json
+
+expected:
+  workflow_actions:
+    canonical_plan: expected/workflow_actions/canonical_plan.json
+    terminal_outcome: delivered
+    required_steps: [classify_skill_mastered, resolve_delivery_targets]
+    forbidden_steps: [terminate_early]
+  delivery_targets:
+    canonical_target_set: [learncard_issuer, learncard_wallet]
+  field_mapping:
+    credential_template:
+      canonical_mapping: expected/field_mapping/credential_template.jsonata
+      field_classifications: expected/field_mapping/credential_template.classifications.json
+    issuer_payload:
+      learncard_issuer:
+        canonical_mapping: expected/field_mapping/issuer_payload.learncard_issuer.jsonata
+        field_classifications: expected/field_mapping/issuer_payload.learncard_issuer.classifications.json
+    wallet_payload:
+      learncard_wallet:
+        canonical_mapping: expected/field_mapping/wallet_payload.learncard_wallet.jsonata
+        field_classifications: expected/field_mapping/wallet_payload.learncard_wallet.classifications.json
+  field_synthesis:
+    credential_template:
+      fields: [badge_description]
+      rubric_notes: expected/field_synthesis/credential_template.rubric.md
+    issuer_payload:
+      learncard_issuer:
+        fields: [badge_description]
+        rubric_notes: expected/field_synthesis/issuer_payload.learncard_issuer.rubric.md
+    # wallet_payload has no entry here: synthesis_allowed is false for wallet-phase requests
+    # (design doc §6), so Field Synthesis is never exercised for wallet targets
+```
+
+`field_mapping` and `field_synthesis` key `issuer_payload` and `wallet_payload` by the specific `delivery_target` they apply to, not just the phase name, because the canonical answer is target-specific: adding a second wallet target such as SmartResume would add a sibling `smart_resume` key alongside `learncard_wallet` under `field_mapping`'s `wallet_payload` (still with no counterpart under `field_synthesis`, since synthesis is not exercised for wallet targets regardless of which wallet), while every other part of the scenario is unaffected. `credential_template` has no target-keyed layer since it has no `delivery_target` (ADR-0017).
+
+`target_schemas` and `action_registry_snapshot` are frozen snapshots owned by the scenario, not live references into a service's own catalog. This matches §1's existing reasoning for freezing context bundles: it keeps Layer D regression deterministic and reproducible. A live reference would also violate ADR-0001's rule that `libs/` must not depend on `services/`, and it would let catalog drift silently reinterpret old frozen scenarios.
+
+**Scaffolding.** This decision documents the target shape only. No `libs/eval-corpus/pyproject.toml` and no real scenario files are being created as part of it; it is left for whoever first needs Layer B evaluation to build against, the same treatment FR-FM-5a already gives Field Mapping's own catalog files ("does not pre-exist and must be authored during implementation").
+
 ## Options Considered
 
 | Option | Description | Main concern |
@@ -253,7 +328,7 @@ This decision should be revisited if:
 
 ## Open Questions
 
-- Where should the evaluation corpus live in the repo, and how should its fixtures be versioned relative to the existing committed mock-LMS fixtures?
+- *(Resolved 2026-07-04, see Decision §8.)*
 - What exact rubric scale should Field Synthesis use: binary accept/reject, 3-point, or 5-point?
 - Should Workflow Actions evaluation allow only one canonical plan per scenario, or should some scenarios explicitly define a small set of acceptable near-equivalent variants?
 - What exact scenario count is the smallest set that still gives the team confidence across all supported event types and target combinations?
@@ -262,6 +337,7 @@ This decision should be revisited if:
 
 ## References
 
+- [ADR 0001: Repository Structure](0001-repo-structure.md)
 - [ADR 0007: LLM Decision Service Decomposition](0007-llm-decision-service-decomposition.md)
 - [ADR 0008: Transformation Mapping Service Decomposition](0008-transformation-mapping-service-decomposition.md)
 - [ADR 0009: Workflow Actions Orchestration Model](0009-workflow-actions-orchestration-model.md)
