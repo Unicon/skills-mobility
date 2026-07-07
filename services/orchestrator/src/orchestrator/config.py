@@ -25,8 +25,8 @@ class Settings(BaseSettings):
     )
     # When set, each seam calls the real service over HTTP; else the Phase-1 stub.
     context_builder_url: str | None = None
-    profile_resolver_url: str | None = None  # #19 — unbuilt; HTTP client wires in later
-    delivery_router_url: str | None = None  # #19 — unbuilt; HTTP client wires in later
+    profile_resolver_url: str | None = None  # #51 Profile Resolver
+    delivery_router_url: str | None = None  # #56 Delivery Router
     # Reusable delivery-phase plan lookup, off by default (FR-OR-28); toggle at runtime.
     reusable_plan_lookup_enabled: bool = False
     # Root log level for the service entrypoint (INFO, DEBUG, WARNING, ...).
