@@ -38,20 +38,20 @@ upstream Profile Resolver's job, not this adapter's.
 ```bash
 uv sync --all-packages
 cp services/learncard-wallet-adapter/.env.example services/learncard-wallet-adapter/.env  # set LEARNCARD_API_TOKEN
-uv run learncard-wallet-adapter          # http://127.0.0.1:8600 — Swagger at /docs
+uv run learncard-wallet-adapter          # http://127.0.0.1:8900 — Swagger at /docs
 ```
 
 Smoke test:
 
 ```bash
-curl -s localhost:8600/healthz
+curl -s localhost:8900/healthz
 ```
 
 ## Config
 
 | Env var | Default | Meaning |
 | --- | --- | --- |
-| `LEARNCARD_WALLET_ADAPTER_PORT` | `8600` | Local HTTP port (clear of Consul's 8300) |
+| `LEARNCARD_WALLET_ADAPTER_PORT` | `8900` | Local HTTP port (outside Consul's 8300-8302/8500/8600) |
 | `LEARNCARD_WALLET_ADAPTER_LOG_LEVEL` | `INFO` | Root log level |
 | `LEARNCARD_API_URL` | `https://network.learncard.com/api` | LearnCloud Network REST base (`libs/learncard-api`) |
 | `LEARNCARD_API_TOKEN` | `""` | Pre-minted scoped bearer JWT (see #39) |

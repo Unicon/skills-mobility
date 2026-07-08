@@ -16,7 +16,7 @@ from fastapi import FastAPI
 from learncard_api import LearnCardClient, LearnCardSettings
 
 from learncard_wallet_adapter import delivery, resultmap
-from learncard_wallet_adapter.config import Settings, get_settings
+from learncard_wallet_adapter.config import ENV_FILE, Settings, get_settings
 from learncard_wallet_adapter.schemas import DeliverRequest, DeliverResponse
 
 logger = logging.getLogger("learncard_wallet_adapter")
@@ -26,7 +26,12 @@ def create_app(
     settings: Settings | None = None, client: LearnCardClient | None = None
 ) -> FastAPI:
     settings = settings or get_settings()
-    client = client or LearnCardClient(LearnCardSettings())
+    # Anchor LearnCardSettings to this service's .env so the LEARNCARD_ token loads
+    # regardless of CWD (the lib has no .env of its own — the token lives here). An
+    # empty token would build an "Authorization: Bearer " header that httpx rejects.
+    # _env_file is a runtime pydantic-settings init arg (overrides the model's env_file);
+    # mypy doesn't model it on the generated __init__, hence the ignore.
+    client = client or LearnCardClient(LearnCardSettings(_env_file=ENV_FILE))  # type: ignore[call-arg]
     app = FastAPI(
         title="LearnCard Wallet Adapter",
         version="0.1.0",

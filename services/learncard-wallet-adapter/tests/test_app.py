@@ -105,3 +105,24 @@ def test_healthz() -> None:
 
     resp = _client(handle).get("/healthz")
     assert resp.json() == {"status": "ok"}
+
+
+def test_service_env_and_token_load_regardless_of_cwd(tmp_path, monkeypatch) -> None:
+    # The service .env (own port + the shared LEARNCARD_ token) must load even when the
+    # process runs from a different CWD than the service dir — the repo-root-vs-service-dir
+    # bug behind the empty-token "Authorization: Bearer " crash. Anchored env_file fixes it.
+    from learncard_wallet_adapter.config import ENV_FILE
+
+    for var in ("LEARNCARD_WALLET_ADAPTER_PORT", "LEARNCARD_API_TOKEN"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.chdir(tmp_path)  # a CWD that is NOT the service dir
+    original = ENV_FILE.read_text() if ENV_FILE.exists() else None
+    ENV_FILE.write_text("LEARNCARD_WALLET_ADAPTER_PORT=8901\nLEARNCARD_API_TOKEN=tok-xyz\n")
+    try:
+        assert Settings().port == 8901  # service-prefixed var, own Settings
+        assert LearnCardSettings(_env_file=ENV_FILE).api_token == "tok-xyz"  # shared token
+    finally:
+        if original is None:
+            ENV_FILE.unlink()
+        else:
+            ENV_FILE.write_text(original)
