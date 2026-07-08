@@ -38,19 +38,27 @@ def create_app(settings: Settings | None = None, client: AdapterClient | None = 
 
     @app.post("/delivery-actions")
     def delivery_actions(req: DeliveryActionRequest) -> DeliveryActionResponse:
+        # All four correlation identifiers on every delivery log line (FR-DR-5).
         logger.info(
-            "delivery attempt action=%s execution_id=%s step_id=%s",
+            "delivery attempt action=%s workflow_id=%s execution_id=%s step_id=%s "
+            "correlation_id=%s",
             req.action.value,
+            req.workflow_id,
             req.execution_id,
             req.step_id,
+            req.correlation_id,
         )
         try:
             resp = dispatcher.dispatch(req, settings, client)
         except httpx.HTTPError as exc:
             logger.warning(
-                "delivery dispatch failed action=%s execution_id=%s: %s",
+                "delivery dispatch failed action=%s workflow_id=%s execution_id=%s step_id=%s "
+                "correlation_id=%s: %s",
                 req.action.value,
+                req.workflow_id,
                 req.execution_id,
+                req.step_id,
+                req.correlation_id,
                 exc,
             )
             return DeliveryActionResponse(
@@ -60,9 +68,13 @@ def create_app(settings: Settings | None = None, client: AdapterClient | None = 
                 error={"message": str(exc)},
             )
         logger.info(
-            "delivery result action=%s execution_id=%s status=%s ref=%s",
+            "delivery result action=%s workflow_id=%s execution_id=%s step_id=%s "
+            "correlation_id=%s status=%s ref=%s",
             req.action.value,
+            req.workflow_id,
             req.execution_id,
+            req.step_id,
+            req.correlation_id,
             resp.status,
             resp.external_reference_id,
         )
