@@ -14,7 +14,7 @@ The LearnCard Profile Resolver is a standalone Python Lambda invoked by the Orch
 
 Both the LearnCard Issuer Adapter and the Wallet Adapter require a resolved LearnCard `profileId` before they can operate. Rather than duplicating resolution logic across two services that use different runtimes (TypeScript for the Issuer Adapter, Python for the Wallet Adapter), resolution runs once as a discrete orchestration step. The Orchestrator stores the resolved `profileId` and DID in the execution context; the issuer and wallet steps consume them without re-resolving.
 
-The resolver does not use the LearnCard SDK. All interactions are HTTP calls to the LearnCard REST APIs, authenticated with a scoped bearer token from an AuthGrant. Bearer-token acquisition is shared with the Wallet Adapter through a common `libs/learncard-api` Python package; the profile-endpoint HTTP client is service-specific.
+The resolver does not use the LearnCard SDK. All interactions are HTTP calls to the LearnCard REST APIs, authenticated with a scoped bearer token. The shared `libs/learncard-api` package (built in #40) holds + attaches that pre-minted bearer via a common `LearnCardClient`; the profile-endpoint request/response models are service-specific. Token minting itself is a one-time TS/SDK step (see §4).
 
 **Open question — Search Profiles endpoint.** The LearnCard Search Profiles endpoint ([docs](https://docs.learncard.com/sdks/learncard-network/profiles#get-search-profiles-input)) is the linchpin of the resolution flow. Its supported input fields, matching behavior, and result shape are not fully documented. This endpoint must be tested against a live LearnCard dev environment before the resolver can be implemented. The Create Profile endpoint similarly needs verification before the fallback create path is built.
 
@@ -78,38 +78,38 @@ Recommended response shape:
 
 ## 4. Shared Library: libs/learncard-api
 
-Both the LearnCard Profile Resolver and the LearnCard Wallet Adapter authenticate to LearnCard REST endpoints using a scoped API token derived from an AuthGrant. Rather than duplicate that acquisition logic in two services, it is extracted into a shared Python library at `libs/learncard-api/`.
+Both the LearnCard Profile Resolver and the LearnCard Wallet Adapter call LearnCloud Network REST endpoints with a scoped bearer token. Rather than duplicate the auth + transport wiring in two services, it is extracted into a shared Python library at `libs/learncard-api/` (built in #40).
+
+> **Updated after the #39 spike.** Minting a token from a seed is the LearnCard **JS SDK**'s DID-auth challenge/sign flow — not practical to reproduce in Python. So the scoped bearer is minted **once on the TS side** and supplied to this library as config (`LEARNCARD_API_TOKEN`); the library *holds and attaches* it and does not run the AuthGrant flow. See the [#39 findings](https://github.com/Unicon/skills-mobility/issues/39).
 
 **What the library owns:**
 
-- Acquiring a scoped API token from the LearnCard AuthGrant → API token flow
-- Returning that token to the caller for use as `Authorization: Bearer <token>`
-- Loading the AuthGrant credentials and LearnCard API base URL from the supplied delivery configuration
+- An authenticated `httpx` client (`LearnCardClient`) that attaches `Authorization: Bearer <token>`, targets the configured base URL, and raises on error responses (no silent drops)
+- Loading the API base URL + pre-minted scoped bearer from config (`LEARNCARD_API_URL`, `LEARNCARD_API_TOKEN`)
 
 **What the library does not own:**
 
-- HTTP clients for specific LearnCard endpoints (Search Profiles, Create Profile, credential send) — those are service-specific
+- Minting/acquiring the token (a one-time TS/SDK setup step)
+- Request/response models for specific endpoints (Search/Create Profile, `/send`) — those are service-specific
 - Profile resolution, credential issuance, or delivery logic
 
-**Expected interface:**
+**Interface:**
 
 ```python
-from learncard_api import LearnCardTokenProvider
+from learncard_api import LearnCardClient, LearnCardSettings
 
-provider = LearnCardTokenProvider.from_config(config)
-token = provider.get_token(scope="profiles:read")
-# caller attaches: Authorization: Bearer {token}
+with LearnCardClient(LearnCardSettings()) as client:
+    client.get("/profile")  # then service-specific Search/Create Profile calls
 ```
 
-The required scope differs per service. The Profile Resolver needs a profiles-related scope for the Search Profiles and Create Profile endpoints; the Wallet Adapter is expected to need `credential:write`. Each service passes its required scope at call time. Both scopes need verification against the live LearnCard API before the clients are built.
+The scope is baked into the pre-minted token rather than requested per call. The Profile Resolver's token needs a profiles-related scope for the Search Profiles and Create Profile endpoints; the Wallet Adapter's needs a send/credential scope. The exact scope strings still warrant a check against the live API before the clients are built.
 
 **Configuration inputs:**
 
-- AuthGrant credentials (from Secrets Manager in AWS; `.env` locally)
-- LearnCard API base URL
-- Requested scope
+- `LEARNCARD_API_TOKEN` — pre-minted scoped bearer (Secrets Manager in AWS; `.env` locally)
+- `LEARNCARD_API_URL` — LearnCloud Network REST base
 
-**Expected path:** `libs/learncard-api/`
+**Path:** `libs/learncard-api/`
 
 This library must be implemented before the Profile Resolver reaches its API client steps (build order step 6) and before the Wallet Adapter reaches its API client steps (build order step 4 in [LearnCard Wallet Adapter Design](./learncard-wallet-adapter.md)).
 
@@ -173,8 +173,8 @@ Routine test runs should not require live LearnCard access.
 2. **Test the LearnCard Search Profiles endpoint in a dev environment.** Confirm what input fields it accepts, what it matches on, and what the result shape looks like. Document findings before writing any client code.
 3. Test the Create Profile endpoint. Confirm the required input fields and the `profileId`/DID shape returned on creation.
 4. Implement the DynamoDB mapping store module and its read/write wrapper.
-5. Implement the `libs/learncard-api` token provider (AuthGrant → bearer token). Required before the API client steps below.
-6. Implement the LearnCard API client for Search Profiles and Create Profile based on findings from steps 2–3, using `libs/learncard-api` for bearer-token acquisition.
+5. ~~Implement the `libs/learncard-api` token provider.~~ **Done (#40):** the lib provides an authenticated `LearnCardClient` (holds + attaches a pre-minted bearer); token minting is a one-time TS/SDK step, not part of this lib.
+6. Implement the LearnCard API client for Search Profiles and Create Profile based on findings from steps 2–3, using `libs/learncard-api`'s `LearnCardClient` for authenticated calls.
 7. Implement the resolution flow (store lookup → search → create → persist).
 8. Add normalized result and error mapping.
 9. Wire the resolver into the Orchestrator as a named plan step type (`resolve_learncard_profile`).
