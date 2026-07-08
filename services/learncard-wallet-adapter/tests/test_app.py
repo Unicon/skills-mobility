@@ -50,6 +50,11 @@ def test_deliver_success_normalizes_and_sends_expected_call() -> None:
     body = resp.json()
     assert body == {
         "status": "succeeded",
+        # Correlation ids preserved from the request in the result record (FR-LCW-11).
+        "workflow_id": "wf_1",
+        "execution_id": "exec_1",
+        "step_id": "step_wallet",
+        "correlation_id": "corr_1",
         "external_reference_id": CREDENTIAL_URI,
         "result": {"delivery_state": "accepted"},
         "error": None,
@@ -74,6 +79,13 @@ def test_learncard_error_is_normalized_to_failed() -> None:
     assert body["external_reference_id"] is None
     assert body["result"] is None
     assert body["error"]["message"]  # a message is present
+    # Ids preserved even on the failure path (FR-LCW-11).
+    assert (body["workflow_id"], body["execution_id"], body["step_id"], body["correlation_id"]) == (
+        "wf_1",
+        "exec_1",
+        "step_wallet",
+        "corr_1",
+    )
 
 
 def test_missing_recipient_profile_id_is_422() -> None:
@@ -206,3 +218,24 @@ def test_read_back_error_is_normalized() -> None:
     body = resp.json()
     assert body["delivered"] is False
     assert body["error"]
+
+
+def test_service_env_and_token_load_regardless_of_cwd(tmp_path, monkeypatch) -> None:
+    # The service .env (own port + the shared LEARNCARD_ token) must load even when the
+    # process runs from a different CWD than the service dir — the repo-root-vs-service-dir
+    # bug behind the empty-token "Authorization: Bearer " crash. Anchored env_file fixes it.
+    from learncard_wallet_adapter.config import ENV_FILE
+
+    for var in ("LEARNCARD_WALLET_ADAPTER_PORT", "LEARNCARD_API_TOKEN"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.chdir(tmp_path)  # a CWD that is NOT the service dir
+    original = ENV_FILE.read_text() if ENV_FILE.exists() else None
+    ENV_FILE.write_text("LEARNCARD_WALLET_ADAPTER_PORT=8901\nLEARNCARD_API_TOKEN=tok-xyz\n")
+    try:
+        assert Settings().port == 8901  # service-prefixed var, own Settings
+        assert LearnCardSettings(_env_file=ENV_FILE).api_token == "tok-xyz"  # shared token
+    finally:
+        if original is None:
+            ENV_FILE.unlink()
+        else:
+            ENV_FILE.write_text(original)

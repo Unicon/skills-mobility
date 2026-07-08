@@ -16,7 +16,7 @@ from fastapi import FastAPI
 from learncard_api import LearnCardClient, LearnCardSettings
 
 from learncard_wallet_adapter import delivery, readback, resultmap
-from learncard_wallet_adapter.config import Settings, get_settings
+from learncard_wallet_adapter.config import ENV_FILE, Settings, get_settings
 from learncard_wallet_adapter.schemas import DeliveredCredential, DeliverRequest, DeliverResponse
 
 logger = logging.getLogger("learncard_wallet_adapter")
@@ -28,9 +28,13 @@ def create_app(
     recipient_client: LearnCardClient | None = None,
 ) -> FastAPI:
     settings = settings or get_settings()
-    client = client or LearnCardClient(LearnCardSettings())
-    # Read-back uses the recipient's own read token (distinct identity from the
-    # sender), against the same LearnCard base URL.
+    # Anchor LearnCardSettings to this service's .env so the LEARNCARD_ token loads
+    # regardless of CWD (the lib has no .env of its own — the token lives here). An
+    # empty token would build an "Authorization: Bearer " header that httpx rejects.
+    # _env_file is a runtime pydantic-settings init arg mypy doesn't model on __init__.
+    client = client or LearnCardClient(LearnCardSettings(_env_file=ENV_FILE))  # type: ignore[call-arg]
+    # Read-back uses the recipient's own read token (distinct identity from the sender);
+    # it loads from the same anchored service .env via settings.recipient_api_token.
     recipient_client = recipient_client or LearnCardClient(
         LearnCardSettings(api_token=settings.recipient_api_token)
     )
@@ -51,19 +55,25 @@ def create_app(
             )
         except httpx.HTTPError as exc:
             logger.warning(
-                "wallet delivery failed execution_id=%s step_id=%s: %s",
+                "wallet delivery failed workflow_id=%s execution_id=%s step_id=%s "
+                "correlation_id=%s: %s",
+                req.workflow_id,
                 req.execution_id,
                 req.step_id,
+                req.correlation_id,
                 exc,
             )
-            return resultmap.to_error(str(exc))
+            return resultmap.to_error(req, str(exc))
         logger.info(
-            "wallet delivery accepted execution_id=%s step_id=%s ref=%s",
+            "wallet delivery accepted workflow_id=%s execution_id=%s step_id=%s "
+            "correlation_id=%s ref=%s",
+            req.workflow_id,
             req.execution_id,
             req.step_id,
+            req.correlation_id,
             uri,
         )
-        return resultmap.to_success(uri)
+        return resultmap.to_success(req, uri)
 
     @app.get("/internal/delivered-credential")
     def delivered_credential(uri: str) -> DeliveredCredential:
