@@ -131,6 +131,7 @@ Per [ADR-0018](../decisions/0018-admin-ui-frontend-stack.md):
 - **Animation:** **Motion** — the same library `apps/mock-lms` already uses; MIT-licensed and free (only the separate Motion+ product is paid, and is not needed). Standardize on the current `motion` package (`motion/react`); `apps/mock-lms` migrates off `framer-motion` during its `packages/ui` migration so both apps share one import ([ADR-0018](../decisions/0018-admin-ui-frontend-stack.md)).
 - **Components:** **Radix Primitives** (headless) styled with our own CSS. **Base UI** is an acceptable alternative primitive layer on a per-component basis. No component framework owns the visual layer — our CSS does.
 - **Explicitly not used:** **shadcn/ui** and **Tailwind**. Styling is plain CSS driven by design tokens.
+- **React version:** the workspace baseline is **React 19**. `apps/mock-lms` is on React 18.3 today and migrates to 19 as part of its `packages/ui` adoption; because the JS workspace hoists a single React copy ([ADR-0020](../decisions/0020-js-ts-workspace-tooling.md)), both apps share one version rather than diverging. Radix Primitives and Motion both support React 19, and the token layer is framework-agnostic CSS. (Recorded here rather than in an ADR: the version is a fast-moving detail expected to be revisited, not a durable architectural decision.)
 
 This keeps the Admin UI consistent with the Mock LMS's hand-authored CSS aesthetic while adding accessible, unstyled behavior primitives (dialogs, popovers, tabs) that the Mock LMS built by hand.
 

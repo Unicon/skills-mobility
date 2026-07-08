@@ -2,7 +2,7 @@
 
 Status: Draft
 Date: 2026-06-17
-Related: [Stakeholder POC Requirements](../2_requirements/poc-requirements.md) · [Target POC Requirements](../2_requirements/target-poc-requirements.md) · [Target POC Architecture](./architecture/target-poc-architecture.md) · [ADR-0002](../decisions/0002-frontend-architecture.md) · [ADR-0004](../decisions/0004-lif-usage.md) · [ADR-0005](../decisions/0005-schema-mapping-langauge.md) · [ADR-0007](../decisions/0007-llm-decision-service-decomposition.md) · [ADR-0008](../decisions/0008-transformation-mapping-service-decomposition.md) · [ADR-0009](../decisions/0009-workflow-actions-orchestration-model.md) · [ADR-0012](../decisions/0012-mcp-client-layer-deferred.md) · [ADR-0016](../decisions/0016-delivery-routing-topology.md)
+Related: [Stakeholder POC Requirements](../2_requirements/poc-requirements.md) · [Target POC Requirements](../2_requirements/target-poc-requirements.md) · [Target POC Architecture](./architecture/target-poc-architecture.md) · [ADR-0002](../decisions/0002-frontend-architecture.md) · [ADR-0004](../decisions/0004-lif-usage.md) · [ADR-0005](../decisions/0005-schema-mapping-language.md) · [ADR-0007](../decisions/0007-llm-decision-service-decomposition.md) · [ADR-0008](../decisions/0008-transformation-mapping-service-decomposition.md) · [ADR-0009](../decisions/0009-workflow-actions-orchestration-model.md) · [ADR-0012](../decisions/0012-mcp-client-layer-deferred.md) · [ADR-0016](../decisions/0016-delivery-routing-topology.md)
 
 ## 1. Purpose
 
