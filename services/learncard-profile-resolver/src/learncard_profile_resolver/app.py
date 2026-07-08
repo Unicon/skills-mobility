@@ -16,7 +16,7 @@ from fastapi import FastAPI
 from learncard_api import LearnCardClient, LearnCardSettings
 
 from learncard_profile_resolver import resolver, resultmap
-from learncard_profile_resolver.config import Settings, get_settings
+from learncard_profile_resolver.config import ENV_FILE, Settings, get_settings
 from learncard_profile_resolver.schemas import ResolveRequest, ResolveResponse
 from learncard_profile_resolver.store import SqliteMappingStore
 
@@ -27,7 +27,11 @@ def create_app(
     settings: Settings | None = None, client: LearnCardClient | None = None
 ) -> FastAPI:
     settings = settings or get_settings()
-    client = client or LearnCardClient(LearnCardSettings())
+    # Anchor LearnCardSettings to this service's .env so the LEARNCARD_ token loads
+    # regardless of CWD (the lib has no .env of its own — the token lives here). An
+    # empty token would build an "Authorization: Bearer " header that httpx rejects.
+    # _env_file is a runtime pydantic-settings arg mypy doesn't model on __init__.
+    client = client or LearnCardClient(LearnCardSettings(_env_file=ENV_FILE))  # type: ignore[call-arg]
     store = SqliteMappingStore(settings.db_path)
     app = FastAPI(
         title="LearnCard Profile Resolver",

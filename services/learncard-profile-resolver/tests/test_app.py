@@ -134,3 +134,24 @@ def test_invalid_learner_id_type_is_422() -> None:
 def test_healthz() -> None:
     tc, _ = _app(_no_call)
     assert tc.get("/healthz").json() == {"status": "ok"}
+
+
+def test_service_env_and_token_load_regardless_of_cwd(tmp_path, monkeypatch) -> None:
+    # The service .env (own db_path + the shared LEARNCARD_ token) must load even when the
+    # process runs from a different CWD than the service dir — the repo-root-vs-service-dir
+    # bug behind the empty-token "Authorization: Bearer " crash. Anchored env_file fixes it.
+    from learncard_profile_resolver.config import ENV_FILE
+
+    for var in ("LEARNCARD_PROFILE_RESOLVER_DB_PATH", "LEARNCARD_API_TOKEN"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.chdir(tmp_path)  # a CWD that is NOT the service dir
+    original = ENV_FILE.read_text() if ENV_FILE.exists() else None
+    ENV_FILE.write_text("LEARNCARD_PROFILE_RESOLVER_DB_PATH=:memory:\nLEARNCARD_API_TOKEN=tok-xyz\n")
+    try:
+        assert Settings().db_path == ":memory:"  # service-prefixed var, own Settings
+        assert LearnCardSettings(_env_file=ENV_FILE).api_token == "tok-xyz"  # type: ignore[call-arg]
+    finally:
+        if original is None:
+            ENV_FILE.unlink()
+        else:
+            ENV_FILE.write_text(original)
