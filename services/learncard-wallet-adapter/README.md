@@ -37,9 +37,12 @@ upstream Profile Resolver's job, not this adapter's.
 
 ```bash
 uv sync --all-packages
-cp services/learncard-wallet-adapter/.env.example services/learncard-wallet-adapter/.env  # set LEARNCARD_API_TOKEN
+cp services/learncard-wallet-adapter/.env.example services/learncard-wallet-adapter/.env
+# set LEARNCARD_API_TOKEN from tools/learncard-demo's generated .env (ADR-0020, PR #54)
 uv run learncard-wallet-adapter          # http://127.0.0.1:8900 — Swagger at /docs
 ```
+
+`.env` is read regardless of the directory you launch from (it's anchored to the service package), so the token is picked up even when run from the repo root.
 
 Smoke test:
 
@@ -54,7 +57,7 @@ curl -s localhost:8900/healthz
 | `LEARNCARD_WALLET_ADAPTER_PORT` | `8900` | Local HTTP port (outside Consul's 8300-8302/8500/8600) |
 | `LEARNCARD_WALLET_ADAPTER_LOG_LEVEL` | `INFO` | Root log level |
 | `LEARNCARD_API_URL` | `https://network.learncard.com/api` | LearnCloud Network REST base (`libs/learncard-api`) |
-| `LEARNCARD_API_TOKEN` | `""` | Pre-minted scoped bearer JWT (see #39) |
+| `LEARNCARD_API_TOKEN` | `""` | Pre-minted scoped bearer JWT — from `tools/learncard-demo` (ADR-0020, PR #54) |
 
 ## Test
 
