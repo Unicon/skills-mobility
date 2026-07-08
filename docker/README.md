@@ -9,8 +9,8 @@ docker compose up --build     # from the repo root
 ```
 
 Then: mock-lms `http://localhost:8000`, context-builder `:8100`, event-consumer
-`:8200`, orchestrator `:8400`, issuer-adapter `:8500`, wallet-adapter `:8600`,
-profile-resolver `:8700`, delivery-router `:8800` (each serves `/healthz`).
+`:8200`, orchestrator `:8400`, profile-resolver `:8700`, delivery-router `:8800`,
+issuer-adapter `:8910`, wallet-adapter `:8900` (each serves `/healthz`).
 
 The LearnCard adapters/resolver need secrets (tokens + issuer seed) from the demo
 provisioning step — see **Secrets** below. Without them the stack still comes up,
@@ -28,8 +28,8 @@ mock-lms (8000) --emits--> event-consumer (8200) --hands off--> orchestrator (84
    profile-resolver (8700) <---------------------------------- orchestrator
    delivery-router (8800) <------------------------------------ orchestrator
         |  routes by action
-        +--> learncard-issuer-adapter (8500)  --sign OBv3-->  LearnCard network
-        +--> learncard-wallet-adapter (8600)  --deliver--->   LearnCard network
+        +--> learncard-issuer-adapter (8910)  --sign OBv3-->  LearnCard network
+        +--> learncard-wallet-adapter (8900)  --deliver--->   LearnCard network
 ```
 
 Set via compose env (services reach each other by service name):
@@ -42,8 +42,8 @@ Set via compose env (services reach each other by service name):
 | orchestrator | `ORCHESTRATOR_CONTEXT_BUILDER_URL` | `http://context-builder:8100` |
 | orchestrator | `ORCHESTRATOR_PROFILE_RESOLVER_URL` | `http://profile-resolver:8700` |
 | orchestrator | `ORCHESTRATOR_DELIVERY_ROUTER_URL` | `http://delivery-router:8800` |
-| delivery-router | `DELIVERY_ROUTER_LEARNCARD_ISSUER_URL` | `http://learncard-issuer-adapter:8500` |
-| delivery-router | `DELIVERY_ROUTER_LEARNCARD_WALLET_URL` | `http://learncard-wallet-adapter:8600` |
+| delivery-router | `DELIVERY_ROUTER_LEARNCARD_ISSUER_URL` | `http://learncard-issuer-adapter:8910` |
+| delivery-router | `DELIVERY_ROUTER_LEARNCARD_WALLET_URL` | `http://learncard-wallet-adapter:8900` |
 
 SQLite state for event-consumer, orchestrator and profile-resolver lives in named volumes.
 
