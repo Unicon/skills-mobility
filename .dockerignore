@@ -1,0 +1,25 @@
+# Keep the build context small + reproducible. The Python image only needs the
+# workspace metadata + libs/ + services/ (see docker/Dockerfile.python).
+.git
+**/.venv
+.venv
+**/__pycache__
+**/*.pyc
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+**/*.db
+**/*.sqlite*
+.mypy_cache
+.ruff_cache
+.pytest_cache
+generated-fixtures/
+seed-data/
+audit-output/
+execution-traces/
+logs/
+# Not needed by the Python service image:
+apps/
+tools/
+docker/
+**/.env
