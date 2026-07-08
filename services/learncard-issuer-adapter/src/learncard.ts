@@ -1,5 +1,6 @@
 import { initLearnCard } from "@learncard/init";
 import { type IssuerConfig, isConfigured } from "./config";
+import { logger } from "./logger";
 
 export class IssuerNotConfiguredError extends Error {
   readonly code = "issuer_not_configured";
@@ -29,27 +30,30 @@ interface IssuerWallet {
 }
 
 /**
- * Ensure the issuer's LearnCard service profile exists before issuance
- * (design §4 step 5, FR-LCI-6): look it up, create it from PROFILE_ID/PROFILE_NAME
- * if absent. Idempotent — a create that reports "already exists" is benign on
- * re-run; any other failure surfaces rather than being swallowed.
+ * Best-effort assurance that the issuer's LearnCard service profile exists before
+ * issuance (design §4 step 5, FR-LCI-6): look it up, create it from PROFILE_ID/
+ * PROFILE_NAME if absent.
  *
- * NOTE: wired to the SDK methods named in the #48 review, but the create path
- * can't be exercised against a live network here — verify once with real issuer
- * credentials.
+ * This is deliberately non-fatal. The demo provisions the issuer profile
+ * out-of-band (tools/learncard-demo), and `issueCredential` signs with local
+ * seed-derived keys — so a profile lookup/create failure (e.g. a LearnCloud
+ * error, or an already-existing profile) must NOT crash the process or fail
+ * issuance. We log and proceed. (Live-verifying the exact getProfile/
+ * createServiceProfile contract with real issuer credentials is tracked separately;
+ * an e2e run showed the lookup can 500 against LearnCloud.)
  */
 async function ensureIssuerProfile(wallet: IssuerWallet, cfg: IssuerConfig): Promise<void> {
-  const existing = await wallet.invoke.getProfile();
-  if (existing) return;
   try {
-    await wallet.invoke.createServiceProfile({
-      profileId: cfg.profileId as string,
-      displayName: cfg.profileName ?? (cfg.profileId as string),
-      isServiceProfile: true,
-    });
+    const existing = await wallet.invoke.getProfile();
+    if (!existing) {
+      await wallet.invoke.createServiceProfile({
+        profileId: cfg.profileId as string,
+        displayName: cfg.profileName ?? (cfg.profileId as string),
+        isServiceProfile: true,
+      });
+    }
   } catch (err) {
-    const message = String((err as { message?: unknown })?.message ?? err);
-    if (!/exist|already|taken|conflict/i.test(message)) throw err;
+    logger.warn("issuer profile assurance skipped (non-fatal)", { error: String(err) });
   }
 }
 
