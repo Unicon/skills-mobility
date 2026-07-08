@@ -8,11 +8,11 @@ Node/TS runtime — AGENTS.md / ADR-0003). It does **not** resolve recipient
 profiles (that's the Profile Resolver) or route (that's the Delivery Router).
 
 > **Status: wired to the LearnCard SDK.** `issueCredential` initializes the issuer
-> wallet from `SECURE_SEED` (memoized) and signs the unsigned OBv3 via
-> `invoke.issueCredential` — verified live (a real `DataIntegrityProof` is attached).
-> Until `SECURE_SEED` + `PROFILE_ID` are set, `/healthz` reports `configured: false`
-> and issuance returns a normalized `failed` result. Seed/profile come from the demo
-> provisioning step (`tools/learncard-demo`, ADR-0020).
+> wallet from `SECURE_SEED` (memoized), ensures the issuer **service profile**
+> exists (`getProfile` → `createServiceProfile` if absent — design §4 step 5), and
+> signs the unsigned OBv3 via `invoke.issueCredential` — a real `DataIntegrityProof`
+> is attached. Until `SECURE_SEED` + `PROFILE_ID` are set, `/healthz` reports
+> `configured: false` and issuance returns a normalized `failed` result.
 
 ## Layout
 
@@ -21,39 +21,78 @@ src/
   server.ts    entry: builds the app and listens
   api.ts       POST /internal/issue-learncard-badge + /healthz
   schemas.ts   zod request schema + response type (router-facing contract)
-  learncard.ts LearnCard SDK init (memoized) + issueCredential signing wrapper
+  learncard.ts LearnCard SDK init (memoized) + profile assurance + issueCredential
   resultmap.ts normalize SDK results/errors → response shape
   config.ts    env config (PORT, LOG_LEVEL, SECURE_SEED, PROFILE_ID, PROFILE_NAME)
   logger.ts    minimal LOG_LEVEL-gated logger
-test/          vitest unit tests (schema validation, result normalization)
+test/          vitest tests: schema validation, SDK wrapper (mocked), HTTP route (supertest)
+```
+
+## Setup: issuer seed + profile
+
+The adapter needs a LearnCard wallet **seed** and a **service-profile id**. Two ways:
+
+**Self-serve (stand it up / smoke-test now).** The seed is any 64-char hex; the
+adapter creates the service profile on first issuance if it doesn't exist, so no
+separate profile step is needed (seed generation + profile creation are self-serve
+against the public demo network — #39 finding):
+
+```bash
+cp .env.example .env
+# a LearnCard wallet seed (64-char hex):
+echo "SECURE_SEED=$(openssl rand -hex 32)" >> .env
+echo "PROFILE_ID=smi-demo-issuer"          >> .env
+echo 'PROFILE_NAME=SMI Demo Issuer'        >> .env
+```
+
+**Coordinated demo.** To match the *fixed* demo issuer identity the recipient
+resolves against, use the seed/profile minted by `tools/learncard-demo`
+(ADR-0020, PR #54) instead of a random seed — copy its `SECURE_SEED`/`PROFILE_ID`
+into this `.env`.
+
+### Sample request payload
+
+`payload.unsigned_vc` is a full unsigned OBv3; the recipient's resolved LearnCard
+DID goes in **`credentialSubject.id`** (the Profile Resolver put it there upstream):
+
+```json
+{
+  "contract_version": "v1",
+  "workflow_id": "wf_1", "execution_id": "exec_1", "step_id": "step_issue",
+  "correlation_id": "corr_1", "delivery_config_ref": "learncard-dev",
+  "payload": {
+    "unsigned_vc": {
+      "@context": ["https://www.w3.org/2018/credentials/v1"],
+      "type": ["VerifiableCredential", "OpenBadgeCredential"],
+      "issuer": "did:web:network.learncard.com:users:smi-demo-issuer",
+      "credentialSubject": {
+        "id": "did:web:network.learncard.com:users:smi-demo-learner",
+        "type": ["AchievementSubject"],
+        "achievement": { "id": "urn:uuid:...", "name": "Intro to Accounting" }
+      }
+    }
+  }
+}
 ```
 
 ## Contract
 
-`POST /internal/issue-learncard-badge` (called by the Delivery Router):
-
-```json
-{ "contract_version": "v1", "workflow_id": "...", "execution_id": "...",
-  "step_id": "...", "correlation_id": "...", "delivery_config_ref": "learncard-dev",
-  "payload": { "unsigned_vc": { } } }
-```
-
-→ `{ "status": "succeeded|failed", "external_reference_id": "...",
-     "result": { "issued_credential": { } }, "error": null }`
+`POST /internal/issue-learncard-badge` (called by the Delivery Router) — request as
+above → `{ "status": "succeeded|failed", "external_reference_id": "...",
+"result": { "issued_credential": { } }, "error": null }`.
 
 ## Run / test
 
 ```bash
 cd services/learncard-issuer-adapter
 npm install
-cp .env.example .env        # SECURE_SEED + PROFILE_ID from tools/learncard-demo
-npm run dev                 # tsx watch — serves on :8500 (Swagger N/A; see contract above)
+npm run dev                 # tsx watch — serves on :8910 (no Swagger; see the contract above)
 npm run build               # tsc → dist/
 npm run typecheck           # tsc --noEmit
-npm test                    # vitest
+npm test                    # vitest (schema + SDK-wrapper + route tests)
 ```
 
-`curl localhost:8500/healthz` → `{"status":"ok","configured":true}` once `SECURE_SEED` + `PROFILE_ID` are set.
+`curl localhost:8910/healthz` → `{"status":"ok","configured":true}` once `SECURE_SEED` + `PROFILE_ID` are set. (Port 8910 is outside Consul's reserved range — 8300–8302, 8500, 8600.)
 
 ## Downstream
 

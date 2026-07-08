@@ -24,15 +24,18 @@ export function createApp(cfg: IssuerConfig): Express {
       });
       return;
     }
-    const { execution_id, payload } = parsed.data;
-    logger.info("issue request received", { execution_id });
+    const { workflow_id, execution_id, step_id, correlation_id, payload } = parsed.data;
+    // Attach all four correlation identifiers to every log line (FR-LCI-11) — the
+    // failure path especially must be correlatable back to the workflow/step.
+    const ids = { workflow_id, execution_id, step_id, correlation_id };
+    logger.info("issue request received", ids);
     try {
       const result = await issueCredential(cfg, payload.unsigned_vc);
-      logger.info("credential issued", { execution_id, ref: result.externalReferenceId });
+      logger.info("credential issued", { ...ids, ref: result.externalReferenceId });
       res.json(toSuccess(result));
     } catch (err) {
       // A normalized failure envelope (not an HTTP error) — the router reads `status`.
-      logger.error("issuance failed", { execution_id, error: String(err) });
+      logger.error("issuance failed", { ...ids, error: String(err) });
       res.json(toError(err));
     }
   });

@@ -1,35 +1,62 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IssuerConfig } from "../src/config";
 
-// Mock the LearnCard SDK: a wallet whose issueCredential just attaches a proof.
+// Mock the LearnCard SDK. The invoke methods are reconfigurable per test so we can
+// exercise both the profile-exists and profile-absent paths and a signer failure.
+const issueCredentialMock = vi.fn();
+const getProfileMock = vi.fn();
+const createServiceProfileMock = vi.fn();
+
 vi.mock("@learncard/init", () => ({
   initLearnCard: vi.fn(async () => ({
     id: { did: () => "did:web:network.learncard.com:users:smi-demo-issuer" },
     invoke: {
-      issueCredential: vi.fn(async (vc: Record<string, unknown>) => ({
-        ...vc,
-        proof: { type: "Ed25519Signature2020" },
-      })),
+      issueCredential: issueCredentialMock,
+      getProfile: getProfileMock,
+      createServiceProfile: createServiceProfileMock,
     },
   })),
 }));
 
-import { IssuerNotConfiguredError, issueCredential } from "../src/learncard";
-
 const configured: IssuerConfig = {
-  port: 8500,
+  port: 8910,
   secureSeed: "deadbeef",
   profileId: "smi-demo-issuer",
+  profileName: "SMI Demo Issuer",
+};
+const unconfigured: IssuerConfig = {
+  port: 8910,
+  secureSeed: null,
+  profileId: null,
   profileName: null,
 };
-const unconfigured: IssuerConfig = { port: 8500, secureSeed: null, profileId: null, profileName: null };
+
+// Fresh module per test: the issuer wallet (and its one-time profile assurance) is
+// memoized at module scope, so a reset lets each test drive it with its own mocks.
+async function load() {
+  vi.resetModules();
+  return import("../src/learncard");
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  issueCredentialMock.mockImplementation(async (vc: Record<string, unknown>) => ({
+    ...vc,
+    // Real LearnCard output is a DataIntegrityProof (matches the README status line).
+    proof: { type: "DataIntegrityProof", cryptosuite: "eddsa-rdfc-2022" },
+  }));
+  getProfileMock.mockResolvedValue({ profileId: "smi-demo-issuer" }); // exists by default
+  createServiceProfileMock.mockResolvedValue({});
+});
 
 describe("issueCredential", () => {
   it("throws IssuerNotConfiguredError when seed/profile are missing", async () => {
+    const { issueCredential, IssuerNotConfiguredError } = await load();
     await expect(issueCredential(unconfigured, {})).rejects.toBeInstanceOf(IssuerNotConfiguredError);
   });
 
   it("signs the unsigned VC and returns the issued credential", async () => {
+    const { issueCredential } = await load();
     const unsigned = {
       "@context": ["https://www.w3.org/2018/credentials/v1"],
       type: ["VerifiableCredential"],
@@ -37,9 +64,36 @@ describe("issueCredential", () => {
     };
     const result = await issueCredential(configured, unsigned);
 
-    expect(result.issuedCredential.proof).toBeDefined();
+    expect((result.issuedCredential.proof as { type: string }).type).toBe("DataIntegrityProof");
     expect(result.issuedCredential.credentialSubject).toEqual(unsigned.credentialSubject);
     // No `id` on the signed VC -> reference falls back to the issuer DID.
     expect(result.externalReferenceId).toBe("did:web:network.learncard.com:users:smi-demo-issuer");
+  });
+
+  it("creates the issuer service profile when it doesn't exist yet (FR-LCI-6)", async () => {
+    getProfileMock.mockResolvedValue(null); // no profile on the network yet
+    const { issueCredential } = await load();
+    await issueCredential(configured, {});
+
+    expect(createServiceProfileMock).toHaveBeenCalledTimes(1);
+    expect(createServiceProfileMock).toHaveBeenCalledWith({
+      profileId: "smi-demo-issuer",
+      displayName: "SMI Demo Issuer",
+      isServiceProfile: true,
+    });
+  });
+
+  it("does not re-create the profile when it already exists", async () => {
+    getProfileMock.mockResolvedValue({ profileId: "smi-demo-issuer" });
+    const { issueCredential } = await load();
+    await issueCredential(configured, {});
+
+    expect(createServiceProfileMock).not.toHaveBeenCalled();
+  });
+
+  it("propagates a LearnCard signer failure (normalization happens at the boundary)", async () => {
+    issueCredentialMock.mockRejectedValue(new Error("LearnCard signer rejected the credential"));
+    const { issueCredential } = await load();
+    await expect(issueCredential(configured, {})).rejects.toThrow(/signer rejected/);
   });
 });
