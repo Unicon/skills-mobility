@@ -25,6 +25,9 @@ services:
     environment:
       MOCK_LMS_EVENT_CONSUMER_URL: http://event-consumer:8200
     ports: ["8000:8000"]
+    depends_on:
+      event-consumer:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz')"]
       interval: 10s
@@ -39,6 +42,9 @@ services:
       EVENT_CONSUMER_DB_PATH: /data/event-consumer.db
     volumes: ["event-consumer-data:/data"]
     ports: ["8200:8200"]
+    depends_on:
+      orchestrator:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8200/healthz')"]
       interval: 10s
@@ -64,11 +70,20 @@ services:
       ORCHESTRATOR_CONTEXT_BUILDER_URL: http://context-builder:8100
       ORCHESTRATOR_PROFILE_RESOLVER_URL: http://profile-resolver:8700
       ORCHESTRATOR_DELIVERY_ROUTER_URL: http://delivery-router:8800
+      # The signed OBv3's issuer must be the real (resolvable) demo issuer DID, not
+      # the placeholder default — else the issuer adapter's SDK sign fails resolving it.
       ORCHESTRATOR_ISSUER_ID: ${LEARNCARD_ISSUER_DID:-did:web:poc.skills-mobility.example}
       LEARNCARD_DEMO_RECIPIENT_PROFILE_ID: ${LEARNCARD_DEMO_RECIPIENT_PROFILE_ID:-smi-demo-learner}
       ORCHESTRATOR_DB_PATH: /data/orchestrator.db
     volumes: ["orchestrator-data:/data"]
     ports: ["8400:8400"]
+    depends_on:
+      context-builder:
+        condition: service_healthy
+      profile-resolver:
+        condition: service_healthy
+      delivery-router:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8400/healthz')"]
       interval: 10s
@@ -96,9 +111,14 @@ services:
     <<: *python
     command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('delivery_router.app:create_app', factory=True, host='0.0.0.0', port=8800)"]
     environment:
-      DELIVERY_ROUTER_LEARNCARD_ISSUER_URL: http://learncard-issuer-adapter:8500
-      DELIVERY_ROUTER_LEARNCARD_WALLET_URL: http://learncard-wallet-adapter:8600
+      DELIVERY_ROUTER_LEARNCARD_ISSUER_URL: http://learncard-issuer-adapter:8910
+      DELIVERY_ROUTER_LEARNCARD_WALLET_URL: http://learncard-wallet-adapter:8900
     ports: ["8800:8800"]
+    depends_on:
+      learncard-issuer-adapter:
+        condition: service_healthy
+      learncard-wallet-adapter:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8800/healthz')"]
       interval: 10s
@@ -112,28 +132,29 @@ services:
     image: skills-mobility-node:local
     restart: unless-stopped
     environment:
-      PORT: "8500"
+      PORT: "8910"
       LOG_LEVEL: info
       SECURE_SEED: ${SECURE_SEED:-}
       PROFILE_ID: ${LEARNCARD_ISSUER_PROFILE_ID:-smi-demo-issuer}
       PROFILE_NAME: ${LEARNCARD_ISSUER_PROFILE_NAME:-SMI Demo Issuer}
-    ports: ["8500:8500"]
+    ports: ["8910:8910"]
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8500/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8910/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       interval: 10s
       timeout: 3s
       retries: 5
 
   learncard-wallet-adapter:
     <<: *python
-    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('learncard_wallet_adapter.app:create_app', factory=True, host='0.0.0.0', port=8600)"]
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('learncard_wallet_adapter.app:create_app', factory=True, host='0.0.0.0', port=8900)"]
     environment:
       LEARNCARD_API_URL: ${LEARNCARD_API_URL:-https://network.learncard.com/api}
       LEARNCARD_API_TOKEN: ${LEARNCARD_API_TOKEN:-}
+      # Recipient-scoped read token for the delivered-credential read-back (#53/#55).
       LEARNCARD_RECIPIENT_API_TOKEN: ${LEARNCARD_RECIPIENT_API_TOKEN:-}
-    ports: ["8600:8600"]
+    ports: ["8900:8900"]
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8600/healthz')"]
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8900/healthz')"]
       interval: 10s
       timeout: 3s
       retries: 5
