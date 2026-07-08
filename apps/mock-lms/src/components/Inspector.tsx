@@ -82,28 +82,32 @@ export function Inspector({
         {outcome && (
           <div className="asg-kv">
             <b>Outcome</b>
-            <span className="mono">{outcome.code}</span> {outcome.display_name || outcome.title}
+            <span>
+              <span className="mono">{outcome.code}</span> {outcome.display_name || outcome.title}
+            </span>
           </div>
         )}
         {rubric && (
           <div className="asg-kv">
             <b>Rubric</b>
-            {rubric.criteria.map((c) => `${c.description} (${c.points})`).join(" · ")}
+            <span>{rubric.criteria.map((c) => `${c.description} (${c.points})`).join(" · ")}</span>
           </div>
         )}
         {learnerId && (
           <div className="asg-kv">
             <b>Submission</b>
-            {submission ? (
-              <>
-                {learner ? `${learner.name} · ${learner.email}` : learnerId} —{" "}
-                {submission.score ?? "—"}{" "}
-                {submission.grade && <span className="pill grade">{submission.grade}</span>}{" "}
-                <span className="mono dim">{submission.workflow_state}</span>
-              </>
-            ) : (
-              <span className="dim">no submission for this learner</span>
-            )}
+            <span>
+              {submission ? (
+                <>
+                  {learner ? `${learner.name} · ${learner.email}` : learnerId} —{" "}
+                  {submission.score ?? "—"}{" "}
+                  {submission.grade && <span className="pill grade">{submission.grade}</span>}{" "}
+                  <span className="mono dim">{submission.workflow_state}</span>
+                </>
+              ) : (
+                <span className="dim">no submission for this learner</span>
+              )}
+            </span>
           </div>
         )}
       </div>

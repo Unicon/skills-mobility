@@ -20,7 +20,7 @@ running services and no live LearnCard. The real Context Builder (#20, over
 
 ```
 src/orchestrator/
-  app.py       FastAPI factory: POST /run-workflow, GET /executions/{id},
+  app.py       FastAPI factory: POST /run-workflow, GET /executions[/{id}],
                PUT /admin/plan-lookup-toggle, DELETE /admin/plans/{id}, /healthz
   config.py    settings (ORCHESTRATOR_PORT, ORCHESTRATOR_DB_PATH, ORCHESTRATOR_ISSUER_ID,
                LEARNCARD_DELIVERY_CONFIG_REF, LEARNCARD_DEMO_RECIPIENT_PROFILE_ID,
@@ -40,6 +40,9 @@ src/orchestrator/
 - `POST /run-workflow {execution_id, event_id, correlation_id, event}` — runs the
   plan and persists the trail; returns the `ExecutionMetadata`.
 - `GET /executions/{id}` — the correlated execution metadata (status + per-step log + result).
+- `GET /executions?limit=&correlation_id=` — recent executions (newest first), compact
+  summary rows with completed/total step progress; `correlation_id` filters to one
+  Action run's executions. The Admin UI's list + cross-app pivot (#28).
 - `PUT /admin/plan-lookup-toggle {enabled}` — turn reusable delivery-phase plan lookup on/off (FR-OR-28).
 - `DELETE /admin/plans/{plan_id}` — drop a stored plan to force regeneration (FR-OR-29).
 

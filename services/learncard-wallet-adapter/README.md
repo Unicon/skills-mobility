@@ -49,24 +49,27 @@ No accept/write: a delivered credential sits in `incoming` (pending) until accep
 
 ```bash
 uv sync --all-packages
-cp services/learncard-wallet-adapter/.env.example services/learncard-wallet-adapter/.env  # set LEARNCARD_API_TOKEN
-uv run learncard-wallet-adapter          # http://127.0.0.1:8600 — Swagger at /docs
+cp services/learncard-wallet-adapter/.env.example services/learncard-wallet-adapter/.env
+# set LEARNCARD_API_TOKEN from tools/learncard-demo's generated .env (ADR-0020, PR #54)
+uv run learncard-wallet-adapter          # http://127.0.0.1:8900 — Swagger at /docs
 ```
+
+`.env` is read regardless of the directory you launch from (it's anchored to the service package), so the token is picked up even when run from the repo root.
 
 Smoke test:
 
 ```bash
-curl -s localhost:8600/healthz
+curl -s localhost:8900/healthz
 ```
 
 ## Config
 
 | Env var | Default | Meaning |
 | --- | --- | --- |
-| `LEARNCARD_WALLET_ADAPTER_PORT` | `8600` | Local HTTP port (clear of Consul's 8300) |
+| `LEARNCARD_WALLET_ADAPTER_PORT` | `8900` | Local HTTP port (outside Consul's 8300-8302/8500/8600) |
 | `LEARNCARD_WALLET_ADAPTER_LOG_LEVEL` | `INFO` | Root log level |
 | `LEARNCARD_API_URL` | `https://network.learncard.com/api` | LearnCloud Network REST base (`libs/learncard-api`) |
-| `LEARNCARD_API_TOKEN` | `""` | Sender bearer for delivery (`credentials:write`) — from `tools/learncard-demo` |
+| `LEARNCARD_API_TOKEN` | `""` | Sender bearer for delivery (`credentials:write`) — from `tools/learncard-demo` (ADR-0020, PR #54) |
 | `LEARNCARD_RECIPIENT_API_TOKEN` | `""` | Recipient read bearer (`credentials:read`) for the read-back (#53) |
 
 ## Test
