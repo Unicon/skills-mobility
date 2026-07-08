@@ -150,6 +150,17 @@ class Assignment(BaseModel):
     rubric_id: str | None = None
 
 
+class SubmissionCriterionAssessment(BaseModel):
+    """One criterion's assessment within a submission's rubric_assessment — the
+    detail the Context Builder requests via ``include[]=rubric_assessment`` and
+    that Field Synthesis summarizes into learner-facing narrative."""
+
+    criterion_id: str
+    points: float
+    rating_description: str = ""
+    comments: str = ""
+
+
 class Submission(BaseModel):
     id: str
     course_id: str
@@ -158,6 +169,11 @@ class Submission(BaseModel):
     score: float | None = None
     grade: str | None = None
     workflow_state: str = "graded"
+    # The learner's submitted work (free text). Realistic, varied content is what
+    # the Field Synthesis LLM Decision Service summarizes (issue #23).
+    body: str = ""
+    # Per-criterion rubric assessment (Canvas ``include[]=rubric_assessment``).
+    rubric_assessment: list[SubmissionCriterionAssessment] = []
     submitted_at: datetime | None = None
     graded_at: datetime | None = None
 
