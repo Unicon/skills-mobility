@@ -3,14 +3,21 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Anchor .env to the service package root (services/orchestrator/), not a bare
+# ".env": a relative env_file resolves against the process CWD, so running from
+# the repo root (the documented way) silently ignored a service-dir .env. In
+# containers this path doesn't exist and env comes from compose `environment:`.
+ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="ORCHESTRATOR_", env_file=".env", extra="ignore"
+        env_prefix="ORCHESTRATOR_", env_file=ENV_FILE, extra="ignore"
     )
 
     # Local HTTP port. 8400 (not 8300 — that's Consul's default RPC port and
