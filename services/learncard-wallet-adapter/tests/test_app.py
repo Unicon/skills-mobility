@@ -50,6 +50,11 @@ def test_deliver_success_normalizes_and_sends_expected_call() -> None:
     body = resp.json()
     assert body == {
         "status": "succeeded",
+        # Correlation ids preserved from the request in the result record (FR-LCW-11).
+        "workflow_id": "wf_1",
+        "execution_id": "exec_1",
+        "step_id": "step_wallet",
+        "correlation_id": "corr_1",
         "external_reference_id": CREDENTIAL_URI,
         "result": {"delivery_state": "accepted"},
         "error": None,
@@ -74,6 +79,13 @@ def test_learncard_error_is_normalized_to_failed() -> None:
     assert body["external_reference_id"] is None
     assert body["result"] is None
     assert body["error"]["message"]  # a message is present
+    # Ids preserved even on the failure path (FR-LCW-11).
+    assert (body["workflow_id"], body["execution_id"], body["step_id"], body["correlation_id"]) == (
+        "wf_1",
+        "exec_1",
+        "step_wallet",
+        "corr_1",
+    )
 
 
 def test_missing_recipient_profile_id_is_422() -> None:

@@ -39,6 +39,12 @@ class ErrorInfo(BaseModel):
 
 class DeliverResponse(BaseModel):
     status: Literal["succeeded", "failed"]
+    # Correlation identifiers preserved from the request (FR-LCW-11), so a delivery
+    # outcome is traceable in the result record itself, not only via the logs.
+    workflow_id: str = ""
+    execution_id: str = ""
+    step_id: str = ""
+    correlation_id: str = ""
     external_reference_id: str | None = None
     result: DeliverResult | None = None
     error: ErrorInfo | None = None

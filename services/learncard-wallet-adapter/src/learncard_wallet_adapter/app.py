@@ -43,19 +43,25 @@ def create_app(
             )
         except httpx.HTTPError as exc:
             logger.warning(
-                "wallet delivery failed execution_id=%s step_id=%s: %s",
+                "wallet delivery failed workflow_id=%s execution_id=%s step_id=%s "
+                "correlation_id=%s: %s",
+                req.workflow_id,
                 req.execution_id,
                 req.step_id,
+                req.correlation_id,
                 exc,
             )
-            return resultmap.to_error(str(exc))
+            return resultmap.to_error(req, str(exc))
         logger.info(
-            "wallet delivery accepted execution_id=%s step_id=%s ref=%s",
+            "wallet delivery accepted workflow_id=%s execution_id=%s step_id=%s "
+            "correlation_id=%s ref=%s",
+            req.workflow_id,
             req.execution_id,
             req.step_id,
+            req.correlation_id,
             uri,
         )
-        return resultmap.to_success(uri)
+        return resultmap.to_success(req, uri)
 
     @app.get("/healthz", tags=["meta"])
     def healthz() -> dict[str, str]:

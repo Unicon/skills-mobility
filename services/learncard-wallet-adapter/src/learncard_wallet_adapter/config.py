@@ -15,8 +15,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="LEARNCARD_WALLET_ADAPTER_")
 
-    # Local HTTP port. 8600 — clear of Consul's 8300 and the other POC services.
-    port: int = 8600
+    # Local HTTP port. 8900 — outside Consul's reserved range (8300-8302, 8500,
+    # 8600) and clear of the other POC services (mock-lms 8000, orchestrator 8400,
+    # delivery-router 8800).
+    port: int = 8900
 
     # Root log level for the service entrypoint (e.g. INFO, DEBUG, WARNING).
     log_level: str = "INFO"
