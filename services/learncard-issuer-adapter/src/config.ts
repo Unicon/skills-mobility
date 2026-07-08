@@ -12,7 +12,9 @@ export interface IssuerConfig {
 
 export function loadConfig(): IssuerConfig {
   return {
-    port: Number(process.env.PORT ?? 8500),
+    // 8910 — outside Consul's reserved range (8300-8302, 8500, 8600); 8500 collided
+    // with Consul's HTTP API port.
+    port: Number(process.env.PORT ?? 8910),
     secureSeed: process.env.SECURE_SEED ?? null,
     profileId: process.env.PROFILE_ID ?? null,
     profileName: process.env.PROFILE_NAME ?? null,
