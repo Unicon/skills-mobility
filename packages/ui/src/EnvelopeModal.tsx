@@ -1,6 +1,7 @@
-import { motion } from "framer-motion";
-import type { EventEnvelope } from "../types";
-import { highlightJson } from "../util";
+import type { EventEnvelope } from "@skills-mobility/contracts";
+import { motion } from "motion/react";
+import { highlightJson } from "./highlightJson";
+import "./EnvelopeModal.css";
 
 export function EnvelopeModal({
   envelope,
@@ -22,7 +23,7 @@ export function EnvelopeModal({
       >
         <header>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span className="dot" style={{ background: "var(--gold)" }} />
+            <span className="envelope-dot" style={{ background: "var(--gold)" }} />
             <span className="mono" style={{ fontWeight: 700, color: "var(--gold)" }}>
               {envelope.metadata.event_name}
             </span>

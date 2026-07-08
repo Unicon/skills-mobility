@@ -74,10 +74,12 @@ uv run mypy libs/*/src services/*/src  # type-check (strict)
 uv run mock-lms                        # run the mock LMS service (http://127.0.0.1:8000, docs at /docs)
 uv run mock-lms-generate               # regenerate committed fixtures (seeded)
 
-# React UI
-cd apps/mock-lms && npm install
-npm run dev                            # http://localhost:5173 (proxies /api,/demo to backend :8000)
-npm run build                          # tsc --noEmit + vite build
+# React UI (npm workspace, ADR-0020) — install once from the repo root
+npm install
+npm run dev -w apps/mock-lms           # http://localhost:5173 (proxies /api,/demo to backend :8000)
+npm run build -w apps/mock-lms         # tsc --noEmit + vite build
+npm run typecheck                      # fans out across all workspace members
+npm run test -w packages/contracts -w packages/ui   # vitest for the shared packages
 ```
 
 CDK/infra tooling is not set up yet.

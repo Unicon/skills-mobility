@@ -1,12 +1,12 @@
-import { AnimatePresence } from "framer-motion";
+import { api } from "@skills-mobility/contracts";
+import type { ActionView, CourseWithActions, EventEnvelope, RunResult, Scope } from "@skills-mobility/contracts";
+import { EnvelopeModal } from "@skills-mobility/ui";
+import { AnimatePresence } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
-import { api } from "./api";
 import { CourseRail } from "./components/CourseRail";
-import { EnvelopeModal } from "./components/EnvelopeModal";
 import { Header } from "./components/Header";
 import { Inspector } from "./components/Inspector";
 import { TriggerPanel } from "./components/TriggerPanel";
-import type { ActionView, CourseWithActions, EventEnvelope, RunResult, Scope } from "./types";
 import { copy } from "./util";
 
 export default function App() {

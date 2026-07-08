@@ -1,0 +1,30 @@
+:root {
+  --bg: #0b0c0e;
+  --bg-2: #0f1114;
+  --panel: #14171b;
+  --panel-2: #181c21;
+  --line: #262b32;
+  --line-bright: #353c45;
+
+  --ink: #e9ecef;
+  --ink-dim: #9aa3ad;
+  --ink-faint: #5d666f;
+
+  --gold: #e6b450;
+  --gold-bright: #ffcf6b;
+  --live: #3ddc84;
+  --live-dim: #1f8a55;
+
+  /* event-type telemetry colors */
+  --evt-skill: #54c7ec;
+  --evt-course: #3ddc84;
+  --evt-badge: #e6b450;
+  --evt-credential: #c98bdb;
+  --danger: #ff6b6b;
+
+  --shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.8);
+  --glow-gold: 0 0 0 1px rgba(230, 180, 80, 0.35), 0 0 24px -6px rgba(230, 180, 80, 0.5);
+
+  --font-display: "Archivo", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
