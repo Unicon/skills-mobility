@@ -10,19 +10,23 @@ ref is a later concern.
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from delivery_router.schemas import AdapterKey
 
+# Anchor .env to the service package root (services/delivery-router/), not a bare
+# ".env": a relative env_file resolves against the process CWD, so running from
+# the repo root (the documented way) silently ignored a service-dir .env and left
+# the adapter URLs None. In containers this path doesn't exist and env comes from
+# compose `environment:`, so it's harmlessly ignored there.
+_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+
 
 class Settings(BaseSettings):
-    # env_file so a populated .env (see .env.example) is actually read — with
-    # env_prefix alone, pydantic-settings reads only real process env vars and a
-    # populated .env is silently ignored, leaving the adapter URLs None (so the
-    # router reports "can't dispatch" despite a configured .env).
     model_config = SettingsConfigDict(
-        env_prefix="DELIVERY_ROUTER_", env_file=".env", extra="ignore"
+        env_prefix="DELIVERY_ROUTER_", env_file=_ENV_FILE, extra="ignore"
     )
 
     # Local HTTP port. 8800 — clear of Consul's 8300 and the other POC services.
