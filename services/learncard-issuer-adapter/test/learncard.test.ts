@@ -96,4 +96,13 @@ describe("issueCredential", () => {
     const { issueCredential } = await load();
     await expect(issueCredential(configured, {})).rejects.toThrow(/signer rejected/);
   });
+
+  it("still issues when profile assurance fails (best-effort, non-fatal)", async () => {
+    // Reproduces the e2e crash: a live LearnCloud getProfile 500 must NOT crash or
+    // fail issuance — the issuer signs with local seed-derived keys regardless.
+    getProfileMock.mockRejectedValue(new Error("TRPCClientError: Unable to transform response"));
+    const { issueCredential } = await load();
+    const result = await issueCredential(configured, { type: ["VerifiableCredential"] });
+    expect((result.issuedCredential.proof as { type: string }).type).toBe("DataIntegrityProof");
+  });
 });
