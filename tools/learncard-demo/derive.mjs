@@ -11,8 +11,6 @@ export function deriveSeed(label) {
   return createHash('sha256').update(`skills-mobility-demo:${label}`).digest('hex');
 }
 
-// The two fixed demo identities. Labels are intentionally public.
-export const ISSUER_LABEL = 'issuer';
-export const RECIPIENT_LABEL = 'learner';
-export const RECIPIENT_PROFILE_ID = 'smi-demo-learner';
-export const ISSUER_PROFILE_ID = 'smi-demo-issuer';
+// The two demo identities (recipient learner + issuing organization) are
+// configured via .env — labels and profile ids live in .env.example, not here,
+// so a different org can customize its own demo run without editing code.
