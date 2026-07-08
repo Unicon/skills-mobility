@@ -40,23 +40,35 @@ def create_app(
 
     @app.post("/resolve-learncard-profile")
     def resolve_profile(req: ResolveRequest) -> ResolveResponse:
+        # Correlation ids preserved in logs and the result record (FR-LPR-11).
+        ids = {
+            "workflow_id": req.workflow_id,
+            "execution_id": req.execution_id,
+            "step_id": req.step_id,
+            "correlation_id": req.correlation_id,
+        }
         try:
             resp = resolver.resolve(req.payload, store, client)
         except httpx.HTTPError as exc:
             logger.warning(
-                "resolution failed execution_id=%s step_id=%s: %s",
+                "resolution failed workflow_id=%s execution_id=%s step_id=%s "
+                "correlation_id=%s: %s",
+                req.workflow_id,
                 req.execution_id,
                 req.step_id,
+                req.correlation_id,
                 exc,
             )
-            return resultmap.error(str(exc))
+            return resultmap.error(str(exc)).model_copy(update=ids)
         logger.info(
-            "resolution execution_id=%s step_id=%s status=%s",
+            "resolution workflow_id=%s execution_id=%s step_id=%s correlation_id=%s status=%s",
+            req.workflow_id,
             req.execution_id,
             req.step_id,
+            req.correlation_id,
             resp.status,
         )
-        return resp
+        return resp.model_copy(update=ids)
 
     @app.get("/healthz", tags=["meta"])
     def healthz() -> dict[str, Any]:

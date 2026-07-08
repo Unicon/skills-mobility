@@ -40,7 +40,15 @@ def _no_call(request: httpx.Request) -> httpx.Response:
 
 
 def test_stored_returns_without_api_call() -> None:
-    tc, store = _app(_no_call)
+    # Assert the no-call invariant explicitly (a counted transport), not via an
+    # uncaught AssertionError that a future broad except-handler could swallow.
+    calls: list[httpx.Request] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(200, json=[])
+
+    tc, store = _app(handle)
     store.put("profile_id", "smi-learner-1", "smi-learner-1", DID, "searched")  # type: ignore[attr-defined]
 
     body = tc.post(ENDPOINT, json=_request("profile_id", "smi-learner-1")).json()
@@ -51,6 +59,14 @@ def test_stored_returns_without_api_call() -> None:
         "did": DID,
         "resolution_method": "stored",
     }
+    assert len(calls) == 0  # stored hit short-circuits before any LearnCard search
+    # Correlation ids preserved in the result record (FR-LPR-11).
+    assert (body["workflow_id"], body["execution_id"], body["step_id"], body["correlation_id"]) == (
+        "wf_1",
+        "exec_1",
+        "step_resolve_profile",
+        "corr_1",
+    )
 
 
 def test_search_hit_resolves_then_persists() -> None:
