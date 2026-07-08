@@ -1,0 +1,23 @@
+[project]
+name = "learncard-wallet-adapter"
+version = "0.1.0"
+description = "LearnCard Wallet Adapter — delivers an already-issued credential to LearnCard wallet APIs (POC)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "httpx>=0.27",
+    "learncard-api",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.4",
+    "uvicorn>=0.30",
+]
+
+[project.scripts]
+learncard-wallet-adapter = "learncard_wallet_adapter.app:run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/learncard_wallet_adapter"]

@@ -15,6 +15,7 @@ members = ["libs/*", "services/*"]
 [tool.uv.sources]
 skills-mobility-events = { workspace = true }
 mock-lms = { workspace = true }
+learncard-api = { workspace = true }
 
 [dependency-groups]
 dev = [
