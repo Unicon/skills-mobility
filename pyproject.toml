@@ -39,5 +39,7 @@ python_version = "3.12"
 strict = true
 
 [tool.pytest.ini_options]
-addopts = "-ra"
+# importlib mode so same-named test modules across packages (e.g. several
+# services' test_app.py / test_engine.py) don't collide on collection.
+addopts = "-ra --import-mode=importlib"
 testpaths = ["libs", "services"]

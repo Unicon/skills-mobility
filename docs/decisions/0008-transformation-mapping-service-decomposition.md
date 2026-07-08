@@ -3,6 +3,8 @@
 - Status: Accepted
 - Date: 2026-06-15
 
+> **Note (2026-06-25):** This ADR's two-loop pipeline and three-treatment field classification (direct mapping / synthesis placeholder / template pass-through) are the historical baseline. ADR-0017 introduces a third transformation phase and collapses field classification to two treatments (direct/synthesis). References to "two loops" and the three-treatment model in this ADR should be read accordingly.
+
 ## Context
 
 The Transformation Mappings LLM Decision Service as described in ADR 0007 is responsible for generating the translation instructions that convert source data into the format expected by each selected delivery target. For this POC, the primary source inputs are:
@@ -225,7 +227,7 @@ This decision should be revisited if:
 ## References
 
 - [ADR 0007: LLM Decision Service Decomposition](0007-llm-decision-service-decomposition.md)
-- [ADR 0005: Schema Mapping Language](0005-schema-mapping-langauge.md)
+- [ADR 0005: Schema Mapping Language](0005-schema-mapping-language.md)
 - [ADR 0004: LIF Component Usage in the Initial POC](0004-lif-usage.md)
 - [LIF Microservices Overview](https://github.com/LIF-Initiative/lif-core/blob/main/docs/overview/services-overview.md)
 - [DCC Credential Co-Writer (Live Tool)](https://co-writer.dcconsortium.org/)

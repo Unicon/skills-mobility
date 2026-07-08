@@ -117,5 +117,5 @@ This decision should be revisited if:
 ## References
 
 - [ADR 0004: LIF Component Usage in the Initial POC](0004-lif-usage.md)
-- [ADR 0005: Schema Mapping Language](0005-schema-mapping-langauge.md)
+- [ADR 0005: Schema Mapping Language](0005-schema-mapping-language.md)
 - [Skills Mobility Infrastructure POC Requirements](../2_requirements/poc-requirements.md)

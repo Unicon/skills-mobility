@@ -13,7 +13,12 @@ from datetime import UTC, datetime
 
 from orchestrator import planner
 from orchestrator.actions import ActionDeps
-from orchestrator.clients import ContextBuilderClient, DeliveryRouterClient, ProfileResolverClient
+from orchestrator.clients import (
+    ContextBuilderClient,
+    DeliveryRouterClient,
+    EnvelopeContext,
+    ProfileResolverClient,
+)
 from orchestrator.executor import execute_plan
 from orchestrator.schemas import ExecutionMetadata, WorkflowStartRequest
 from orchestrator.store import ExecutionStore
@@ -86,8 +91,17 @@ def run_workflow(
         "delivery_config_ref": delivery_config_ref,
         "learner_id_value": metadata.get("user_id", ""),
     }
+    envelope = EnvelopeContext(
+        workflow_id=execution_id,  # Phase 1: one workflow per execution.
+        execution_id=execution_id,
+        correlation_id=request.correlation_id or metadata.get("correlation_id", ""),
+        delivery_config_ref=delivery_config_ref,
+    )
     deps = ActionDeps(
-        profile_resolver=profile_resolver, delivery_router=delivery_router, issuer_id=issuer_id
+        profile_resolver=profile_resolver,
+        delivery_router=delivery_router,
+        issuer_id=issuer_id,
+        envelope=envelope,
     )
     store.set_status(execution_id, "running")
     status, result = execute_plan(plan, workflow_ctx, deps, store, execution_id)

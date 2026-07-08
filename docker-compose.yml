@@ -1,0 +1,73 @@
+# Local multi-service dev/demo environment for the Phase-1 spine.
+#
+# One shared Python image (docker/Dockerfile.python), run once per service via
+# `command` (binding 0.0.0.0). Services reach each other by compose service name.
+# Run:  docker compose up --build
+#
+# Only the 4 services on `main` are here today; the delivery layer joins as its
+# PRs merge (see docker/README.md).
+name: skills-mobility
+
+x-python: &python
+  build:
+    context: .
+    dockerfile: docker/Dockerfile.python
+  image: skills-mobility-python:local
+  restart: unless-stopped
+
+services:
+  mock-lms:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('mock_lms.app:create_app', factory=True, host='0.0.0.0', port=8000)"]
+    environment:
+      MOCK_LMS_EVENT_CONSUMER_URL: http://event-consumer:8200
+    ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  event-consumer:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('event_consumer.app:create_app', factory=True, host='0.0.0.0', port=8200)"]
+    environment:
+      EVENT_CONSUMER_ORCHESTRATOR_URL: http://orchestrator:8400
+      EVENT_CONSUMER_DB_PATH: /data/event-consumer.db
+    volumes: ["event-consumer-data:/data"]
+    ports: ["8200:8200"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8200/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  context-builder:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('context_builder.app:create_app', factory=True, host='0.0.0.0', port=8100)"]
+    environment:
+      CONTEXT_BUILDER_LMS_BASE_URL: http://mock-lms:8000
+    ports: ["8100:8100"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8100/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  orchestrator:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('orchestrator.app:create_app', factory=True, host='0.0.0.0', port=8400)"]
+    environment:
+      ORCHESTRATOR_CONTEXT_BUILDER_URL: http://context-builder:8100
+      ORCHESTRATOR_DB_PATH: /data/orchestrator.db
+    volumes: ["orchestrator-data:/data"]
+    ports: ["8400:8400"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8400/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  event-consumer-data:
+  orchestrator-data:
