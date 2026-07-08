@@ -69,6 +69,8 @@ Among external alternatives, the current ranking for this architecture is:
 
 `Temporal` is the strongest revisit candidate if the project later decides that the internal runtime is providing too little durability, visibility, or long-running workflow support for the engineering cost of maintaining it. If that happens, the migration target should be a Temporal-hosted implementation of the same abstract plan contract rather than a redesign of the orchestration model itself.
 
+**2026-07-04 addendum:** `LangGraph` is a distinct case from the platforms above — a Python library, not a separate service to deploy and operate — and is now the strongest revisit candidate for a future, post-POC phase. See "Addendum: LangGraph and Agent-Harness-as-Orchestrator" below.
+
 ## Options Considered
 
 | Option | Description | Main concern |
@@ -79,6 +81,8 @@ Among external alternatives, the current ranking for this architecture is:
 | Camunda-backed generic plan interpreter | Map the abstract plan into Camunda BPMN processes, service tasks, events, and job workers | Camunda is strong for visual collaboration and human-readable process diagrams, but BPMN plus FEEL/Zeebe job-worker concepts is farther from our generated-plan contract than Temporal or Conductor and would require a more opinionated translation layer |
 | AWS Step Functions as primary executor | Represent the workflow directly as a Step Functions state machine and fit Workflow Actions output into that model | Step Functions workflows are defined in Amazon States Language ahead of time; using it as the primary runtime would require pre-enumerating the workflow structure or embedding a custom executor inside a task, which means Step Functions would not actually be executing the LLM-generated plan |
 | Dagster or Airflow | Use a broader orchestration platform already considered in ADR 0004 | Better fit for data pipelines, scheduled DAGs, and broader operational workflows than for this event-driven, runtime-planned execution model |
+| LangGraph-backed plan executor *(added 2026-07-04)* | Implement the same abstract plan contract as a developer-defined graph of nodes/edges using the LangGraph library, with LLM nodes for planner steps | Does not remove the plan contract, registry, or validator design work; its typical usage pattern is a graph topology fixed at development time, which is in tension with ADR 0009's runtime-generated-plan model unless deliberately built to generate the graph dynamically |
+| Agent-harness-as-orchestrator *(added 2026-07-04)* | Let an agent harness (e.g. Claude Code, OpenCode, Hermes) decide live, step by step, what to run next, rather than executing a pre-validated generated plan | Meeting-quoted cost/latency (~$100, hours per run) is consistent with current premium-model pricing for unscoped agentic loops and is the wrong shape for a per-event Lambda pipeline; current research treats decide-act loops without a pre-execution validation gate as an open production-safety problem ([Capability Gates Are Not Authorization: Confused-Deputy Failures in LLM Agent Frameworks](https://arxiv.org/abs/2606.28679)), independent of this project's own prior decisions |
 
 ## Why Not Step Functions
 
@@ -149,6 +153,39 @@ The correct first move is therefore to define and prove the abstract plan contra
 `Conductor` ranks next because it is also a credible fit for dynamic orchestration problems. Its official documentation shows workflow definitions composed from task configurations, input/output expressions over workflow and task data, and built-in wait, human, and other system-task/operator concepts. That is meaningfully closer to this ADR's abstract step model than Step Functions or BPMN-centric tools. However, it still asks us to target Conductor's workflow-definition model rather than execute our own plan contract directly.
 
 `Camunda` ranks below Conductor not because it is weak, but because its strongest differentiator is also its main mismatch here. Camunda's BPMN modeler and job-worker runtime are compelling when the process diagram itself is a first-class artifact for business and technical collaboration. For this architecture, though, the first-class artifact is the LLM-generated abstract plan. Translating that plan into BPMN service tasks, gateways, events, and FEEL expressions is possible, but it is a larger semantic mapping step than targeting Temporal activities or Conductor-style tasks.
+
+## Addendum (2026-07-04): LangGraph and Agent-Harness-as-Orchestrator
+
+An internal AI-tooling meeting with the LearnVia project team raised two orchestration alternatives this ADR had not evaluated when it was first written: LangGraph, and using an agent harness (Claude Code, OpenCode, Hermes) as the orchestrator itself. This addendum evaluates both against the same constraints as the rest of this ADR, plus a live check of current (2026) industry practice, without treating the existing decision as untouchable.
+
+### LangGraph
+
+LangGraph is a distinct case from every other external option in the table above: it is a Python library that runs inside the same process as the rest of the application, not a separate platform to deploy and operate. That removes the specific cost this ADR originally weighed against Temporal, Conductor, and Camunda ("a new workflow platform to deploy and learn").
+
+External research as of 2026 shows LangGraph has crossed a real adoption threshold for exactly this problem shape: reported production use at Uber, JP Morgan, BlackRock, Cisco, LinkedIn, and Klarna, with built-in guardrail nodes and content-moderation middleware aimed at validating output before it takes effect ([What Is LangGraph? State, Agents & Production Use Cases 2026](https://atlan.com/know/ai-agent/ai-agent-memory/what-is-langgraph/); [LangGraph Guardrails docs](https://docs.langchain.com/oss/python/langchain/guardrails)). The caveat, from the same research: "Major frameworks like LangChain/LangGraph, LlamaIndex, and Stripe Agent Toolkit provide capability gating by default, but none provides a deterministic fail-closed per-call value authorization gate by default." Adopting LangGraph would not eliminate the work this project's Policy Rules Service already does — a strict deny-by-default validation boundary would still need to be built on top of it, the same conclusion this ADR already reached about Temporal, Conductor, and Camunda, now confirmed against LangGraph specifically.
+
+**Verdict:** not adopted for this POC. The custom runtime already satisfies every functional requirement in this ADR's Decision section, so this is not a capability gap — it's a total-cost-of-ownership question:
+
+- maintenance shifts from fully-owned to shared with a widely-used OSS project,
+- lower bus-factor risk than a bespoke internal system,
+- pre-built guardrail/checkpointing middleware that could reduce future hand-written plumbing if workflow complexity grows past what the POC needs (the same "Temporal is the natural next host" argument this ADR already makes, at a lighter weight).
+
+None of that justifies a mid-POC rewrite of something already built, tested, and merged (`services/orchestrator/`). LangGraph is recorded as the strongest candidate for any future, post-POC phase — see Revisit Triggers.
+
+### Agent-harness-as-orchestrator
+
+An agent harness lets an LLM decide, live and continuously, what to do next — a fundamentally different model from "generate one plan, validate it, then execute only what was approved." This is evaluated against general-purpose evidence, not against this project's own prior ADRs.
+
+Two independent findings argue against it for the production orchestrator role:
+
+- **Cost and latency.** The meeting's own figure — roughly $100 and a couple of hours for a single unscoped run using an Opus- or Fable-class model as the orchestrator — is consistent with current pricing and typical run lengths for long-horizon agentic tasks at that capability tier. That is the wrong cost/latency shape for a per-event step in a Lambda-based pipeline with low event volume.
+- **Open safety research.** Current research treats decide-act loops without a pre-execution validation gate as an unsolved production-safety problem: see ["Capability Gates Are Not Authorization: Confused-Deputy Failures in LLM Agent Frameworks"](https://arxiv.org/abs/2606.28679) and the "gated execution" literature ([Gated Execution: Why Your Agent Should Never Act Without Permission](https://ranjankumar.in/harness-engineering-gated-execution-llm-agents-policy-safety)), which frames a validation gate between model intent and system action as the thing missing from continuous-agent-loop architectures generally.
+
+**Verdict:** not adopted for the production orchestrator role, on cost and current safety-research grounds rather than because it conflicts with this project's own prior architecture.
+
+### What this confirms about the existing decision
+
+The plan-then-validate-then-execute pattern this project already built is not idiosyncratic homebrew — it matches a pattern current research is actively naming and studying ("gated execution," pre-execution plan validation against structure and consistency constraints) as the appropriate shape for this exact problem: untrusted LLM output that must produce safe side effects.
 
 ## Recommended Implementation Details
 
@@ -425,9 +462,11 @@ This decision should be revisited if:
 - the runtime needs richer concurrency, child-workflow, or signaling semantics than the constrained executor model supports cleanly,
 - audit and visibility requirements grow beyond what the internal runtime can provide economically,
 - or the engineering burden of maintaining durable execution mechanics exceeds the cost of adopting Temporal or another durable workflow platform.
+- *(2026-07-04)* the project moves past this POC into a phase where total cost of ownership (shared maintenance, bus-factor risk, built-in guardrail/checkpointing middleware) justifies porting one orchestration seam to LangGraph as a lightweight comparison before committing to a full migration.
 
 ## Open Questions
 
+- *(2026-07-04)* Does the project's original vision anticipate a more autonomous, continuously-deciding orchestrator (closer to the agent-harness model) than the plan-then-validate model this ADR and ADR-0009 chose? The research in the addendum above argues against agent-harness-as-orchestrator for the production role on cost and safety grounds, independent of this project's own prior decisions — but if there is daylight between that architecture and the project's original intent, that is a project-direction question for leadership to weigh in on explicitly, not something this ADR can resolve unilaterally.
 - What expression language should be used for input binding and conditions, and should that be the same language used elsewhere in the architecture?
 - Should per-target delivery inside `for_each` execute serially or with bounded parallelism in the POC?
 - Do we need true callback-based waits in the POC, or is scheduled retry/polling sufficient for the event scenarios we will actually demo?
@@ -451,3 +490,7 @@ This decision should be revisited if:
 - [Camunda BPMN in Modeler](https://docs.camunda.io/docs/components/modeler/bpmn/)
 - [Camunda Service Tasks](https://docs.camunda.io/docs/components/modeler/bpmn/service-tasks/)
 - [Workflow Orchestration Showdown: Temporal.io vs Orkes Conductor vs Camunda](https://medium.com/@easwaranvijayakumar/workflow-orchestration-showdown-temporal-io-vs-orkes-conductor-vs-camunda-e59fd79c2b65)
+- *(2026-07-04 addendum)* [What Is LangGraph? State, Agents & Production Use Cases 2026](https://atlan.com/know/ai-agent/ai-agent-memory/what-is-langgraph/)
+- *(2026-07-04 addendum)* [LangGraph Guardrails docs](https://docs.langchain.com/oss/python/langchain/guardrails)
+- *(2026-07-04 addendum)* [Capability Gates Are Not Authorization: Confused-Deputy Failures in LLM Agent Frameworks (arXiv 2606.28679)](https://arxiv.org/abs/2606.28679)
+- *(2026-07-04 addendum)* [Gated Execution: Why Your Agent Should Never Act Without Permission](https://ranjankumar.in/harness-engineering-gated-execution-llm-agents-policy-safety)

@@ -11,6 +11,8 @@
 | [`orchestrator.md`](./orchestrator.md) | Design for the **Orchestrator** — plan acquisition, constrained step execution, Phase 1 stub seams, execution state, and local-vs-AWS invocation model |
 | [`mock-lms.md`](./mock-lms.md) | Design for the **Mock LMS** (Event Producer + LMS Resource APIs + Demo UI) — modules, event model, Actions, data model (CSV roster + generated layer), phasing, local-vs-AWS, build order |
 | [`context-builder.md`](./context-builder.md) | Design for the **Context Builder** — deterministic fetch profiles, chained LMS lookups, bundle assembly, and local-vs-AWS behavior |
+| [`field-mapping-llm-decision-service.md`](./field-mapping-llm-decision-service.md) | Design for the Field Mapping LLM Decision Service — mapping-spec contract, prompt structure, Bedrock invocation, validation, and local-vs-AWS runtime shape |
+| [`admin-ui.md`](./admin-ui.md) | Design for the **Admin UI** — read-only SPA over the Orchestrator's execution store: data contract, polling model, IA (list → workflow → step), frontend stack, and the three-layer token architecture |
 | [`delivery-router-service.md`](./delivery-router-service.md) | Design for the Delivery Router Service — internal contract, dispatch model, shared delivery mechanics, and adapter integration points |
 | [`learncard-profile-resolver.md`](./learncard-profile-resolver.md) | Design for the LearnCard Profile Resolver — standalone Python Lambda for learner profile resolution before issuance or delivery |
 | [`learncard-issuer-adapter.md`](./learncard-issuer-adapter.md) | Design for the LearnCard Issuer Adapter — Node/TypeScript SDK boundary for issuance |

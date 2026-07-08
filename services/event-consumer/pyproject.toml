@@ -1,0 +1,22 @@
+[project]
+name = "event-consumer"
+version = "0.1.0"
+description = "Event Consumer — workflow ingress boundary for the Skills Mobility POC"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "httpx>=0.27",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.4",
+    "uvicorn>=0.30",
+]
+
+[project.scripts]
+event-consumer = "event_consumer.app:run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/event_consumer"]
