@@ -29,7 +29,7 @@ def test_imports_two_course_kinds_from_roster():
     kinds = {c.id: c.kind for c in catalog.courses}
     assert set(kinds.values()) == {CourseKind.STANDARD, CourseKind.DIGITAL_CREDENTIAL}
     # Course names + learner emails come straight from the roster CSVs.
-    assert any(c.name == "Introduction to Testing" for c in catalog.courses)
+    assert any(c.name == "Introduction to Accounting" for c in catalog.courses)
     assert all(u.email for u in catalog.users)
 
 
@@ -116,6 +116,16 @@ def test_modules_carry_instructional_pages_and_rich_text():
     assert any(len(p.body) > 120 for p in catalog.pages)
     assert all(len(a.description) > 40 for a in catalog.assignments)
     assert all(len(o.description) > 60 for o in catalog.outcomes)
+
+
+def test_subject_for_maps_known_prefixes_and_rejects_unknown():
+    from mock_lms.generators.content import subject_for
+
+    assert subject_for("ACCY-111") == "accounting"
+    assert subject_for("FINC-301") == "finance"
+    # An unrecognized prefix must raise, not silently mislabel as accounting (#34).
+    with pytest.raises(ValueError):
+        subject_for("BIOL-101")
 
 
 def test_store_resolves_generated_entities():

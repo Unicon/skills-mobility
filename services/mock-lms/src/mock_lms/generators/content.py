@@ -318,7 +318,14 @@ _SUBJECTS = {"accounting": _ACCOUNTING, "finance": _FINANCE}
 
 
 def subject_for(course_code: str) -> str:
-    return "finance" if course_code.upper().startswith("FINC") else "accounting"
+    prefix = course_code.upper()
+    if prefix.startswith("ACCY"):
+        return "accounting"
+    if prefix.startswith("FINC"):
+        return "finance"
+    # Don't silently mislabel an unrecognized prefix as accounting — a new subject
+    # area must add its own content block, not inherit the wrong one.
+    raise ValueError(f"Unrecognized course-code prefix: {course_code!r} (expected ACCY* or FINC*)")
 
 
 def content_for(course_code: str) -> SubjectContent:

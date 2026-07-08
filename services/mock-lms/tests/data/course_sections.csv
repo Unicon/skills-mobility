@@ -1,3 +1,3 @@
 section_id,course_id,account_id,name,property:Course Name,property:Course Number,property:Course Section ID,property:Term,property:Institution,property:College or School,property:Degree Program,property:Department,property:Course Modality,property:Home Campus,property:Course Level,property:Instructor,status
-TEST101-001,TEST-101,test,Introduction to Testing,Introduction to Testing,TEST-101,TEST101-001,Fall2026,Test University,School of Testing,BS,Testing,On-campus,Main,Undergraduate,Dana Teacher,active
-TEST202-001,TEST-202,test,"Advanced Testing, Methods & Ethics",Advanced Testing,TEST-202,TEST202-001,Fall2026,Test University,School of Testing,BS,Testing,On-campus,Main,Undergraduate,Dana Teacher,active
+ACCY101-001,ACCY-101,test,Introduction to Accounting,Introduction to Accounting,ACCY-101,ACCY101-001,Fall2026,Test University,School of Testing,BS,Accounting,On-campus,Main,Undergraduate,Dana Teacher,active
+FINC202-001,FINC-202,test,"Corporate Finance, Methods & Ethics",Corporate Finance,FINC-202,FINC202-001,Fall2026,Test University,School of Testing,BS,Finance,On-campus,Main,Undergraduate,Dana Teacher,active
