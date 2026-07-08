@@ -125,7 +125,7 @@ Dependency rules: `apps/` may use `packages/` but not `services/`; `services/` m
 
 **Pull requests:** use the `gh` CLI. Describe *what* changed and *why*; call out interesting decisions/tradeoffs. Mark in-progress work as a draft (`--draft`) and/or `WIP:` in the title.
 
-**Decisions:** capture significant architecture decisions as ADRs under `docs/decisions/` (`NNNN-short-title.md`); ADRs are immutable history — supersede, don't rewrite.
+**Decisions:** capture significant architecture decisions as ADRs under `docs/decisions/` (`NNNN-short-title.md`). During the POC, ADRs are living documents — edit in place; clarifications are free, but a **reversal of an accepted decision** must stay visible (`Status` + a `Supersedes:` line + keep the prior option in Options Considered). See [ADR-0019](docs/decisions/0019-adr-governance-and-lifecycle.md).
 
 ## AWS boundary
 
