@@ -147,11 +147,54 @@ def test_read_back_not_found_does_not_resolve() -> None:
     def handle(request: httpx.Request) -> httpx.Response:
         if request.url.path.endswith("/credentials/incoming"):
             return httpx.Response(200, json=[])
+        if request.url.path.endswith("/credentials/received"):
+            return httpx.Response(200, json=[])
         raise AssertionError("resolve must not run when the uri is absent")
 
     body = _readback_client(handle).get(READBACK, params={"uri": CREDENTIAL_URI}).json()
     assert body["delivered"] is False
     assert body["credential"] is None
+
+
+def test_read_back_falls_back_to_received_when_accepted() -> None:
+    # Once accepted, the credential moves out of incoming into received — the
+    # read-back must still find it there (#55 review item 2).
+    vc = {"type": ["VerifiableCredential"]}
+    sent = "2026-07-01T02:32:23.023Z"
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/credentials/incoming"):
+            return httpx.Response(200, json=[])
+        if request.url.path.endswith("/credentials/received"):
+            return httpx.Response(
+                200,
+                json=[{"uri": CREDENTIAL_URI, "to": "smi-demo-learner", "sent": sent}],
+            )
+        if request.url.path.endswith("/storage/resolve"):
+            return httpx.Response(200, json=vc)
+        raise AssertionError(f"unexpected path {request.url.path}")
+
+    body = _readback_client(handle).get(READBACK, params={"uri": CREDENTIAL_URI}).json()
+    assert body["delivered"] is True
+    assert body["credential"] == vc
+
+
+def test_read_back_pages_incoming_until_found() -> None:
+    # The target is on the second page — a single-page read would miss it (#55 item 3).
+    vc = {"type": ["VerifiableCredential"]}
+    page1 = [{"uri": f"lc:other:{i}", "to": "smi-demo-learner", "sent": "s"} for i in range(100)]
+    page2 = [{"uri": CREDENTIAL_URI, "to": "smi-demo-learner", "sent": "s"}]
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/credentials/incoming"):
+            after_page1 = request.url.params.get("from") == page1[-1]["uri"]
+            return httpx.Response(200, json=page2 if after_page1 else page1)
+        if request.url.path.endswith("/storage/resolve"):
+            return httpx.Response(200, json=vc)
+        raise AssertionError(f"unexpected path {request.url.path}")
+
+    body = _readback_client(handle).get(READBACK, params={"uri": CREDENTIAL_URI}).json()
+    assert body["delivered"] is True
 
 
 def test_read_back_error_is_normalized() -> None:
