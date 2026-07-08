@@ -45,5 +45,10 @@ class ResolveResponse(BaseModel):
     # succeeded: result present. unresolved: no LearnCard profile for this learner
     # (a clean business outcome, not a fault). failed: API/transport error.
     status: Literal["succeeded", "unresolved", "failed"]
+    # Correlation ids preserved from the request in the result record (FR-LPR-11).
+    workflow_id: str = ""
+    execution_id: str = ""
+    step_id: str = ""
+    correlation_id: str = ""
     result: ResolvedProfile | None = None
     error: ErrorInfo | None = None
