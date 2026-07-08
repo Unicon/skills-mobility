@@ -140,3 +140,13 @@ def test_healthz() -> None:
         return httpx.Response(200, json={"status": "succeeded"})
 
     assert _app(handle).get("/healthz").json() == {"status": "ok"}
+
+
+def test_settings_read_from_dotenv_file(tmp_path, monkeypatch) -> None:
+    # Regression: a populated .env (see .env.example) must actually be read.
+    # Without env_file the adapter URLs stay None and the router can't dispatch.
+    monkeypatch.delenv("DELIVERY_ROUTER_LEARNCARD_ISSUER_URL", raising=False)
+    (tmp_path / ".env").write_text("DELIVERY_ROUTER_LEARNCARD_ISSUER_URL=http://issuer.example\n")
+    monkeypatch.chdir(tmp_path)
+
+    assert Settings().learncard_issuer_url == "http://issuer.example"

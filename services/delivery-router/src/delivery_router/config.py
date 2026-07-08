@@ -17,7 +17,13 @@ from delivery_router.schemas import AdapterKey
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="DELIVERY_ROUTER_")
+    # env_file so a populated .env (see .env.example) is actually read — with
+    # env_prefix alone, pydantic-settings reads only real process env vars and a
+    # populated .env is silently ignored, leaving the adapter URLs None (so the
+    # router reports "can't dispatch" despite a configured .env).
+    model_config = SettingsConfigDict(
+        env_prefix="DELIVERY_ROUTER_", env_file=".env", extra="ignore"
+    )
 
     # Local HTTP port. 8800 — clear of Consul's 8300 and the other POC services.
     port: int = 8800
