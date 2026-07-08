@@ -63,6 +63,15 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def _plan_step_count(plan_json: str | None, fallback: int) -> int:
+    """Step-progress denominator: the plan's declared step count. Falls back to
+    the attempted-step count only when no plan is on record — e.g. a run that
+    terminated at the pre-target gate, or whose plan was deleted (FR-OR-29)."""
+    if not plan_json:
+        return fallback
+    return len(json.loads(plan_json).get("steps", []))
+
+
 class ExecutionStore:
     def __init__(self, db_path: str) -> None:
         self._conn = sqlite3.connect(db_path, check_same_thread=False)
@@ -202,15 +211,18 @@ class ExecutionStore:
     ) -> list[ExecutionSummary]:
         """Recent executions (newest first), optionally filtered to one Action
         run's correlation id. Compact rows with completed/total step counts
-        computed server-side (#28 G1/G2/G6)."""
+        computed server-side (#28 G1/G2/G6). ``total`` is the plan's step count
+        (via plan_id → workflow_plan), not the steps attempted so far — so a run
+        that died on step 1 of 8 reads as 0/8, not 0/1 (FR-AU-23)."""
         sql = (
             "SELECT e.execution_id, e.correlation_id, e.event_type, e.status, "
-            "e.created_at, e.updated_at, "
+            "e.created_at, e.updated_at, p.plan_json, "
             "(SELECT COUNT(*) FROM workflow_step_execution s "
-            " WHERE s.execution_id = e.execution_id) AS total, "
+            " WHERE s.execution_id = e.execution_id) AS attempted, "
             "(SELECT COUNT(*) FROM workflow_step_execution s "
             " WHERE s.execution_id = e.execution_id AND s.status = 'succeeded') AS completed "
             "FROM workflow_execution e "
+            "LEFT JOIN workflow_plan p ON p.plan_id = e.plan_id "
         )
         params: list[Any] = []
         if correlation_id is not None:
@@ -225,7 +237,10 @@ class ExecutionStore:
                 correlation_id=r["correlation_id"] or "",
                 event_type=r["event_type"],
                 status=r["status"],
-                step_progress=StepProgress(completed=r["completed"], total=r["total"]),
+                step_progress=StepProgress(
+                    completed=r["completed"],
+                    total=_plan_step_count(r["plan_json"], r["attempted"]),
+                ),
                 created_at=r["created_at"] or "",
                 updated_at=r["updated_at"] or "",
             )

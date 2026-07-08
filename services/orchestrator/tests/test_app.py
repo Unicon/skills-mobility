@@ -65,6 +65,26 @@ def test_list_executions_and_correlation_filter(client, sample_event, course_eve
     assert [r["execution_id"] for r in filtered] == ["exec_b"]
 
 
+def test_list_executions_respects_limit(client, sample_event):
+    for i in range(3):
+        client.post("/run-workflow", json={"execution_id": f"exec_{i}", "event": sample_event})
+    assert len(client.get("/executions", params={"limit": 2}).json()) == 2
+
+
+def test_list_executions_correlation_no_match_is_empty(client, sample_event):
+    # FR-AU-22: the Admin UI's "no match" state depends on an empty list, not a 404.
+    client.post("/run-workflow", json={"execution_id": "exec_a", "event": sample_event})
+    assert client.get("/executions", params={"correlation_id": "does-not-exist"}).json() == []
+
+
+def test_list_executions_orders_newest_first(client, sample_event, course_event):
+    # FR-AU-16: ordered by updated_at desc, execution_id desc — exec_b ran last.
+    client.post("/run-workflow", json={"execution_id": "exec_a", "event": sample_event})
+    client.post("/run-workflow", json={"execution_id": "exec_b", "event": course_event})
+    rows = client.get("/executions").json()
+    assert [r["execution_id"] for r in rows] == ["exec_b", "exec_a"]
+
+
 def test_unknown_execution_returns_404(client):
     assert client.get("/executions/nope").status_code == 404
 
