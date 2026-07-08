@@ -72,6 +72,46 @@ def test_plan_lookup_toggle_and_delete(client, sample_event):
     assert client.delete("/admin/plans/phase1-skill_mastered.v1").json() == {"deleted": False}
 
 
+def test_list_executions_and_correlation_filter(client, sample_event, course_event):
+    # Two runs with distinct correlation ids (corr_1 on skill, corr_2 on course).
+    client.post("/run-workflow", json={"execution_id": "exec_a", "event": sample_event})
+    client.post("/run-workflow", json={"execution_id": "exec_b", "event": course_event})
+
+    rows = client.get("/executions").json()
+    assert {r["execution_id"] for r in rows} == {"exec_a", "exec_b"}
+    # Summary rows carry the Admin-UI fields incl. server-computed step progress.
+    a = next(r for r in rows if r["execution_id"] == "exec_a")
+    assert a["correlation_id"] == "corr_1"
+    assert a["status"] == "completed"
+    assert a["step_progress"] == {"completed": 8, "total": 8}
+    assert a["created_at"] and a["updated_at"]
+    assert "steps" not in a and "result" not in a  # compact projection
+
+    # Correlation filter returns just that Action run's executions (#28 G2).
+    filtered = client.get("/executions", params={"correlation_id": "corr_2"}).json()
+    assert [r["execution_id"] for r in filtered] == ["exec_b"]
+
+
+def test_list_executions_respects_limit(client, sample_event):
+    for i in range(3):
+        client.post("/run-workflow", json={"execution_id": f"exec_{i}", "event": sample_event})
+    assert len(client.get("/executions", params={"limit": 2}).json()) == 2
+
+
+def test_list_executions_correlation_no_match_is_empty(client, sample_event):
+    # FR-AU-22: the Admin UI's "no match" state depends on an empty list, not a 404.
+    client.post("/run-workflow", json={"execution_id": "exec_a", "event": sample_event})
+    assert client.get("/executions", params={"correlation_id": "does-not-exist"}).json() == []
+
+
+def test_list_executions_orders_newest_first(client, sample_event, course_event):
+    # FR-AU-16: ordered by updated_at desc, execution_id desc — exec_b ran last.
+    client.post("/run-workflow", json={"execution_id": "exec_a", "event": sample_event})
+    client.post("/run-workflow", json={"execution_id": "exec_b", "event": course_event})
+    rows = client.get("/executions").json()
+    assert [r["execution_id"] for r in rows] == ["exec_b", "exec_a"]
+
+
 def test_unknown_execution_returns_404(client):
     assert client.get("/executions/nope").status_code == 404
 

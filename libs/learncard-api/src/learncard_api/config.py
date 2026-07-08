@@ -13,7 +13,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class LearnCardSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="LEARNCARD_")
+    # env_file so a consuming service's populated .env is actually read: with
+    # env_prefix alone, pydantic-settings reads only real process env vars and a
+    # populated .env is silently ignored — LEARNCARD_API_TOKEN then defaults to
+    # "", producing an "Authorization: Bearer " request the API rejects.
+    model_config = SettingsConfigDict(
+        env_prefix="LEARNCARD_", env_file=".env", extra="ignore"
+    )
 
     # LearnCloud Network API base. The OpenAPI paths (/send, /profile, ...) are
     # relative to this. Override: LEARNCARD_API_URL.

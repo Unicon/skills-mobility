@@ -65,3 +65,15 @@ def test_request_returns_raw_response_for_bare_string_body() -> None:
         resp = client.request("POST", "/credential/send/@learner", json={"credential": {}})
 
     assert resp.json() == uri
+
+
+def test_settings_read_from_dotenv_file(tmp_path, monkeypatch) -> None:
+    # Regression: a consuming service's populated .env must actually be read.
+    # With env_prefix alone (no env_file) a real .env is silently ignored and
+    # api_token stays "" — producing the rejected "Authorization: Bearer " header.
+    monkeypatch.delenv("LEARNCARD_API_TOKEN", raising=False)
+    monkeypatch.delenv("LEARNCARD_API_URL", raising=False)
+    (tmp_path / ".env").write_text("LEARNCARD_API_TOKEN=real-token-value\n")
+    monkeypatch.chdir(tmp_path)
+
+    assert LearnCardSettings().api_token == "real-token-value"
