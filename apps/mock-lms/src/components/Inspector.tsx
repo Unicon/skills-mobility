@@ -1,6 +1,6 @@
+import { api } from "@skills-mobility/contracts";
+import type { Assignment, CourseWithActions, Module, Outcome, Rubric, Submission } from "@skills-mobility/contracts";
 import { useEffect, useState } from "react";
-import { api } from "../api";
-import type { Assignment, CourseWithActions, Module, Outcome, Rubric, Submission } from "../types";
 
 interface Loaded {
   modules: Module[];
