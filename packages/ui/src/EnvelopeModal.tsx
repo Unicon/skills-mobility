@@ -32,13 +32,15 @@ export function EnvelopeModal({
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button
+              type="button"
               className="iconbtn"
               title="Copy envelope JSON"
+              aria-label="Copy envelope JSON"
               onClick={() => onCopy(JSON.stringify(envelope, null, 2), "envelope")}
             >
               ⧉
             </button>
-            <button className="iconbtn" title="Close" onClick={onClose}>
+            <button type="button" className="iconbtn" title="Close" aria-label="Close" onClick={onClose}>
               ✕
             </button>
           </div>

@@ -30,4 +30,13 @@ describe("highlightJson", () => {
     expect(html).toContain("truncated");
     expect(html.length).toBeLessThan(JSON.stringify(huge).length);
   });
+
+  test("truncates at a line boundary, not mid-token", () => {
+    const huge = { items: Array.from({ length: 5000 }, (_, i) => `item-${i}`) };
+    const html = highlightJson(huge);
+
+    const openSpans = (html.match(/<span/g) ?? []).length;
+    const closeSpans = (html.match(/<\/span>/g) ?? []).length;
+    expect(openSpans).toBe(closeSpans);
+  });
 });

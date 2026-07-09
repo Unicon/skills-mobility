@@ -11,5 +11,8 @@ export function clockTime(iso: string): string {
 }
 
 export async function copy(text: string): Promise<void> {
+  if (!navigator.clipboard) {
+    throw new Error("Clipboard API unavailable");
+  }
   await navigator.clipboard.writeText(text);
 }

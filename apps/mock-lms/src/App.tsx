@@ -41,10 +41,14 @@ export default function App() {
 
   const onCopy = useCallback(
     (text: string, label: string) => {
-      copy(text).then(() => flash(`Copied ${label}`));
+      copy(text)
+        .then(() => flash(`Copied ${label}`))
+        .catch(() => flash(`Copy failed: ${label}`));
     },
     [flash],
   );
+
+  const onCopySuccess = useCallback((label: string) => flash(`Copied ${label}`), [flash]);
 
   const onRun = async (action: ActionView) => {
     if (!active) return;
@@ -81,7 +85,7 @@ export default function App() {
           onRun={onRun}
           lastRun={lastRun}
           onOpenEnvelope={setOpen}
-          onCopy={onCopy}
+          onCopySuccess={onCopySuccess}
         />
       </div>
 

@@ -11,7 +11,13 @@ export function highlightJson(value: unknown): string {
   }
 
   const truncated = json.length > MAX_JSON_CHARS;
-  const source = truncated ? json.slice(0, MAX_JSON_CHARS) : json;
+  let source = json;
+  if (truncated) {
+    // Cut at the last complete line so we never split a token mid-way
+    // (which would otherwise leave a dangling, unescaped quote).
+    const lineBreak = json.lastIndexOf("\n", MAX_JSON_CHARS);
+    source = json.slice(0, lineBreak > 0 ? lineBreak : MAX_JSON_CHARS);
+  }
 
   const escaped = source
     .replace(/&/g, "&amp;")

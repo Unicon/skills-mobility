@@ -10,16 +10,22 @@ export function CopyableId({
   value: string;
   display: string;
   label: string;
-  onCopied?: (text: string, label: string) => void;
+  onCopied?: (label: string) => void;
 }) {
   const [failed, setFailed] = useState(false);
 
   const handleClick = () => {
-    navigator.clipboard
+    const clipboard = navigator.clipboard;
+    if (!clipboard) {
+      setFailed(true);
+      window.setTimeout(() => setFailed(false), 1600);
+      return;
+    }
+    clipboard
       .writeText(value)
       .then(() => {
         setFailed(false);
-        onCopied?.(value, label);
+        onCopied?.(label);
       })
       .catch(() => {
         setFailed(true);
@@ -32,6 +38,7 @@ export function CopyableId({
       type="button"
       className={failed ? "copyable-id copyable-id-failed" : "copyable-id"}
       title={failed ? "Copy failed" : `Copy ${label}`}
+      aria-live="polite"
       onClick={handleClick}
     >
       {failed ? "Copy failed" : display}

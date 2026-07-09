@@ -13,7 +13,7 @@ export function TriggerPanel({
   onRun,
   lastRun,
   onOpenEnvelope,
-  onCopy,
+  onCopySuccess,
 }: {
   course: CourseWithActions | null;
   scope: Scope;
@@ -24,7 +24,7 @@ export function TriggerPanel({
   onRun: (action: ActionView) => void;
   lastRun: RunResult | null;
   onOpenEnvelope: (env: EventEnvelope) => void;
-  onCopy: (text: string, label: string) => void;
+  onCopySuccess: (label: string) => void;
 }) {
   const runAction =
     course && lastRun ? course.actions.find((a) => a.id === lastRun.action_id) : null;
@@ -111,7 +111,7 @@ export function TriggerPanel({
                     value={lastRun.correlation_id}
                     display={shortId(lastRun.correlation_id)}
                     label="correlation id"
-                    onCopied={onCopy}
+                    onCopied={onCopySuccess}
                   />
                 </header>
                 <div className="rows">
