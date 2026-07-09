@@ -1,0 +1,113 @@
+from typing import Any
+
+from field_mapping.contracts import MappingGeneration, MappingRequest, SynthesisRequestEntry
+from field_mapping.validators import validate_generation
+
+_TARGET: dict[str, Any] = {
+    "x-transformation-type": "issuer_payload",
+    "required": ["@context", "type", "issuer", "credentialSubject"],
+}
+
+# A well-formed issuer_payload mapping: all required top-level keys, a real source ref.
+_VALID_JSONATA = (
+    '{ "@context": ["x"], "type": ["y"], "issuer": {"id": "did"}, '
+    '"credentialSubject": {"id": source_payloads.outcome.display_name} }'
+)
+
+
+def _request(**overrides: Any) -> MappingRequest:
+    data: dict[str, Any] = {
+        "execution_id": "exec_1",
+        "event_id": "evt_1",
+        "transformation_type": "issuer_payload",
+        "source_system": "mock_lms",
+        "fetch_profile_id": "skill_mastered.v1",
+        "delivery_target": "learncard_issuer",
+        "synthesis_allowed": True,
+        "source_payloads": {"outcome": {"display_name": "X", "description": "Y"}},
+    }
+    data.update(overrides)
+    return MappingRequest(**data)
+
+
+def _gen(**overrides: Any) -> MappingGeneration:
+    data: dict[str, Any] = {
+        "jsonata": _VALID_JSONATA,
+        "placeholder_ids": [],
+        "synthesis_requests": [],
+        "confidence": 0.9,
+        "rationale": "direct maps only",
+    }
+    data.update(overrides)
+    return MappingGeneration(**data)
+
+
+def test_valid_jsonata_passes_without_execution() -> None:
+    assert validate_generation(_gen(), request=_request(), target_schema=_TARGET) == []
+
+
+def test_parse_gate_rejects_invalid_jsonata() -> None:
+    errors = validate_generation(
+        _gen(jsonata='{ "@context": '), request=_request(), target_schema=_TARGET
+    )
+    assert any("parse" in e for e in errors)
+
+
+def test_placeholder_without_synthesis_request_fails() -> None:
+    errors = validate_generation(
+        _gen(placeholder_ids=["achievement_description"]), request=_request(), target_schema=_TARGET
+    )
+    assert any("no synthesis request" in e for e in errors)
+
+
+def test_orphan_synthesis_request_fails() -> None:
+    entry = SynthesisRequestEntry(
+        placeholder_id="achievement_description",
+        target_path="achievement.description",
+        source_payloads={"outcome": {}},
+        instruction="x",
+    )
+    errors = validate_generation(
+        _gen(synthesis_requests=[entry]), request=_request(), target_schema=_TARGET
+    )
+    assert any("no matching placeholder" in e for e in errors)
+
+
+def test_unknown_source_path_fails() -> None:
+    bad = (
+        '{ "@context": ["x"], "type": ["y"], "issuer": {"id": "d"}, '
+        '"credentialSubject": {"id": source_payloads.nonexistent.field} }'
+    )
+    errors = validate_generation(_gen(jsonata=bad), request=_request(), target_schema=_TARGET)
+    assert any("unknown source" in e for e in errors)
+
+
+def test_output_keys_must_satisfy_target_required_fields() -> None:
+    missing_issuer = '{ "@context": ["x"], "type": ["y"], "credentialSubject": {"id": "d"} }'
+    errors = validate_generation(
+        _gen(jsonata=missing_issuer), request=_request(), target_schema=_TARGET
+    )
+    assert any("issuer" in e for e in errors)
+
+
+def test_synthesis_forbidden_rejects_any_placeholder() -> None:
+    entry = SynthesisRequestEntry(
+        placeholder_id="achievement_description",
+        target_path="achievement.description",
+        source_payloads={"outcome": {}},
+        instruction="x",
+    )
+    errors = validate_generation(
+        _gen(placeholder_ids=["achievement_description"], synthesis_requests=[entry]),
+        request=_request(synthesis_allowed=False),
+        target_schema=_TARGET,
+    )
+    assert any("synthesis_allowed is false" in e for e in errors)
+
+
+def test_missing_confidence_or_rationale_fails() -> None:
+    errors = validate_generation(
+        _gen(confidence=None, rationale=None), request=_request(), target_schema=_TARGET
+    )
+    assert any("confidence" in e for e in errors)
+    assert any("rationale" in e for e in errors)

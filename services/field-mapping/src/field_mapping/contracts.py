@@ -170,3 +170,18 @@ class SynthesisRequestArtifact(BaseModel):
     synthesis_request_schema_version: Literal["v1"] = "v1"
     transformation_type: TransformationType
     requests: list[SynthesisRequestEntry]
+
+
+class MappingGeneration(BaseModel):
+    """The structured model output the LLM/replay adapter returns (§7): the JSONata
+    mapping body, the synthesis requests for any placeholders, and confidence /
+    rationale. ``confidence`` / ``rationale`` are optional here so their absence is
+    a validation failure (FR-FM-14), not a parse crash."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    jsonata: str
+    placeholder_ids: list[str] = Field(default_factory=list)
+    synthesis_requests: list[SynthesisRequestEntry] = Field(default_factory=list)
+    confidence: float | None = None
+    rationale: str | None = None
