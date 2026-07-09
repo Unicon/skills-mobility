@@ -1,5 +1,5 @@
 import type { EventEnvelope } from "@skills-mobility/contracts";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { highlightJson } from "./highlightJson";
 import "./EnvelopeModal.css";
 
@@ -12,13 +12,15 @@ export function EnvelopeModal({
   onClose: () => void;
   onCopy: (text: string, label: string) => void;
 }) {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
     <div className="scrim" onClick={onClose}>
       <motion.div
         className="modal"
-        initial={{ opacity: 0, scale: 0.97, y: 8 }}
+        initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.97, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 400, damping: 32 }}
+        transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 32 }}
         onClick={(e) => e.stopPropagation()}
       >
         <header>

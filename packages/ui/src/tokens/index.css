@@ -1,30 +1,65 @@
+/* Layer 1 — base/primitive: Open Props scales (spacing, sizing, type scale,
+   radii, shadows, easings) + Radix Colors 12-step dark scales (ADR-0018).
+   Radix Colors scopes its dark-scale custom properties to `.dark`/`.dark-theme`
+   (not `:root`) so light/dark themes can coexist — consumers of this file must
+   add `class="dark"` to their root HTML element (both apps here are dark-only,
+   no theme toggle) or these variables resolve to nothing. */
+@import "open-props/sizes";
+@import "open-props/fonts";
+@import "open-props/borders";
+@import "open-props/shadows/dark";
+@import "open-props/easings";
+@import "@radix-ui/colors/gray-dark.css";
+@import "@radix-ui/colors/amber-dark.css";
+@import "@radix-ui/colors/green-dark.css";
+@import "@radix-ui/colors/red-dark.css";
+@import "@radix-ui/colors/cyan-dark.css";
+@import "@radix-ui/colors/purple-dark.css";
+
+/* Layer 2 — semantic: our names, mapped onto the base layer above. Values are
+   the current "mission control" identity re-expressed through Radix Colors'
+   nearest matching step + Open Props' scales; not pixel-identical to the prior
+   hand-rolled hex (ADR-0018: "illustrative of the current look, not fixed"). */
 :root {
-  --bg: #0b0c0e;
-  --bg-2: #0f1114;
-  --panel: #14171b;
-  --panel-2: #181c21;
-  --line: #262b32;
-  --line-bright: #353c45;
+  --bg: var(--gray-1);
+  --bg-2: var(--gray-2);
+  --panel: var(--gray-3);
+  --panel-2: var(--gray-4);
+  --line: var(--gray-5);
+  --line-bright: var(--gray-6);
 
-  --ink: #e9ecef;
-  --ink-dim: #9aa3ad;
-  --ink-faint: #5d666f;
+  --ink: var(--gray-12);
+  --ink-dim: var(--gray-11);
+  --ink-faint: var(--gray-8);
 
-  --gold: #e6b450;
-  --gold-bright: #ffcf6b;
-  --live: #3ddc84;
-  --live-dim: #1f8a55;
+  --gold: var(--amber-9);
+  --gold-bright: var(--amber-10);
+  --live: var(--green-11);
+  --live-dim: var(--green-8);
 
   /* event-type telemetry colors */
-  --evt-skill: #54c7ec;
-  --evt-course: #3ddc84;
-  --evt-badge: #e6b450;
-  --evt-credential: #c98bdb;
-  --danger: #ff6b6b;
+  --evt-skill: var(--cyan-11);
+  --evt-course: var(--live);
+  --evt-badge: var(--gold);
+  --evt-credential: var(--purple-11);
+  --danger: var(--red-9);
 
-  --shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.8);
+  --shadow: var(--shadow-4);
   --glow-gold: 0 0 0 1px rgba(230, 180, 80, 0.35), 0 0 24px -6px rgba(230, 180, 80, 0.5);
 
   --font-display: "Archivo", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Scale aliases (design doc §6) — the contract consumers use instead of
+     literal values. `--radius-*` needs no alias: Open Props already exports it
+     under that exact name (borders.min.css, imported above). Not yet consumed
+     by the pre-existing hand-authored CSS in apps/mock-lms (out of scope for
+     this migration); available for new work. */
+  --space-1: var(--size-1);
+  --space-2: var(--size-2);
+  --space-3: var(--size-3);
+  --space-4: var(--size-4);
+  --text-1: var(--font-size-0);
+  --text-2: var(--font-size-1);
+  --text-3: var(--font-size-2);
 }

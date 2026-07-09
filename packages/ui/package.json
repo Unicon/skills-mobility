@@ -16,8 +16,10 @@
     "react-dom": "^19"
   },
   "dependencies": {
+    "@radix-ui/colors": "^3.0.0",
     "@skills-mobility/contracts": "*",
-    "motion": "^11.11.0"
+    "motion": "^11.11.0",
+    "open-props": "^1.7.23"
   },
   "devDependencies": {
     "@testing-library/react": "^16.0.1",
