@@ -7,10 +7,11 @@ seam reads — see ``orchestrator.actions._generate_payload_mapping``.
 
 from __future__ import annotations
 
+import re
 from enum import StrEnum
 from typing import Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class TransformationType(StrEnum):
@@ -102,3 +103,70 @@ class MappingResponse(BaseModel):
             requires_synthesis=False,
             llm_invocation_log_ref=llm_invocation_log_ref,
         )
+
+
+# --- Stored artifacts (§2) ---
+
+_CAMEL_BOUNDARY = re.compile(r"(?<!^)(?=[A-Z])")
+
+
+def placeholder_id_from_path(target_path: str) -> str:
+    """Derive a snake_case ``placeholder_id`` from a target field path (§2).
+
+    Example: ``achievement.description`` -> ``achievement_description``. A leading
+    ``credentialSubject`` segment is implicit in the id (the design's own example
+    maps ``credentialSubject.achievement.description`` -> ``achievement_description``).
+    """
+    segments = [s for s in target_path.split(".") if s]
+    if segments and segments[0] == "credentialSubject":
+        segments = segments[1:]
+    return "_".join(_CAMEL_BOUNDARY.sub("_", s).lower() for s in segments)
+
+
+class MappingArtifact(BaseModel):
+    """§2 stored mapping artifact: ready-to-run JSONata for one transformation
+    target, plus the ids of any synthesis-backed fields."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    mapping_artifact_schema_version: Literal["v1"] = "v1"
+    transformation_type: TransformationType
+    source_system: str
+    fetch_profile_id: str
+    delivery_target: DeliveryTarget | None = None
+    target_schema_ref: str
+    jsonata: str
+    placeholder_ids: list[str] = Field(default_factory=list)
+
+
+class SynthesisRequestEntry(BaseModel):
+    """One placeholder's synthesis instruction. At least one of
+    ``source_payload_paths`` / ``source_payloads`` must be present; when both are,
+    ``source_payloads`` is the concrete snapshot of the referenced values (§2)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    placeholder_id: str
+    target_path: str
+    source_payload_paths: list[str] | None = None
+    source_payloads: dict[str, Any] | None = None
+    instruction: str
+
+    @model_validator(mode="after")
+    def _require_a_source_representation(self) -> Self:
+        if not self.source_payload_paths and self.source_payloads is None:
+            raise ValueError(
+                "synthesis request needs source_payload_paths or a source_payloads snapshot"
+            )
+        return self
+
+
+class SynthesisRequestArtifact(BaseModel):
+    """§2 stored synthesis-request artifact — what Field Synthesis needs per
+    placeholder, kept out of the compact mapping artifact."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    synthesis_request_schema_version: Literal["v1"] = "v1"
+    transformation_type: TransformationType
+    requests: list[SynthesisRequestEntry]
