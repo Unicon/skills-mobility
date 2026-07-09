@@ -32,13 +32,15 @@ class FailedArtifactError(Exception):
         super().__init__("; ".join(validation_errors) or "artifact generation failed")
 
 
-def _key(
+def stable_key(
     *,
     source_system: str,
     fetch_profile_id: str,
     transformation_type: TransformationType,
     delivery_target: DeliveryTarget | None,
 ) -> str:
+    """The stable artifact id shared by a request's mapping, synthesis-request, and
+    invocation-log records (§17)."""
     parts = [source_system, fetch_profile_id, str(transformation_type)]
     if delivery_target is not None:
         parts.append(str(delivery_target))
@@ -61,7 +63,7 @@ class ArtifactStore:
     # --- mapping artifacts ---
 
     def store_mapping(self, artifact: MappingArtifact) -> str:
-        key = _key(
+        key = stable_key(
             source_system=artifact.source_system,
             fetch_profile_id=artifact.fetch_profile_id,
             transformation_type=artifact.transformation_type,
@@ -80,7 +82,7 @@ class ArtifactStore:
         delivery_target: DeliveryTarget | None,
         validation_errors: list[str],
     ) -> str:
-        key = _key(
+        key = stable_key(
             source_system=source_system,
             fetch_profile_id=fetch_profile_id,
             transformation_type=transformation_type,
@@ -110,6 +112,11 @@ class ArtifactStore:
         if record["status"] != "succeeded":
             raise FailedArtifactError(list(record.get("validation_errors", [])))
         return SynthesisRequestArtifact(**record["artifact"])
+
+    # --- invocation log (§14) ---
+
+    def store_invocation_log(self, record: dict[str, Any], *, key: str) -> str:
+        return self._write("llmcall", key, record)
 
     def _read(self, ref: str) -> dict[str, Any]:
         kind, key = ref.split(":", 1)

@@ -4,10 +4,15 @@ version = "0.1.0"
 description = "Field Mapping LLM Decision Service — generates JSONata transformation mappings (Skills Mobility POC)"
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi>=0.115",
     "pydantic>=2.7",
     "pydantic-settings>=2.4",
+    "uvicorn>=0.30",
     "jsonata-python>=0.5",
 ]
+
+[project.scripts]
+field-mapping = "field_mapping.api:run"
 
 [build-system]
 requires = ["hatchling"]
