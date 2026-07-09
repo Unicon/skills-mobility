@@ -20,5 +20,16 @@
     "module_pages": "module_pages",
     "canvas_user": "canvas_user",
     "submission": "submission"
-  }
+  },
+  "required_aliases": [
+    "outcome",
+    "assignment",
+    "module_context",
+    "canvas_user",
+    "submission"
+  ],
+  "conditional_aliases": [
+    "rubric",
+    "module_pages"
+  ]
 }
