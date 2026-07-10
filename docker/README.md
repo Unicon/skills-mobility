@@ -91,7 +91,7 @@ the workspace via `uv sync --frozen`, which needs their `uv.lock` members).
 The `field-mapping` service runs in **bedrock** mode (live Amazon Bedrock, Claude
 Haiku 4.5) and needs AWS credentials in the container. Startup is AWS-free (the
 Bedrock client is created lazily), so it comes up healthy without them — but
-`POST :8300/map` needs short-lived creds. Export them into the gitignored `.env`
+`POST :8120/map` needs short-lived creds. Export them into the gitignored `.env`
 before `up` (they expire, so refresh as needed):
 
 ```
@@ -100,9 +100,9 @@ aws configure export-credentials --profile <profile> --format env-no-export >> .
 ```
 
 The compose file reads `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` /
-`AWS_SESSION_TOKEN` from `.env`. This service is **standalone** — smoke-test it
-directly (`POST :8300/map`); it is not yet wired into the orchestrator flow
-(build item 8).
+`AWS_SESSION_TOKEN` from `.env`. The orchestrator calls it at the mapping steps
+(`ORCHESTRATOR_FIELD_MAPPING_URL`, best-effort — obv3 still delivers, build
+item 8); it is also smoke-testable directly (`POST :8120/map`).
 
 ## Not included
 
