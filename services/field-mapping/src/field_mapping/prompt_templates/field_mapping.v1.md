@@ -25,6 +25,12 @@ supporting metadata. For every target field, choose exactly one outcome:
 - Output must be valid, machine-executable JSONata that constructs the target
   object. Direct fields use `source_payloads.*`; synthesis-backed fields use
   `synthesized.*`. No sentinel values.
+- Emit **raw JSONata operators — never HTML entities**. Use `&` for string
+  concatenation (not `&amp;`), and `<` / `>` directly. The output is parsed as
+  JSONata, not HTML.
+- This is **JSONata, not JavaScript**. Regex literals allow only the `i` and `m`
+  flags — never `g` (JSONata `$replace` with a regex already replaces every
+  match). Use JSONata functions (`$replace`, `$lowercase`, `$substring`, …).
 - `placeholder_ids` and `synthesis_requests` must correspond one-to-one.
 - If `synthesis_allowed` is `false`, you MUST NOT classify any field as synthesis:
   every field is direct or resolves via the target's no-mapping behavior. Produce
