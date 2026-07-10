@@ -17,6 +17,7 @@ from orchestrator.clients import (
     ContextBuilderClient,
     DeliveryRouterClient,
     EnvelopeContext,
+    FieldMappingClient,
     ProfileResolverClient,
 )
 from orchestrator.executor import execute_plan
@@ -33,6 +34,7 @@ def run_workflow(
     context_builder: ContextBuilderClient,
     profile_resolver: ProfileResolverClient,
     delivery_router: DeliveryRouterClient,
+    field_mapping: FieldMappingClient,
     issuer_id: str,
     delivery_config_ref: str,
     reusable_plan_lookup: bool = False,
@@ -100,6 +102,7 @@ def run_workflow(
     deps = ActionDeps(
         profile_resolver=profile_resolver,
         delivery_router=delivery_router,
+        field_mapping=field_mapping,
         issuer_id=issuer_id,
         envelope=envelope,
     )

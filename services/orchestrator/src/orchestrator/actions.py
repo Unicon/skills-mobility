@@ -12,18 +12,27 @@ without reshaping the plan or executor — see the seam notes on each.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
 from orchestrator import obv3
-from orchestrator.clients import DeliveryRouterClient, EnvelopeContext, ProfileResolverClient
+from orchestrator.clients import (
+    DeliveryRouterClient,
+    EnvelopeContext,
+    FieldMappingClient,
+    ProfileResolverClient,
+)
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
 class ActionDeps:
     profile_resolver: ProfileResolverClient
     delivery_router: DeliveryRouterClient
+    field_mapping: FieldMappingClient
     issuer_id: str
     envelope: EnvelopeContext
 
@@ -37,35 +46,62 @@ def _resolve_learncard_profile(inputs: dict[str, Any], deps: ActionDeps) -> dict
     )
 
 
-def _generate_payload_mapping(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
-    """Field Mapping seam (#27). Returns the §10 response envelope; the Phase-1
-    stub returns the same shape with null artifact refs. ``transformation_type``
-    and ``delivery_target`` arrive as independent plan literals (#27 §4) — the stub
-    derives neither from the other; the real service uses them to resolve its
-    source/target catalogs.
+_DEGRADED_MAPPING = {
+    "status": "succeeded",
+    "mapping_artifact_ref": None,
+    "synthesis_request_ref": None,
+    "requires_synthesis": False,
+    "llm_invocation_log_ref": None,
+}
 
-    ``requires_synthesis`` is derived, never asserted (#27 §10):
-    ``synthesis_allowed and placeholder_ids and synthesis_request_ref is not None``.
-    The stub maps every field directly, so it has no placeholders and no synthesis
-    request — the result is always ``False``, honoring the §6 gate for either
-    ``synthesis_allowed`` value.
 
-    TODO(#27): when the real service lands, send ``source_payloads`` +
-    ``fetch_profile_id`` and return the real ``mapping_artifact_ref`` /
-    ``synthesis_request_ref`` / ``llm_invocation_log_ref``."""
-    synthesis_allowed = bool(inputs.get("synthesis_allowed", False))
-    placeholder_ids: list[str] = []  # Phase-1 stub maps every field directly
-    synthesis_request_ref: str | None = None
-    requires_synthesis = (
-        synthesis_allowed and bool(placeholder_ids) and synthesis_request_ref is not None
-    )
-    return {
-        "status": "succeeded",
-        "mapping_artifact_ref": None,
-        "synthesis_request_ref": synthesis_request_ref,
-        "requires_synthesis": requires_synthesis,
-        "llm_invocation_log_ref": None,
+def _mapping_source_payloads(inputs: dict[str, Any]) -> dict[str, Any]:
+    """Assemble the phase's source_payloads for the Field Mapping request (#27 §4).
+    Aliases settled on #33: `profile_resolution` (recipient/issuer ids) plus, for
+    the issuer phase, the Context Builder source_data; for the wallet phase, the
+    issued badge."""
+    profile = inputs.get("resolved_profile", {})
+    profile_resolution = {
+        "recipient_did": profile.get("did"),
+        "recipient_profile_id": profile.get("profile_id"),
+        "issuer_id": inputs.get("issuer_id"),
     }
+    if inputs.get("transformation_type") == "wallet_payload":
+        issued = inputs.get("issued", {})
+        signed = (issued.get("result") or {}).get("issued_credential", {})
+        return {"issued_badge": signed, "profile_resolution": profile_resolution}
+    source_data = (inputs.get("bundle") or {}).get("source_data", {})
+    return {**source_data, "profile_resolution": profile_resolution}
+
+
+def _generate_payload_mapping(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
+    """Field Mapping seam (#27). Calls the Field Mapping service (or the Phase-1
+    stub when no URL is configured) and returns its §10 response envelope.
+    ``transformation_type`` / ``delivery_target`` are independent plan literals
+    (#27 §4); ``requires_synthesis`` is derived by the service, never asserted here.
+
+    Best-effort (build item 8): the deterministic obv3 stand-in still produces the
+    delivered payload, so a Field Mapping failure must NOT fail the workflow — we
+    log it and return a non-fatal succeeded/null-refs envelope. Wiring the mapping
+    artifact into delivery needs the Transformation Executor + Field Synthesis
+    (not yet built)."""
+    request = {
+        "transformation_type": inputs.get("transformation_type"),
+        "delivery_target": inputs.get("delivery_target"),
+        "synthesis_allowed": bool(inputs.get("synthesis_allowed", False)),
+        "source_system": inputs.get("source_system", "mock_lms"),
+        "fetch_profile_id": inputs.get("fetch_profile_id", "skill_mastered.v1"),
+        "source_payloads": _mapping_source_payloads(inputs),
+    }
+    try:
+        result = deps.field_mapping.map(request, deps.envelope, "generate_payload_mapping")
+    except Exception as err:
+        logger.warning("field mapping call failed (non-fatal; obv3 stand-in delivers): %s", err)
+        return dict(_DEGRADED_MAPPING)
+    if result.get("status") != "succeeded":
+        logger.warning("field mapping returned failed (non-fatal): %s", result.get("status"))
+        return dict(_DEGRADED_MAPPING)
+    return result
 
 
 def _generate_field_synthesis(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:

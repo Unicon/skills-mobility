@@ -8,7 +8,12 @@ import logging
 from typing import Any
 
 from orchestrator import engine, planner
-from orchestrator.clients import StubContextBuilder, StubDeliveryRouter, StubProfileResolver
+from orchestrator.clients import (
+    StubContextBuilder,
+    StubDeliveryRouter,
+    StubFieldMapping,
+    StubProfileResolver,
+)
 from orchestrator.schemas import (
     DeliveryPhasePlan,
     InputBinding,
@@ -27,6 +32,7 @@ def _run(event, *, store, reusable=False, execution_id="e1", context_builder=Non
         context_builder=context_builder or StubContextBuilder(),
         profile_resolver=StubProfileResolver(),
         delivery_router=StubDeliveryRouter(),
+        field_mapping=StubFieldMapping(),
         issuer_id="did:web:issuer.example",
         delivery_config_ref="cfg",
         reusable_plan_lookup=reusable,
