@@ -71,15 +71,21 @@ uv run pytest services/mock-lms        # one package
 uv run pytest services/mock-lms/tests/test_emit_api.py::test_emit_single_skill_mastered  # one test
 uv run ruff check .                    # lint (fix: ruff check . --fix)
 uv run mypy libs/*/src services/*/src  # type-check (strict)
-uv run mock-lms                        # run the mock LMS service (http://127.0.0.1:8000, docs at /docs)
 uv run mock-lms-generate               # regenerate committed fixtures (seeded)
+
+# The three backends chain together (Mock LMS -> Event Consumer -> Orchestrator);
+# each hop is opt-in via env var, so start them in this order for events to flow:
+uv run orchestrator                                                          # :8400, docs at /docs
+EVENT_CONSUMER_ORCHESTRATOR_URL=http://127.0.0.1:8400 uv run event-consumer  # :8200, docs at /docs
+MOCK_LMS_EVENT_CONSUMER_URL=http://127.0.0.1:8200 uv run mock-lms           # :8000, docs at /docs
 
 # React UI (npm workspace, ADR-0020) — install once from the repo root
 npm install
 npm run dev -w apps/mock-lms           # http://localhost:5173 (proxies /api,/demo to backend :8000)
+npm run dev -w apps/admin              # http://localhost:5174 (proxies /executions,/healthz to backend :8400)
 npm run build -w apps/mock-lms         # tsc --noEmit + vite build
 npm run typecheck                      # fans out across all workspace members
-npm run test -w packages/contracts -w packages/ui   # vitest for the shared packages
+npm run test -w apps/admin -w packages/contracts -w packages/ui   # vitest for admin + the shared packages
 ```
 
 CDK/infra tooling is not set up yet.
@@ -104,11 +110,14 @@ Mock data follows **generate → capture → commit → replay**: a seeded gener
 ```
 apps/        # deployable React/TS SPAs (may depend on packages/, never on services/)
   mock-lms/  # presenter-facing demo console
+  admin/     # read-only observability console over the Orchestrator
 libs/        # shared Python libraries reused by services (must not depend on apps/ or services/)
   events/    # shared event contracts
 services/    # deployable backend services (may depend on libs/; not on each other directly)
-  mock-lms/  # Canvas-style mock LMS APIs + event emission + SSE
-packages/    # shared TS / cross-stack packages (generated clients, contracts) — not yet populated
+  mock-lms/        # Canvas-style mock LMS APIs + event emission + SSE
+  event-consumer/  # workflow ingress boundary: validates + hands off to the Orchestrator
+  orchestrator/    # Phase-1 constrained plan executor
+packages/    # shared TS / cross-stack packages: contracts/ (shared types + API clients), ui/ (tokens + primitives)
 infra/       # IaC / deployment (CDK) — not yet populated
 docs/        # docs by lifecycle phase (1_product, 2_requirements, 3_design, 4_operations) + decisions/ (ADRs)
 ```
