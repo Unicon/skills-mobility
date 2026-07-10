@@ -58,4 +58,6 @@ def run() -> None:
 
     settings = get_settings()
     logging.basicConfig(level=settings.log_level)
-    uvicorn.run(create_app(), host="0.0.0.0", port=8300)
+    # 8120 (enablement layer, near context-builder's 8100) — outside Consul's
+    # reserved range 8300-8302/8500/8600 (see #61).
+    uvicorn.run(create_app(), host="0.0.0.0", port=8120)
