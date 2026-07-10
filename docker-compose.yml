@@ -63,6 +63,27 @@ services:
       timeout: 3s
       retries: 5
 
+  # Field Mapping LLM Decision Service (live Bedrock). Standalone for now — not yet
+  # wired into the orchestrator flow (that is build item 8). Smoke-test directly via
+  # POST :8300/map. AWS creds are short-lived (aws configure export-credentials into
+  # the gitignored .env); startup is AWS-free (the Bedrock client is created lazily).
+  field-mapping:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('field_mapping.api:create_app', factory=True, host='0.0.0.0', port=8300)"]
+    environment:
+      FIELD_MAPPING_MODE: bedrock
+      FIELD_MAPPING_MODEL_ID: ${FIELD_MAPPING_MODEL_ID:-us.anthropic.claude-haiku-4-5-20251001-v1:0}
+      FIELD_MAPPING_AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+    ports: ["8300:8300"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8300/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   orchestrator:
     <<: *python
     command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('orchestrator.app:create_app', factory=True, host='0.0.0.0', port=8400)"]

@@ -86,6 +86,24 @@ wiring (#58) + demo-recipient resolution (#59). Until then `docker compose confi
 validates, but `up --build` needs those merged (the shared Python image installs
 the workspace via `uv sync --frozen`, which needs their `uv.lock` members).
 
+## Field Mapping (live Bedrock)
+
+The `field-mapping` service runs in **bedrock** mode (live Amazon Bedrock, Claude
+Haiku 4.5) and needs AWS credentials in the container. Startup is AWS-free (the
+Bedrock client is created lazily), so it comes up healthy without them — but
+`POST :8300/map` needs short-lived creds. Export them into the gitignored `.env`
+before `up` (they expire, so refresh as needed):
+
+```
+aws sso login --profile <profile>
+aws configure export-credentials --profile <profile> --format env-no-export >> .env
+```
+
+The compose file reads `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` /
+`AWS_SESSION_TOKEN` from `.env`. This service is **standalone** — smoke-test it
+directly (`POST :8300/map`); it is not yet wired into the orchestrator flow
+(build item 8).
+
 ## Not included
 
 The mock-lms React UI runs separately (`cd apps/mock-lms && npm run dev`) — this
