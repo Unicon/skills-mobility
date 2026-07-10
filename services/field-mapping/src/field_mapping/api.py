@@ -8,6 +8,7 @@ from pathlib import Path
 from fastapi import FastAPI
 
 from .artifact_store import ArtifactStore
+from .bedrock_adapter import BedrockAdapter
 from .catalog_store import CatalogStore
 from .config import Settings, get_settings
 from .contracts import MappingRequest, MappingResponse
@@ -18,11 +19,16 @@ from .service import MappingService
 
 def build_service(settings: Settings, *, adapter: LLMAdapter | None = None) -> MappingService:
     if adapter is None:
-        if settings.mode != "replay":
-            raise NotImplementedError(
-                f"adapter mode '{settings.mode}' is not implemented yet (only 'replay')"
+        if settings.mode == "replay":
+            adapter = ReplayAdapter()
+        elif settings.mode == "bedrock":
+            adapter = BedrockAdapter(
+                model_id=settings.model_id,
+                region=settings.aws_region,
+                max_tokens=settings.max_tokens,
             )
-        adapter = ReplayAdapter()
+        else:
+            raise ValueError(f"unknown adapter mode '{settings.mode}' (expected replay|bedrock)")
     return MappingService(
         catalog_store=CatalogStore(),
         artifact_store=ArtifactStore(Path(settings.artifact_dir)),

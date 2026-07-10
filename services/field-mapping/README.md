@@ -13,8 +13,10 @@ The LLM sits behind an adapter boundary (`llm_adapter.LLMAdapter`). Two implemen
 
 - **replay** (`replay_adapter.ReplayAdapter`, default) — returns committed canonical
   fixtures, so tests and local runs need **no Bedrock / AWS access** (ADR-0013).
-- **bedrock** — live Amazon Bedrock (ADR-0010) — **not implemented yet** (build-order
-  item 7).
+- **bedrock** — live Amazon Bedrock via the Converse API (ADR-0010): a thin provider
+  adapter, schema-constrained structured output via forced tool use, temperature 0.
+  Source payloads are screened for prompt injection first (FR-FM-27b). Set
+  `FIELD_MAPPING_MODE=bedrock`; credentials come from the normal AWS SDK chain.
 
 Validation (`validators.validate_generation`) is a set of **hard Layer-A gates**
 (ADR-0013): a structurally valid model response is never a success on its own. The
@@ -47,7 +49,7 @@ Configuration is env-driven (`FIELD_MAPPING_` prefix); see `.env.example`.
 ## Build-order status (design §16)
 
 Done: contracts, artifacts + store, catalogs, catalog/payload loading, validation,
-replay adapter + service + API. **Deferred:** the Bedrock provider adapter +
-prompts (item 7), orchestrator wiring (item 8, PR #33), and live evaluation +
-DeepEval Layer B (item 9). `credential_template` / `smart_resume` catalogs are also
-deferred (out of the Phase-1 path).
+replay adapter + service + API (items 1–6), and the Bedrock provider adapter +
+prompts + injection screen (item 7). **Deferred:** orchestrator wiring (item 8,
+PR #33) and live evaluation + DeepEval Layer B (item 9). `credential_template` /
+`smart_resume` catalogs are also deferred (out of the Phase-1 path).
