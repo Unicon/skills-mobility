@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@radix-ui/colors": "^3.0.0",
+    "@radix-ui/react-dialog": "^1.1.2",
     "@skills-mobility/contracts": "*",
     "motion": "^11.11.0",
     "open-props": "^1.7.23"
