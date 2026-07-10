@@ -1,0 +1,35 @@
+{
+  "source_system": "mock_lms",
+  "fetch_profile_id": "skill_mastered.v1",
+  "event_type": "skill_mastered",
+  "description": "Resources the deterministic Context Builder skill_mastered.v1 profile fetches. Each resource has a source-resource catalog under ../../sources/mock_lms/. The alias is the key the resource's data appears under in the source_payloads envelope (the Context Builder output_key).",
+  "resources": [
+    "outcome",
+    "assignment",
+    "rubric",
+    "module_context",
+    "module_pages",
+    "canvas_user",
+    "submission"
+  ],
+  "payload_aliases": {
+    "outcome": "outcome",
+    "assignment": "assignment",
+    "rubric": "rubric",
+    "module_context": "module_context",
+    "module_pages": "module_pages",
+    "canvas_user": "canvas_user",
+    "submission": "submission"
+  },
+  "required_aliases": [
+    "outcome",
+    "assignment",
+    "module_context",
+    "canvas_user",
+    "submission"
+  ],
+  "conditional_aliases": [
+    "rubric",
+    "module_pages"
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS Rubric (Canvas-style)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "Rubric": {
+        "type": "object",
+        "description": "A Canvas rubric with criteria and ratings (conditional on the assignment carrying a rubric_id).",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "rubric",
+        "required": ["id", "course_id", "title"],
+        "properties": {
+          "id": { "type": "string", "description": "Global rubric id.", "examples": ["RUB1"] },
+          "course_id": { "type": "string", "description": "Course containing the rubric.", "examples": ["ACCY-111"] },
+          "assignment_id": { "type": ["string", "null"], "description": "Associated assignment.", "examples": ["ASG1"] },
+          "title": { "type": "string", "description": "Rubric title.", "examples": ["Rubric for Final Project"] },
+          "criteria": {
+            "type": "array",
+            "description": "Scoring criteria.",
+            "items": {
+              "type": "object",
+              "required": ["id", "description", "points"],
+              "properties": {
+                "id": { "type": "string", "description": "Criterion id.", "examples": ["CRIT1"] },
+                "description": { "type": "string", "description": "Criterion description.", "examples": ["Demonstrates mastery"] },
+                "points": { "type": "number", "description": "Points for this criterion.", "examples": [10.0] },
+                "ratings": {
+                  "type": "array",
+                  "description": "Rating levels for the criterion.",
+                  "items": {
+                    "type": "object",
+                    "required": ["description", "points"],
+                    "properties": {
+                      "description": { "type": "string", "description": "Rating description.", "examples": ["Excellent work"] },
+                      "points": { "type": "number", "description": "Rating points.", "examples": [10.0] }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

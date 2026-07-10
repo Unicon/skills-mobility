@@ -1,0 +1,29 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "LearnCard Wallet — delivery payload (wallet_payload)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "WalletDeliveryPayload": {
+        "type": "object",
+        "description": "The wallet-delivery payload: the resolved recipient plus the already-signed credential sent to the LearnCloud POST /credential/send/{profileId} endpoint. synthesis_allowed is false for this phase (no Field Synthesis step provisioned).",
+        "x-transformation-type": "wallet_payload",
+        "x-delivery-target": "learncard_wallet",
+        "required": ["recipient_profile_id", "signed_credential"],
+        "properties": {
+          "recipient_profile_id": {
+            "type": "string",
+            "description": "LearnCard recipient profile id resolved upstream by the Profile Resolver (case-sensitive).",
+            "x-no-mapping-behavior": "disallowed",
+            "examples": ["smi-demo-learner"]
+          },
+          "signed_credential": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "The complete signed OBv3 credential from the Issuer Adapter, passed through verbatim as the LearnCloud `credential` body.",
+            "x-no-mapping-behavior": "disallowed"
+          }
+        }
+      }
+    }
+  }
+}
