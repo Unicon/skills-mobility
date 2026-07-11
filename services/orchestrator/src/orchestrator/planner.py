@@ -69,7 +69,10 @@ def _phase1_steps() -> list[PlanStep]:
             1,
             "resolve_learncard_profile",
             {
-                "learner_id_type": InputBinding(source="literal", value="email"),
+                # Resolve by LearnCard handle, not email: LearnCard Search doesn't
+                # match email and services can't create profiles, so the POC delivers
+                # to a fixed pre-provisioned recipient wallet (ADR-0020, #41).
+                "learner_id_type": InputBinding(source="literal", value="profile_id"),
                 "learner_id_value": InputBinding(source="workflow", path="learner_id_value"),
                 "delivery_config_ref": InputBinding(source="workflow", path="delivery_config_ref"),
             },

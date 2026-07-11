@@ -118,3 +118,25 @@ def test_unknown_execution_returns_404(client):
 
 def test_healthz(client):
     assert client.get("/healthz").json()["status"] == "ok"
+
+
+def test_settings_load_from_service_dotenv_regardless_of_cwd(tmp_path, monkeypatch):
+    # The service .env must load even when the process runs from a different CWD than
+    # the service dir (the repo-root-vs-service-dir bug). Covers a normal-prefixed var
+    # and a LEARNCARD_-aliased one. A bare env_file=".env" would fail from tmp_path.
+    from orchestrator.config import ENV_FILE
+
+    for var in ("ORCHESTRATOR_DB_PATH", "LEARNCARD_DEMO_RECIPIENT_PROFILE_ID"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.chdir(tmp_path)  # a CWD that is NOT the service dir
+    original = ENV_FILE.read_text() if ENV_FILE.exists() else None
+    ENV_FILE.write_text("ORCHESTRATOR_DB_PATH=:memory:\nLEARNCARD_DEMO_RECIPIENT_PROFILE_ID=@demo\n")
+    try:
+        s = Settings()
+        assert s.db_path == ":memory:"
+        assert s.demo_recipient_profile_id == "@demo"  # validation_alias, LEARNCARD_-prefixed
+    finally:
+        if original is None:
+            ENV_FILE.unlink()
+        else:
+            ENV_FILE.write_text(original)

@@ -79,6 +79,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             delivery_router=app.state.delivery_router,
             issuer_id=settings.issuer_id,
             delivery_config_ref=settings.delivery_config_ref,
+            recipient_profile_id=settings.demo_recipient_profile_id,
             reusable_plan_lookup=app.state.reusable_plan_lookup_enabled,
         )
         return metadata.model_dump()
