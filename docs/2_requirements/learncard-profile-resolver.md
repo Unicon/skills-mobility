@@ -10,7 +10,7 @@ The **LearnCard Profile Resolver** is a standalone Lambda invoked by the Orchest
 
 Both the LearnCard Issuer Adapter and the LearnCard Wallet Adapter require a resolved LearnCard `profileId` before they can operate: the Issuer Adapter needs the recipient's LearnCard-derived DID to embed in `credentialSubject.id`, and the Wallet Adapter needs the `profileId` to target `POST /credential/send/{profileId}`. The Profile Resolver eliminates this shared dependency by resolving it once as a discrete orchestration step, storing the result in the execution context so downstream adapters can consume it without re-resolving.
 
-The incoming learner identifier from the upstream system will typically be an email address or LMS user ID rather than a LearnCard-specific profile handle. The resolver bridges that gap through a three-stage flow: check the resolver's mapping store, search the LearnCard network, and create a profile if no match is found.
+The incoming learner identifier from the upstream system will typically be an email address or LMS user ID rather than a LearnCard-specific profile handle. The resolver bridges that gap through a two-stage flow: check the resolver's mapping store, then search the LearnCard network. If no match is found the learner resolves to `unresolved` — creating a profile is not a service operation in LearnCard (#41 finding), so there is no create stage.
 
 ## 2. Scope
 
@@ -39,7 +39,7 @@ The resolver returns a normalized result that includes at minimum:
 - success or failure status,
 - the resolved LearnCard `profileId` when resolution succeeds,
 - the resolved LearnCard DID when available,
-- the resolution method (`stored` / `searched` / `created`), and
+- the resolution method (`stored` / `searched` / `unresolved`), and
 - structured error information when resolution fails.
 
 ## 4. Functional Requirements
@@ -49,10 +49,10 @@ The resolver returns a normalized result that includes at minimum:
 - **FR-LPR-3** The LearnCard Profile Resolver SHALL validate its required invocation fields before attempting resolution.
 - **FR-LPR-4** The LearnCard Profile Resolver SHALL check a persistent mapping store for a previously resolved `profileId` keyed on the learner identifier before making any external LearnCard API calls.
 - **FR-LPR-5** The LearnCard Profile Resolver SHALL call the LearnCard Search Profiles API using the learner identifier if no stored mapping exists. **The exact behavior and supported input fields of this endpoint are not yet verified — implementation MUST test this endpoint against a live LearnCard dev environment before depending on it for email-based or identifier-based lookup.**
-- **FR-LPR-6** The LearnCard Profile Resolver SHALL call the LearnCard Create Profile API to create a new profile for the learner if no profile is found via the search step.
-- **FR-LPR-7** The LearnCard Profile Resolver SHALL persist the resolved or newly created `profileId` and DID in the mapping store so subsequent steps and future invocations can reuse them without re-resolving.
+- **FR-LPR-6** The LearnCard Profile Resolver SHALL return `unresolved` when no profile is found via the search step. It SHALL NOT attempt to create a LearnCard profile: creating a learner's profile is not a service operation in LearnCard (#41 finding).
+- **FR-LPR-7** The LearnCard Profile Resolver SHALL persist the resolved `profileId` and DID in the mapping store so subsequent steps and future invocations can reuse them without re-resolving.
 - **FR-LPR-8** The LearnCard Profile Resolver SHALL authenticate to the LearnCard API using a scoped API token obtained from an AuthGrant-based flow, keeping credentials out of source control and committed artifacts.
-- **FR-LPR-9** The LearnCard Profile Resolver SHALL return the resolution method alongside the resolved `profileId` so the Orchestrator can distinguish a cached result from a freshly searched or created profile.
+- **FR-LPR-9** The LearnCard Profile Resolver SHALL return the resolution method alongside the resolved `profileId` so the Orchestrator can distinguish a cached result from a freshly searched one.
 - **FR-LPR-10** The LearnCard Profile Resolver SHALL return errors in a structured form that allows the Orchestrator to distinguish failure from success and preserve auditability.
 - **FR-LPR-11** The LearnCard Profile Resolver SHALL attach or preserve workflow, execution, step, and correlation identifiers in its logs and result records.
 - **FR-LPR-12** The LearnCard Profile Resolver SHALL NOT own credential issuance, wallet delivery, delivery routing, business-policy enforcement, or workflow planning.
