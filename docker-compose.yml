@@ -25,9 +25,11 @@ services:
     environment:
       MOCK_LMS_EVENT_CONSUMER_URL: http://event-consumer:8200
     ports: ["8000:8000"]
-    depends_on:
-      event-consumer:
-        condition: service_healthy
+    # No depends_on event-consumer: mock-lms only calls it at *trigger* time (the
+    # async emit), not at startup, and gating it here would close a startup cycle
+    # (context-builder -> mock-lms -> event-consumer -> orchestrator ->
+    # context-builder). The synchronous read path (context-builder -> mock-lms) is
+    # the one gated instead.
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz')"]
       interval: 10s
