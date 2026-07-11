@@ -100,8 +100,8 @@ The AuthGrant docs define scopes with the pattern `{resource}:{action}` and list
 
 - `api/` — internal wallet-delivery endpoint
 - `schemas/` — request and response models
-- `learncard_api/` — thin client for the LearnCloud Network API delivery path the project adopts; uses bearer-token auth supplied by `libs/learncard-api`
-- `config/` — environment/config resolution for API base URLs; bearer-token acquisition is delegated to `libs/learncard-api`
+- `delivery/` — performs the LearnCloud Network wallet-delivery call using the shared `LearnCardClient` (from `libs/learncard-api`); there is no local API-client module of its own
+- `config/` — service settings (port, log level) and the anchored `.env` path passed to `LearnCardSettings`; the base URL + bearer come from the shared `libs/learncard-api`
 - `resultmap/` — normalize LearnCard API responses and errors
 
 The adapter should not contain generic routing logic or business-policy evaluation.
