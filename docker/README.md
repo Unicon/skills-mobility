@@ -56,12 +56,13 @@ fixed demo wallets from committed non-secret labels and emits the tokens/seed:
 
 - `LEARNCARD_API_TOKEN` — sender bearer for profile-resolver + wallet-adapter.
 - `LEARNCARD_RECIPIENT_API_TOKEN` — recipient read token for the wallet read-back.
-- `SECURE_SEED` — issuer adapter signing seed; derived from the demo label, not
-  emitted by `provision.mjs`: `sha256("skills-mobility-demo:issuer")`.
+- `SECURE_SEED` — issuer adapter signing seed. In the demo the issuer is the
+  *organization* profile `provision.mjs` provisions (#54), so the seed derives
+  from the same label, not emitted by the tool: `sha256("skills-mobility-demo:organization")`.
 - `LEARNCARD_ISSUER_DID` — the issuer's resolvable network DID, stamped as the
   OBv3 issuer (`ORCHESTRATOR_ISSUER_ID`); signing fails if it isn't resolvable.
 - `LEARNCARD_DEMO_RECIPIENT_PROFILE_ID` / `LEARNCARD_ISSUER_PROFILE_ID` — fixed
-  demo handles (default to `smi-demo-learner` / `smi-demo-issuer`).
+  demo handles (default to `smi-demo-learner` / `smi-demo-organization`).
 
 ## The image pattern
 

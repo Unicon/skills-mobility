@@ -57,6 +57,9 @@ services:
     environment:
       CONTEXT_BUILDER_LMS_BASE_URL: http://mock-lms:8000
     ports: ["8100:8100"]
+    depends_on:
+      mock-lms:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8100/healthz')"]
       interval: 10s
@@ -134,9 +137,11 @@ services:
     environment:
       PORT: "8910"
       LOG_LEVEL: info
+      # The demo issuer identity is the *organization* profile tools/learncard-demo
+      # provisions (smi-demo-organization, #54/ADR-0020) — not a separate "issuer".
       SECURE_SEED: ${SECURE_SEED:-}
-      PROFILE_ID: ${LEARNCARD_ISSUER_PROFILE_ID:-smi-demo-issuer}
-      PROFILE_NAME: ${LEARNCARD_ISSUER_PROFILE_NAME:-SMI Demo Issuer}
+      PROFILE_ID: ${LEARNCARD_ISSUER_PROFILE_ID:-smi-demo-organization}
+      PROFILE_NAME: ${LEARNCARD_ISSUER_PROFILE_NAME:-SMI Demo Organization}
     ports: ["8910:8910"]
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:8910/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
