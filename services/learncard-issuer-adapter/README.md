@@ -38,17 +38,25 @@ separate profile step is needed (seed generation + profile creation are self-ser
 against the public demo network — #39 finding):
 
 ```bash
+cd services/learncard-issuer-adapter
 cp .env.example .env
-# a LearnCard wallet seed (64-char hex):
-echo "SECURE_SEED=$(openssl rand -hex 32)" >> .env
-echo "PROFILE_ID=smi-demo-issuer"          >> .env
-echo 'PROFILE_NAME=SMI Demo Issuer'        >> .env
 ```
 
-**Coordinated demo.** To match the *fixed* demo issuer identity the recipient
-resolves against, use the seed/profile minted by `tools/learncard-demo`
-(ADR-0020, PR #54) instead of a random seed — copy its `SECURE_SEED`/`PROFILE_ID`
-into this `.env`.
+Then edit `.env` **in place** (don't append — that duplicates the keys already in
+`.env.example`) and set a LearnCard wallet seed plus the profile:
+
+```
+SECURE_SEED=<64-char hex, e.g. from `openssl rand -hex 32`>
+PROFILE_ID=smi-demo-issuer
+PROFILE_NAME=SMI Demo Issuer
+```
+
+**Coordinated demo.** In the full demo the issuing identity is the *organization*
+profile that `tools/learncard-demo` provisions (`smi-demo-organization`, ADR-0020,
+PR #54), wired to this adapter through docker-compose (`SECURE_SEED` / `PROFILE_ID`
+in the demo environment) rather than copied by hand. That tool provisions the
+network profile and mints delivery tokens; it does not emit a reusable seed file,
+so use the self-serve path above for standalone smoke-testing.
 
 ### Sample request payload
 
