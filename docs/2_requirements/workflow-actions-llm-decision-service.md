@@ -20,11 +20,12 @@ The primary POC question for this service is whether an LLM can make the gate de
 The Workflow Actions LLM Decision Service is responsible for:
 
 - accepting a **pre-target gate** request and returning a structured `terminate`/`continue` decision with confidence and rationale,
-- accepting a **delivery-phase planning** request that includes the selected delivery targets and returning an ordered, executor-neutral plan artifact,
-- generating steps that reference only actions in the supplied action registry (ADR-0011 §3),
+- accepting a **delivery-phase planning** request that includes the selected delivery targets and returning the delivery-phase plan inline (with optional storage reference),
+- reading its own action registry directly to obtain the prompt-time action vocabulary and engineer-authored action descriptions (FR-WA-9a, FR-WA-9b),
+- applying administrator-authored gating policy prose from its own action registry / pipeline config when making the gate decision (FR-WA-3a),
+- generating steps that reference only actions in its own action registry (ADR-0011 §3),
 - expressing per-step inputs as declarative bindings and per-step applicability/conditions,
-- attaching per-step and per-plan rationale and confidence for audit,
-- and returning a compact response that tells the Orchestrator where the stored decision and plan artifacts can be found.
+- and attaching per-step and per-plan rationale and confidence for audit.
 
 The service is not responsible for:
 
@@ -59,6 +60,10 @@ The gate must be able to terminate for cases visible from event or context alone
 | Context bundle | The assembled learner/learning context from the Context Builder, treated as opaque JSON ([Orchestrator Design](../3_design/orchestrator.md) §4) |
 | Policy context | Any deterministic policy signals relevant to early termination (ADR-0007 Workflow Actions inputs) |
 
+Context bundle and policy context are accepted by the gate for completeness and possible future use, but the gate's primary reasoning is over the event and context alone. Their inclusion does not change the gate's scope (see §3).
+
+The service reads its gating policy prose directly from its own action registry / pipeline config — the Orchestrator does **not** pass the registry in as an input (see FR-WA-9a).
+
 ### Delivery-phase planning request inputs
 
 | Input | Purpose |
@@ -67,7 +72,8 @@ The gate must be able to terminate for cases visible from event or context alone
 | `event_type`, `source_system`, and event envelope | Anchor the plan's applicability and step literals |
 | Context bundle | Same opaque context bundle used at the gate stage |
 | `selected_targets` | The delivery targets chosen by the Delivery Targets service; the plan is generated with these known (ADR-0009 Stage 2) |
-| Action registry view | The prompt-time view of the approved action vocabulary the plan may reference (ADR-0011 §3) |
+
+The Orchestrator does **not** fetch the action registry and pass it in as an input. The service has direct access to its own action registry (see FR-WA-9a). The service similarly resolves its own prompt-time action-registry view internally (ADR-0011 §3).
 
 Prompt templates, model IDs, temperatures, and other LLM runtime settings are configuration of the service runtime, not primary business inputs.
 
@@ -84,33 +90,37 @@ The gate response mirrors the small decision artifact the Orchestrator already r
 
 ### Delivery-phase plan output
 
-The synchronous response is compact; the full plan artifact is stored and referred to by identifier.
+The plan is small enough that the service returns it directly in the synchronous response. A `plan_ref` (`plan_id`) MAY be included for storage correlation, but the Orchestrator does not need to make a second round-trip to retrieve the plan body.
 
 | Output | Purpose |
 | --- | --- |
-| `plan_ref` (`plan_id`) | Points to the stored delivery-phase plan artifact |
+| `plan` | The full delivery-phase plan artifact, returned inline |
+| `plan_ref` (`plan_id`) | Optional reference to the stored plan artifact for storage correlation |
 | `confidence` | Model-reported confidence in the plan |
 | `rationale` | Plan-level rationale for audit |
 | `llm_invocation_log_ref` | Correlates to detailed invocation metadata |
 | Terminal status / failure details | Tells the Orchestrator whether planning succeeded |
 
-The stored plan artifact carries the full `plan_schema_version`, `generator`, `applicability`, ordered `steps[]`, and rationale shape defined in [Orchestrator Design](../3_design/orchestrator.md) §5 and [ADR-0011](../decisions/0011-orchestration-runtime-technology.md) §4.
+The plan artifact carries the full `plan_schema_version`, `generator`, `applicability`, ordered `steps[]`, and rationale shape defined in [Orchestrator Design](../3_design/orchestrator.md) §5 and [ADR-0011](../decisions/0011-orchestration-runtime-technology.md) §4.
 
 ## 5. Functional Requirements
 
 - **FR-WA-1** The service SHALL expose two distinct decision contracts: a pre-target gate contract and a delivery-phase plan contract, consistent with the two-stage hierarchical model of [ADR-0009](../decisions/0009-workflow-actions-orchestration-model.md).
 - **FR-WA-2** The pre-target gate invocation SHALL run before Delivery Targets and SHALL return exactly one decision: `continue_to_delivery_targets`, or a named early-termination outcome.
-- **FR-WA-3** The pre-target gate SHALL be able to terminate the workflow for disqualifiers visible from the event or context alone, including at least: sub-competency `skill_mastered` events not warranting a credential, failing-grade `course_completed` events, and badge-awarded events where the badge is not yet retrievable because acceptance has not occurred (ADR-0009 Context).
-- **FR-WA-4** The pre-target gate decision SHALL be execution-scoped. The service SHALL NOT treat it as a reusable artifact, and the Orchestrator SHALL NOT perform reusable-plan lookup for it (ADR-0009 "Artifact reuse"; [FR-OR-20](./orchestrator.md)).
+- **FR-WA-3** The pre-target gate SHALL be able to terminate the workflow for disqualifiers visible from the event or context alone, including at least: sub-competency `skill_mastered` events not warranting a credential, failing-grade `course_completed` events, and badge-awarded events where the badge is not yet retrievable because acceptance has not occurred (ADR-0009 Context). The gate SHALL reason over administrator-authored **gating policy prose** stored in the action registry / pipeline config (see FR-WA-3a).
+- **FR-WA-3a** The action registry / pipeline config SHALL store administrator-authored prose describing when the pre-target gate should terminate early. The gate prompt SHALL include this prose as context so the LLM can apply it. This gating prose is analogous to the admin-authored target descriptions used by the Delivery Targets service. It is stored in the action registry / pipeline config and is NOT delegated to a separate Policy Rules service (which is out of POC scope).
+- **FR-WA-4** The pre-target gate decision SHALL be execution-scoped and SHALL NOT be treated as a reusable artifact (ADR-0009 "Artifact reuse"). The corresponding Orchestrator-side constraint — that it SHALL NOT perform reusable-plan lookup for the gate decision — is stated in [FR-OR-20](./orchestrator.md) and is an Orchestrator requirement, not a requirement on this service.
 - **FR-WA-5** The delivery-phase planning invocation SHALL run only on the continue path, after Delivery Targets, and SHALL receive the selected delivery targets as an input (ADR-0009 Stage 2).
 - **FR-WA-6** The delivery-phase planning invocation SHALL produce an ordered, executor-neutral plan artifact matching the plan schema in [Orchestrator Design](../3_design/orchestrator.md) §5 and [ADR-0011](../decisions/0011-orchestration-runtime-technology.md) §4, including at minimum `plan_schema_version`, `plan_id`, `generated_at`, `generator` (service version, model identifier, prompt-template version), `applicability` (event type, source system, selected targets), `confidence`, `rationale`, and ordered `steps`.
 - **FR-WA-7** Each generated step SHALL include at minimum `step_id`, `type`, `action_id` for `call` steps, `inputs`, and `produces`, and MAY include `condition`, `timeout`, `retry_policy`, `on_failure`, and `metadata`, per [ADR-0011](../decisions/0011-orchestration-runtime-technology.md) §4.
 - **FR-WA-8** The generated plan SHALL reference the Delivery Targets and the Field Mapping / Field Synthesis / Translation Executor services only as named actions in the plan, not as embedded logic (ADR-0007 hierarchical model). Delivery-target selection SHALL remain outside the delivery-phase plan because that decision is already resolved when this stage runs ([Orchestrator Design](../3_design/orchestrator.md) §5).
-- **FR-WA-9** The service SHALL generate steps whose `action_id` values and `type` values are drawn only from the supplied versioned action registry view (ADR-0011 §3). The service SHALL NOT invent actions, raw URLs, Lambda names, queue names, credentials, or arbitrary code.
+- **FR-WA-9** The service SHALL generate steps whose `action_id` values and `type` values are drawn only from its own action registry (ADR-0011 §3). The service SHALL NOT invent actions, raw URLs, Lambda names, queue names, credentials, or arbitrary code.
+- **FR-WA-9a** The service SHALL own its action registry directly and SHALL resolve its prompt-time action-registry view internally. The Orchestrator SHALL NOT fetch the action registry and pass it as an input to the service. The same principle applies to the Delivery Targets LLM Decision Service and its own registry.
+- **FR-WA-9b** Each entry in the action registry SHALL include an **engineer-authored description** of what that action does. The delivery-phase plan prompt SHALL supply these descriptions to the LLM as context (alongside a generic plan-generation prompt), rather than embedding the full output shape in a single monolithic prompt. These descriptions are authored by engineers and may be revised to improve LLM plan quality. They are distinct from the administrator-authored gating prose (FR-WA-3a) and from admin-authored target descriptions used by the Delivery Targets service.
 - **FR-WA-10** Step input bindings SHALL use the declarative source-reference form the Orchestrator resolves (`literal`, `workflow`, `step`), not an arbitrary code or expression language ([Orchestrator Design](../3_design/orchestrator.md) §4; ADR-0011 §5).
 - **FR-WA-11** The service SHALL attach a `confidence` and a `rationale` to the gate decision and to the delivery-phase plan, and MAY attach per-step rationale, to satisfy the explainability contract ([POC Requirements](./poc-requirements.md) rationale/confidence; ADR-0007).
 - **FR-WA-12** The generated plan artifact SHALL be validated by deterministic rules before it is executed. Structural validity alone SHALL NOT constitute success (see §6). The service SHALL NOT allow an unvalidated plan to flow to execution ([Target POC Requirements](./target-poc-requirements.md) deterministic policy validation; ADR-0007).
-- **FR-WA-13** The service SHALL store the generated delivery-phase plan artifact immediately and SHALL return a reference to it in the synchronous response. Returning the full plan inline MAY be supported for local debugging but SHALL NOT be the normal downstream contract.
+- **FR-WA-13** The service SHALL return the full delivery-phase plan artifact inline in the synchronous response. The service SHALL also store the plan artifact and MAY include a `plan_ref` (`plan_id`) in the response for storage correlation. The Orchestrator does not need a second round-trip to retrieve the plan body.
 - **FR-WA-14** The service SHALL use a managed model-access adapter consistent with [ADR-0010](../decisions/0010-llm-model-access-strategy.md). For the POC, the primary provider SHALL be Amazon Bedrock via the Converse API.
 - **FR-WA-15** The service SHALL support configurable model ID, prompt-template version, and generation parameters without a contract change, independently per stage.
 - **FR-WA-16** The service SHALL default to low-temperature generation appropriate for structured, machine-executable plan output.
@@ -124,15 +134,14 @@ The stored plan artifact carries the full `plan_schema_version`, `generator`, `a
 - **FR-WA-21** Plan validation SHALL be a hard gate ([ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md) Layer A). Valid structure is not sufficient. Success SHALL require at minimum:
   - plan-schema validity,
   - `confidence` and `rationale` present,
-  - every step's `action_id` and `type` present in the supplied action registry view,
-  - every step input binding resolvable (its `workflow` paths and referenced prior-step `step_id` values exist and are produced before use),
-  - and the required steps for the applicability being planned are present (see FR-WA-22).
-- **FR-WA-22** For the POC LearnCard path, a valid delivery-phase plan for `selected_targets` including LearnCard issuance and wallet delivery SHALL include at least LearnCard profile resolution, issuer-payload preparation (mapping + synthesis + translation), LearnCard issuance, wallet-payload preparation (mapping + translation), and LearnCard wallet delivery, consistent with the Phase 1 plan sequence in [Orchestrator Design](../3_design/orchestrator.md) §5 and [FR-OR-12/14/15](./orchestrator.md).
+  - every step's `action_id` and `type` present in the service's action registry,
+  - and every step input binding resolvable (its `workflow` paths and referenced prior-step `step_id` values exist and are produced before use).
+- **FR-WA-22** Whether the generated plan includes the expected steps for a given applicability (for example, LearnCard profile resolution, issuer-payload mapping, issuance, and wallet delivery for the POC LearnCard path) SHALL be evaluated in the **test harness / unit test layer**, not enforced as a hard service validation gate. Requiring specific step presence as a hard gate risks the service "cheating" by satisfying the validator rather than producing a genuinely good plan. The test harness (Layer B, ADR-0013 / ADR-0021) is the right place to assert which steps should appear, consistent with [Orchestrator Design](../3_design/orchestrator.md) §5 and [FR-OR-12/14/15](./orchestrator.md).
 - **FR-WA-23** The service SHALL NOT silently fall back to a hand-authored deterministic plan when the model output is bad. Invalid outputs SHALL be stored as failed plan artifacts or failed invocation records with their validation errors attached, so they remain evidence for prompt tuning without being reusable as successful plans.
 - **FR-WA-24** The service SHALL record which prompt template and model produced each gate decision and each plan so prompt or model changes can be compared later against the frozen [ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md) evaluation corpus.
 - **FR-WA-25** The service's Layer B capability evaluation against the frozen ADR-0013 corpus SHALL be implemented using the shared DeepEval test harness ([ADR-0021](../decisions/0021-llm-testing-tooling-extensions.md)) as a deterministic comparator: the gate decision matched against the scenario's canonical terminal outcome, and the plan matched against the canonical expected plan for the scenario, including required or forbidden major steps (ADR-0013 Layer B, Workflow Actions row).
 - **FR-WA-26** The service SHALL screen free-text values drawn from the event and context bundle for prompt-injection attempts before they are included in a Bedrock prompt ([ADR-0021](../decisions/0021-llm-testing-tooling-extensions.md)).
-- **FR-WA-27** The service SHALL NOT claim success based only on syntactically valid JSON. Action-registry conformance, binding resolvability, and required-step presence are hard gates for the service.
+- **FR-WA-27** The service SHALL NOT claim success based only on syntactically valid JSON. Action-registry conformance and binding resolvability are hard structural gates (FR-WA-21). Whether certain steps are present under certain conditions is evaluated in the test harness (FR-WA-22), not enforced as a hard gate here.
 
 ## 7. Reusable Plans
 
@@ -157,14 +166,14 @@ The Workflow Actions LLM Decision Service does not need to provide:
 
 - executing the plan or persisting execution state,
 - delivery-target selection, mapping JSONata generation, or synthesized field text,
-- deterministic policy validation of its own output (a separate deterministic layer),
+- a separate **Policy Rules Service** — the structural validation in §6 is this service's own output validation; the Policy Rules Service that the Orchestrator would call between plan generation and execution (ADR-0011 §2, ADR-0007) is out of POC scope and is distinct from that structural validation,
 - arbitrary mid-flight replanning after delivery-phase execution has begun (ADR-0011 §10),
 - human-in-the-loop plan refinement,
 - or automatic fine-tuning or custom model training.
 
 ## 11. Open Questions
 
-- **Gate decision schema (ADR-0009 Open Questions).** ADR-0009 leaves the minimum schema for the pre-target gate result open. This document adopts the small `decision`/`confidence`/`rationale` shape from [Orchestrator Design](../3_design/orchestrator.md) §4 as the working shape, but the exact set of named terminate outcomes is not yet fixed.
+- **Gate decision schema — named terminate outcomes.** The gate decision fields (`decision` / `confidence` / `rationale`) are defined in [Design §2 / §4](../3_design/workflow-actions-llm-decision-service.md). The exact set of named `terminate_*` outcome strings is not yet fixed; new outcomes can be added without a contract change.
 - **Applicability key dimensions (ADR-0009 / ADR-0011 Open Questions).** Which dimensions beyond event type, source system, and selected targets belong in the delivery-phase plan applicability key is still open.
 - **Confidence semantics.** ADR-0007 leaves per-service confidence thresholds unresolved; acceptable gate and plan confidence thresholds for this service are deferred to the evaluation harness (ADR-0013), not fixed here.
-- **Interaction with Policy Rules.** ADR-0011 §2 places Policy Rules validation between plan generation and execution, but no Policy Rules service design exists yet in this repo, so the exact rule set that validates a plan is stated intent, not a verified contract.
+- **Policy Rules rule set.** ADR-0011 §2 places Policy Rules validation between plan generation and execution, but no Policy Rules service design exists yet in this repo, so the exact rule set that validates a plan is stated intent, not a verified contract. The Policy Rules Service itself is out of POC scope (§10).

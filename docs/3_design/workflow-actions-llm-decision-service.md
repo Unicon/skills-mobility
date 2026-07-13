@@ -44,7 +44,15 @@ The gate response mirrors the shape the Orchestrator already records ([Orchestra
 }
 ```
 
-`decision` is either `continue_to_delivery_targets` or a named early-termination outcome (for example `terminate_sub_competency`, `terminate_failing_grade`, `terminate_badge_not_accepted`). The exact set of named terminate outcomes is an open question (see §12); the field is a discriminated string so new outcomes can be added without a contract change. This decision is execution-scoped: it is recorded in workflow execution metadata but not stored in the reusable-plan store and not looked up for reuse ([FR-OR-20](../2_requirements/orchestrator.md); ADR-0009).
+**Gate decision schema:**
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `decision` | string (enum) | `"continue_to_delivery_targets"` or a named early-termination string (e.g. `"terminate_sub_competency"`, `"terminate_failing_grade"`, `"terminate_badge_not_accepted"`) |
+| `confidence` | float [0,1] | Model-reported confidence in the gate decision |
+| `rationale` | string | Human-readable explanation for audit |
+
+`decision` is a discriminated string so new terminate outcomes can be added without a contract change. The exact set of named `terminate_*` strings is not yet exhaustively fixed ([Requirements §11](../2_requirements/workflow-actions-llm-decision-service.md)). This decision is execution-scoped: it is recorded in workflow execution metadata but not stored in the reusable-plan store and not looked up for reuse ([FR-OR-20](../2_requirements/orchestrator.md); ADR-0009).
 
 ### Delivery-phase plan artifact
 
@@ -73,7 +81,7 @@ The stored plan is the delivery-phase plan defined in [Orchestrator Design](./or
 
 The full 8-step plan body is the sequence in [Orchestrator Design](./orchestrator.md) §5 (`resolve_learncard_profile` → `generate_payload_mapping` → `generate_field_synthesis` → `execute_translation` → `issue_learncard_badge` → `generate_payload_mapping` → `execute_translation` → `deliver_to_learncard_wallet`). That sequence is the service's output contract: the named steps are how the plan references the Delivery Targets-selected work, the Field Mapping / Field Synthesis / Translation Executor seams, and the delivery actions (ADR-0007 hierarchical model). Delivery-target selection is deliberately **not** a step in this plan — it is already resolved before Stage 2 runs ([Orchestrator Design](./orchestrator.md) §5).
 
-The immediate service response to the Orchestrator normally contains a reference to the stored plan, not the full plan inline (§4).
+The service returns the full plan artifact inline in the synchronous response and also stores it; see the response contract in §4 ([FR-WA-13](../2_requirements/workflow-actions-llm-decision-service.md)).
 
 ## 3. Runtime Shape
 
@@ -87,7 +95,7 @@ Orchestrator planner path
        -> build gate prompt + structured-output schema
        -> call Bedrock
        -> parse + validate gate decision
-       -> return decision ref
+       -> return decision inline
   -> if terminate: end workflow with named outcome
   -> if continue: Delivery Targets (selects targets)
   -> Workflow Actions: delivery-phase plan
@@ -96,20 +104,20 @@ Orchestrator planner path
        -> build plan structured-output schema
        -> call Bedrock
        -> parse structured plan
-       -> validate: schema, registry conformance, binding resolvability, required steps
+       -> validate: schema, registry conformance, binding resolvability
        -> store plan artifact
-       -> return plan ref
+       -> return plan inline (+ plan_ref)
   -> (deterministic Policy Rules validation, when active)
   -> executor runs the plan
 ```
 
 Each stage uses **one Bedrock Converse request per invocation**. The gate call is intentionally narrow — a small classification-style decision — and the plan call is the larger structured-generation task. Splitting the plan generation into multiple Bedrock calls (for example, step selection then step rendering) is a later experiment to run only if plan quality is poor; the default is one call per stage (mirroring the Field Mapping design's one-call default).
 
-The service does not fetch source context and does not execute anything. It reads the context bundle as opaque JSON supplied by the Orchestrator and reads its own configuration (prompt templates, model settings). The action-registry view it receives is a prompt-time projection owned by the Orchestrator/runtime (ADR-0011 §3), not something this service defines.
+The service does not fetch source context and does not execute anything. It reads the context bundle as opaque JSON supplied by the Orchestrator and reads its own configuration (prompt templates, model settings, action registry, gating policy prose). The service owns its action registry directly and resolves its own prompt-time action-registry view internally ([FR-WA-9a](../2_requirements/workflow-actions-llm-decision-service.md)); the Orchestrator does not fetch the registry and pass it in as an input. The gate prompt includes administrator-authored gating policy prose from the action registry / pipeline config ([FR-WA-3a](../2_requirements/workflow-actions-llm-decision-service.md)).
 
 ## 4. Response Contract
 
-Both stages return small synchronous responses; the substantive artifact is stored and referenced.
+Both stages return synchronous responses. The gate decision is returned inline. The delivery-phase plan is also returned inline (and stored; a `plan_ref` is included for storage correlation).
 
 Pre-target gate response:
 
@@ -128,6 +136,7 @@ Delivery-phase plan response:
 ```json
 {
   "status": "succeeded",
+  "plan": { "plan_schema_version": "v1", "plan_id": "skill_mastered.learncard.v1", "..." : "..." },
   "plan_ref": "plan:skill_mastered.learncard.v1",
   "confidence": 0.94,
   "rationale": "...",
@@ -135,7 +144,7 @@ Delivery-phase plan response:
 }
 ```
 
-The gate decision is small enough to return inline; the Orchestrator records it on the execution ([FR-OR-20](../2_requirements/orchestrator.md)). The plan is returned by reference — the Orchestrator persists the plan artifact (or a reference to it) and passes `plan_id` through to the executor ([Orchestrator Design](./orchestrator.md) §4/§9). For local debugging only, an inline-expansion mode MAY return the full plan; that is not the default production-like path. The Orchestrator does not need all model metadata inline if it can retrieve that detail through the logged reference.
+The gate decision is small enough to return inline; the Orchestrator records it on the execution ([FR-OR-20](../2_requirements/orchestrator.md)). The plan is small enough to return directly in the response body. The service also stores the plan artifact and includes a `plan_ref` for storage correlation; the Orchestrator does not need a second round-trip to retrieve the plan ([FR-WA-13](../2_requirements/workflow-actions-llm-decision-service.md)). The Orchestrator does not need all model metadata inline if it can retrieve that detail through the logged reference.
 
 ## 5. Request Contract
 
@@ -164,20 +173,11 @@ The gate stage reasons over the event and context alone, because it must be able
   "source_system": "mock_lms",
   "event": { "...": "raw event envelope" },
   "context_bundle": { "...": "opaque context JSON" },
-  "selected_targets": ["learncard_issuer", "learncard_wallet"],
-  "action_registry_view": [
-    {
-      "action_id": "resolve_learncard_profile",
-      "description": "Resolve a LearnCard profile and DID for a learner identity.",
-      "input_schema": { "...": "..." },
-      "output_schema": { "...": "..." },
-      "side_effecting": false
-    }
-  ]
+  "selected_targets": ["learncard_issuer", "learncard_wallet"]
 }
 ```
 
-`selected_targets` is supplied because Stage 2 reasons over the actual chosen targets, which is the whole point of the two-stage model (ADR-0009 "It gives the second planning call the target information it actually needs"). `action_registry_view` is the prompt-time projection of the versioned action registry (ADR-0011 §3): the plan may reference only these `action_id` values, and the same registry version validates the plan.
+`selected_targets` is supplied because Stage 2 reasons over the actual chosen targets, which is the whole point of the two-stage model (ADR-0009 "It gives the second planning call the target information it actually needs"). The action registry is **not** passed in the request; the service reads it directly from its own storage ([FR-WA-9a](../2_requirements/workflow-actions-llm-decision-service.md)). Each action registry entry includes an engineer-authored description the LLM uses as context ([FR-WA-9b](../2_requirements/workflow-actions-llm-decision-service.md)).
 
 The context bundle is treated as opaque JSON on both stages ([Orchestrator Design](./orchestrator.md) §4). Prompt templates, model IDs, temperatures, and other runtime settings are service configuration, not per-request business inputs.
 
@@ -190,6 +190,7 @@ Each stage makes **one Bedrock Converse request**, each with its own system prom
 The system prompt should tell the model:
 
 - it is deciding only whether the workflow proceeds to delivery-target selection or terminates with a named business outcome — it is not planning steps,
+- the administrator-authored **gating policy prose** loaded from the action registry / pipeline config, explaining when early termination should occur ([FR-WA-3a](../2_requirements/workflow-actions-llm-decision-service.md)),
 - the disqualifiers it must recognize from event/context alone: sub-competency outcomes not warranting a credential, failing grades, and unaccepted badges (ADR-0009 Context),
 - that a `continue_to_delivery_targets` decision is the default when no disqualifier is present,
 - and that it must emit `decision`, `confidence`, and `rationale`.
@@ -198,10 +199,10 @@ The gate output schema constrains `decision` to the known enumerated set plus a 
 
 ### Delivery-phase plan prompt
 
-The system prompt should tell the model:
+Rather than a single monolithic prompt that prescribes the full output shape, the delivery-phase plan prompt uses a **generic plan-generation instruction** combined with the **engineer-authored descriptions** from each action registry entry as context ([FR-WA-9b](../2_requirements/workflow-actions-llm-decision-service.md)). The system prompt should tell the model:
 
 - it is generating an ordered, executor-neutral plan that gets from the event and context to the already-selected delivery targets,
-- it may reference only the `action_id` and step `type` values in the supplied action-registry view (ADR-0011 §3/§4),
+- it may reference only the `action_id` and step `type` values present in the action registry, described by their engineer-authored entries ([FR-WA-9a/9b](../2_requirements/workflow-actions-llm-decision-service.md)),
 - how to express step input bindings using the declarative `literal` / `workflow` / `step` source-reference form ([Orchestrator Design](./orchestrator.md) §4), and that it must not emit code, URLs, or credentials,
 - that delivery-target selection is not a step (targets are already selected),
 - that profile resolution is a prerequisite for LearnCard-specific steps, and the Field Mapping / Field Synthesis / Translation Executor seams appear where the payload phase requires them (§5; [FR-OR-14/15](../2_requirements/orchestrator.md)),
@@ -230,7 +231,7 @@ Per-stage interaction sequence:
 2. build the stage's prompt and structured-output schema
 3. call the provider adapter, which invokes Bedrock `Converse` through the AWS SDK
 4. parse the returned structured object
-5. validate it (gate decision, or plan against registry/bindings/required steps)
+5. validate it (gate decision, or plan against registry conformance and binding resolvability)
 6. store the artifact (plan) or record the decision
 
 Bedrock structured outputs can enforce JSON-schema-conformant results for Converse requests; first-time schema compilation can add latency before the compiled grammar is reused, which should be expected during development. Sources: [Bedrock structured outputs](https://docs.aws.amazon.com/bedrock/latest/userguide/structured-output.html) and [Boto3 `converse`](https://docs.aws.amazon.com/boto3/latest/reference/services/bedrock-runtime/client/converse.html).
@@ -261,21 +262,22 @@ Delivery-phase plan validation (hard Layer-A gates, ADR-0013):
 
 1. parse the structured model response
 2. verify plan-schema validity and that `confidence`/`rationale` are present
-3. verify every step's `action_id` and `type` exist in the supplied action-registry view (registry conformance, ADR-0011 §3)
+3. verify every step's `action_id` and `type` exist in the service's action registry (registry conformance, ADR-0011 §3)
 4. verify every step input binding is resolvable: `workflow` paths exist in the workflow context contract, and every `{ "source": "step", "step_id": N }` reference points to a step that runs and `produces` a value before this step (dependency resolution)
-5. verify the required steps for the applicability are present — for the LearnCard dual-target path, at least profile resolution, issuer-payload mapping/synthesis/translation, issuance, wallet-payload mapping/translation, and wallet delivery ([FR-WA-22](../2_requirements/workflow-actions-llm-decision-service.md); [Orchestrator Design](./orchestrator.md) §5)
-6. store only validated plans as successful results
+5. store only structurally validated plans as successful results
+
+Whether the plan includes the expected steps for a given applicability (e.g., the LearnCard dual-target sequence) is evaluated in the **test harness** (Layer B, ADR-0013 / ADR-0021), not enforced as a hard gate here ([FR-WA-22](../2_requirements/workflow-actions-llm-decision-service.md)). Requiring specific steps as a hard gate risks the service satisfying the validator rather than producing a genuinely good plan.
 
 The service must not silently fall back to a hand-authored deterministic plan when model output is bad — that would defeat the POC's purpose. Invalid outputs are stored as **failed plan artifacts** or failed invocation records with their validation errors attached: not reusable as successful plans, but valuable evidence for prompt tuning and model comparison.
 
-This service's validation is distinct from the deterministic **Policy Rules** validation ([ADR-0011](../decisions/0011-orchestration-runtime-technology.md) §2), which the Orchestrator runs between plan generation and execution when active. The two together form the safety layer that does not depend on LLM reasoning ([FR-OR-23](../2_requirements/orchestrator.md); ADR-0007): the service will never let an unvalidated plan reach the executor, and the runtime never executes a plan that has not passed policy validation when active. No Policy Rules service design exists yet in this repo, so today the exact policy rule set is stated intent, not a verified contract.
+The validation described above is this service's own **structural output validation** — it catches bad LLM output before anything is stored as a successful plan. It is distinct from the separate **Policy Rules Service** ([ADR-0011](../decisions/0011-orchestration-runtime-technology.md) §2), which the Orchestrator would run between plan generation and execution. The Policy Rules Service is out of POC scope ([Requirements §10](../2_requirements/workflow-actions-llm-decision-service.md)); this service's own structural validation is in scope and active. No Policy Rules service design exists yet in this repo, so today the exact downstream policy rule set is stated intent, not a verified contract.
 
 ### Capability Evaluation (Layer B)
 
-The checks above are hard gates (ADR-0013 Layer A), not a capability verdict. The service's Layer B capability evaluation is a **deterministic comparator** in the shared DeepEval harness ([ADR-0021](../decisions/0021-llm-testing-tooling-extensions.md)), run against the frozen corpus:
+The hard gates above are Layer A (structural correctness). Layer B is the capability verdict: a **deterministic comparator** in the shared DeepEval harness ([ADR-0021](../decisions/0021-llm-testing-tooling-extensions.md)), run against the frozen corpus:
 
 - the gate decision matched against the scenario's canonical terminal outcome,
-- and the plan matched against the scenario's canonical expected plan, including expected required or forbidden major steps (ADR-0013 Layer B, Workflow Actions row).
+- and the plan matched against the scenario's canonical expected plan — including whether expected or forbidden major steps are present for the applicability (ADR-0013 Layer B, Workflow Actions row; [FR-WA-22](../2_requirements/workflow-actions-llm-decision-service.md)).
 
 This is plain code, not an LLM-as-judge metric; no judge-model cost applies.
 
@@ -352,12 +354,12 @@ Responsibilities:
 
 - `contracts.py`: gate and plan request/response schemas plus the stored plan artifact schema
 - `prompt_templates/`: version-controlled system prompts, one per stage
-- `action_registry_view.py`: parse and hold the prompt-time action-registry projection supplied by the Orchestrator/runtime (ADR-0011 §3); the registry itself is owned by the runtime, not this service
+- `action_registry_view.py`: load and hold the prompt-time action-registry projection from the service's own action registry (ADR-0011 §3; [FR-WA-9a](../2_requirements/workflow-actions-llm-decision-service.md)); the Orchestrator does not supply the registry as an input
 - `prompt_builder.py`: render each stage's system prompt and request message from the loaded inputs
 - `llm_adapter.py`: define the provider-adapter protocol and shared result shape
 - `bedrock_adapter.py`: implement the provider adapter using Bedrock `Converse` plus invocation-log capture
 - `replay_adapter.py`: deterministic local replay without live Bedrock access
-- `validators.py`: gate-decision validation and plan validation (schema, registry conformance, binding resolvability, required-step presence)
+- `validators.py`: gate-decision validation and plan validation (schema, registry conformance, binding resolvability); required-step presence is a Layer B test-harness concern, not a hard gate here ([FR-WA-22](../2_requirements/workflow-actions-llm-decision-service.md))
 - `plan_store.py`: persist delivery-phase plan artifacts (and failed artifacts)
 - `service.py`: orchestration of screen → prompt → model → validation → store → response, per stage
 - `api.py`: FastAPI and Lambda entrypoint boundary exposing both stages
@@ -366,9 +368,9 @@ Responsibilities:
 
 Recommended implementation order:
 
-1. Define the two request contracts (gate, plan) and the ref-returning response contracts.
-2. Define the stored delivery-phase plan artifact schema (aligned to [Orchestrator Design](./orchestrator.md) §5 / ADR-0011 §4) and the gate decision schema.
-3. Implement gate-decision validation and plan validation (schema, registry conformance, binding resolvability, required-step presence).
+1. Define the two request contracts (gate, plan) and the inline-returning response contracts (gate decision + full plan body + optional `plan_ref`).
+2. Define the stored delivery-phase plan artifact schema (aligned to [Orchestrator Design](./orchestrator.md) §5 / ADR-0011 §4) and the gate decision schema (defined in §2).
+3. Implement gate-decision validation and plan validation (schema, registry conformance, binding resolvability); author the action registry with engineer-authored action descriptions and the gating policy prose ([FR-WA-9b](../2_requirements/workflow-actions-llm-decision-service.md), [FR-WA-3a](../2_requirements/workflow-actions-llm-decision-service.md)).
 4. Add a deterministic replay adapter and fixture-driven tests for both stages.
 5. Add the provider-adapter boundary, the Bedrock implementation, and the two prompt templates.
 6. Wire the Orchestrator's two planner seams (`workflow_actions_pre_target_gate`, `workflow_actions_delivery_phase_plan`) to this service, replacing the deterministic stubs behind the same contracts.
