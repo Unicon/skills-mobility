@@ -1,0 +1,13 @@
+{
+  "name": "learncard-demo-provision",
+  "private": true,
+  "type": "module",
+  "description": "One-time provisioning of the fixed no-email LearnCard demo identities (ADR-0020)",
+  "scripts": {
+    "provision": "node provision.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@learncard/init": "^2.4.3"
+  }
+}
