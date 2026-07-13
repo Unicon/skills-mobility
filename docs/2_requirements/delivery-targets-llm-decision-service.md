@@ -6,9 +6,7 @@ Related: [Requirements overview](./README.md) · [Target POC Requirements](./tar
 
 ## 1. Purpose
 
-The **Delivery Targets LLM Decision Service** is the first of ADR-0007's three LLM Decision Services. Its job is described in [ADR-0007](../decisions/0007-llm-decision-service-decomposition.md) as **"selecting which downstream systems should receive transformed data for this event."** It reasons over event type, learner context, policy context, and the set of available delivery targets to produce a small set of selected targets, each with a confidence score and a rationale.
-
-Compared to the Field Mapping service, this is a **routing and eligibility decision**, not a structural translation task. Per [ADR-0007](../decisions/0007-llm-decision-service-decomposition.md), "delivery target selection is primarily a routing and eligibility decision … the prompt is relatively stable and the output schema is simple." Per [ADR-0010](../decisions/0010-llm-model-access-strategy.md) §24, "the output schema is relatively constrained: a small set of selected targets with confidence and rationale." This service therefore uses a simpler prompt and a smaller output schema than Field Mapping.
+The **Delivery Targets LLM Decision Service** is the first of ADR-0007's three LLM Decision Services. Its job is described in [ADR-0007](../decisions/0007-llm-decision-service-decomposition.md) as **"selecting which downstream systems should receive transformed data for this event."** It reasons over event type, learner context, and the set of available delivery targets to produce a small set of selected targets, each with a confidence score and a rationale.
 
 The primary POC question for this service is whether an LLM can make the routing decision reliably enough — and explainably enough — to justify replacing the deterministic stub that selects targets today. The service should therefore keep the selection decision visible and auditable, and it must never let the LLM's selection flow straight to delivery without deterministic validation against the eligible target set.
 
@@ -18,7 +16,7 @@ The Delivery Targets LLM Decision Service is responsible for:
 
 - accepting one delivery-target selection request for one workflow execution,
 - loading the available-delivery-targets catalog that enumerates the targets the POC supports,
-- reasoning over event type, learner context, and policy context to select a subset of those targets,
+- reasoning over event type and learner context to select a subset of those targets,
 - assigning each selected target a confidence score and a rationale,
 - deterministically validating the LLM's selection against the available/eligible target set before reporting success,
 - storing the selection artifact and its invocation metadata for downstream reuse and audit,
@@ -44,7 +42,20 @@ Per [ADR-0016](../decisions/0016-delivery-routing-topology.md), the POC's delive
 
 These three targets are the available target set for the POC. The service selects a subset of them per event; it does not invent targets outside this catalog. As with Field Mapping's catalogs, the **available-delivery-targets catalog is a committed artifact this service resolves** — it does not pre-exist and must be authored as part of building this service (see FR-DT-5a).
 
-> Open question: ADR-0016 defines the delivery-action-to-adapter topology but does not itself define per-target *eligibility* attributes (for example, which event types or learner-profile states make a target eligible). The catalog contents that express eligibility to the model, and how much eligibility is deterministic policy versus LLM judgment, are open (see §6).
+> Open question: ADR-0016 defines the delivery-action-to-adapter topology but does not itself define per-target *eligibility* attributes (for example, which event types or learner-profile states make a target eligible). For the POC, eligibility is expressed through the catalog's human-readable descriptions and resolved by LLM judgment; deterministic policy enforcement against richer eligibility rules is a future-phase concern.
+
+### Target use cases and testing rationale
+
+The POC has two distinct final targets — the LearnCard wallet ecosystem and SmartResume — and testing this service usefully requires a clear basis for routing between them. The intended bifurcation is:
+
+- **LearnCard wallet** (`learncard_issuer` + `learncard_wallet`): for learners who have completed digital-credential-enabled courses and can receive a verifiable Open Badge.
+- **SmartResume** (`smart_resume`): for learners in non-credential-enabled courses, or where SmartResume is the appropriate downstream record.
+
+In a real multi-institution deployment, institution 1 might route all its events to LearnCard and institution 2 might route to SmartResume, giving a natural routing test. For the POC the Mock LMS acts as a single institution, so the routing split must come from other signal — most likely credential enablement on the course or learner-profile state.
+
+> Open question: The sample data for non-credential-enabled courses (the primary SmartResume routing signal) was on hold at the time this doc was written. The concrete routing use case that exercises both final targets in the same evaluation corpus is not yet resolved. This is an honest open question — the testing rationale above captures the intent, but the exact scenario mix should be settled when sample data is finalized. Any assumptions made during catalog and prompt authoring should be documented so they can be revisited.
+
+> Future work: Requirements and design docs for the **SmartResume Adapter** and the **Mock SmartResume** are still needed — matching the existing LearnCard documentation — so the real SmartResume can drop in. Those are separate deliverables not in scope for this service.
 
 ## 4. Inputs and Outputs
 
@@ -58,11 +69,12 @@ The request should provide the decision context inline by default so it can stay
 | `event_type` | The learner/credential event driving the decision (e.g. `skill_mastered`) |
 | `source_system` | Identifies the upstream system that produced the event |
 | Learner context | Learner-specific decision context assembled by the Context Builder |
-| Policy context | Policy/eligibility context assembled by the Context Builder |
 
-Per ADR-0007, the key inputs for this decision are **event type, learner context, policy context, and available delivery targets**. The available delivery targets are resolved by the service from its own catalog (§3, FR-DT-5), not supplied by the Orchestrator. Prompt templates, model IDs, temperatures, and other LLM runtime settings are configuration of the service runtime, not primary business inputs.
+Per ADR-0007, the key inputs for this decision are **event type, learner context, and available delivery targets**. The available delivery targets are resolved by the service from its own catalog (§3, FR-DT-5), not supplied by the Orchestrator. Prompt templates, model IDs, temperatures, and other LLM runtime settings are configuration of the service runtime, not primary business inputs.
 
-The service should treat the learner and policy context as **opaque JSON** from the Context Builder bundle where practical, consistent with the Orchestrator's handling of that bundle ([Orchestrator Design](../3_design/orchestrator.md) §4), rather than requiring an exhaustive typed model of the full context up front.
+A **policy context** input (eligibility rules, institutional policy, etc.) is referenced in some ADR-0007 framing but is **out of scope for the POC** — a Policy Rules Service is not being designed or implemented at this stage. For the POC, eligibility reasoning is carried by the human-readable target descriptions in the available-delivery-targets catalog (FR-DT-5a) and by LLM judgment against those descriptions. Policy enforcement as a separate service layer is deferred to a future phase.
+
+The service should treat the learner context as **opaque JSON** from the Context Builder bundle where practical, consistent with the Orchestrator's handling of that bundle ([Orchestrator Design](../3_design/orchestrator.md) §4), rather than requiring an exhaustive typed model of the full context up front.
 
 ### Outputs
 
@@ -70,26 +82,26 @@ The synchronous service response should be compact. The full selection artifact 
 
 | Output | Purpose |
 | --- | --- |
-| `selection_artifact_ref` | Points to the stored selection artifact (selected targets + per-target confidence and rationale) |
+| `selection_artifact_ref` | Points to the **business decision artifact**: which targets were selected, each with its confidence score and rationale. This is the durable record of *what was decided* for a given workflow execution. |
 | `selected_targets` | The validated set of selected delivery-target identifiers, for direct use by the delivery-phase Workflow Actions call |
-| `llm_invocation_log_ref` | Lets the Orchestrator correlate to detailed invocation metadata in execution logs |
+| `llm_invocation_log_ref` | Points to the **technical invocation record**: model ID, prompt-template version, token counts, latency, raw model output, and similar operational metadata. This is the record of *how the decision was made*, kept separate so the Orchestrator does not need to parse model internals. |
 | Terminal status / failure details | Tells the Orchestrator whether the selection step succeeded |
 
-The full stored selection artifact carries the per-target confidence and rationale. Detailed model metadata such as token counts, latency, and prompt-template version belong in stored logs or artifacts, not necessarily in the immediate runtime response.
+The two refs serve different retrieval purposes: `selection_artifact_ref` is what downstream steps and auditors navigate to understand or replay the routing decision; `llm_invocation_log_ref` is what operators and prompt engineers navigate to diagnose model behavior and compare across prompt or model changes. Both are retained even for failed invocations.
 
 ## 5. Functional Requirements
 
 - **FR-DT-1** The service SHALL accept one delivery-target selection request per workflow execution invocation.
-- **FR-DT-2** The request SHALL identify `event_type` and `source_system`, and SHALL carry the learner context and policy context needed for the routing decision.
+- **FR-DT-2** The request SHALL identify `event_type` and `source_system`, and SHALL carry the learner context needed for the routing decision. Policy context is out of scope for the POC (see §4 Inputs).
 - **FR-DT-3** The service SHALL NOT fetch live LMS resources directly from upstream systems; it SHALL rely on the context supplied in the request (assembled deterministically by the Context Builder).
 - **FR-DT-4** The service SHALL select a subset of the available delivery targets. Its output SHALL NOT include any target that is not present in the available-delivery-targets catalog.
 - **FR-DT-5** The service SHALL resolve the available-delivery-targets catalog from its own configuration and storage rather than requiring the Orchestrator to enumerate targets in the request.
-- **FR-DT-5a** The implementation of this service SHALL include authoring the committed available-delivery-targets catalog file. For the POC the catalog SHALL enumerate `learncard_issuer`, `learncard_wallet`, and `smart_resume` per [ADR-0016](../decisions/0016-delivery-routing-topology.md), with a human-readable description of each target sufficient to explain the routing choice to the model. This catalog file does not pre-exist and is an explicit deliverable of the development effort for this service, not a pre-existing input.
+- **FR-DT-5a** The implementation of this service SHALL include authoring the committed available-delivery-targets catalog file. For the POC the catalog SHALL enumerate `learncard_issuer`, `learncard_wallet`, and `smart_resume` per [ADR-0016](../decisions/0016-delivery-routing-topology.md), with a human-readable description of each target sufficient to explain the routing choice to the model. The descriptions should be written as an institution administrator realistically would when configuring a target — that is, the catalog should reflect the kind of description an admin fills out on a configuration form, not a technically polished doc-site summary. In a real deployment, an institution administrator would author this description when registering a target system; for the POC we write it in that same voice. Do NOT over-edit these descriptions for literary quality, because the LLM's routing performance should be evaluated against natural admin-written inputs, not artificially cleaned ones. This catalog file does not pre-exist and is an explicit deliverable of the development effort for this service, not a pre-existing input.
 - **FR-DT-6** Each selected target in the output SHALL carry a `confidence` score and a `rationale`, consistent with [ADR-0010](../decisions/0010-llm-model-access-strategy.md) §165 (confidence and rationale as structured output).
 - **FR-DT-7** The service SHALL express the LLM decision as a **schema-constrained structured response**. It SHALL NOT rely on free-form text parsing to recover the selected targets.
 - **FR-DT-8** The service SHALL store the selection artifact immediately and SHALL return a reference to it in the synchronous response. Returning the full artifact inline MAY be supported for local debugging but SHALL NOT be the normal downstream contract.
-- **FR-DT-9** The service SHALL run **before** the Transformation Mappings (Field Mapping) service, per the hard dependency in [ADR-0007](../decisions/0007-llm-decision-service-decomposition.md): the mapping instructions depend on which targets have been selected.
-- **FR-DT-10** The service SHALL be invocable as a named step in the Orchestrator's runtime shape — the `select_delivery_targets` seam that sits between the pre-target Workflow Actions gate and the delivery-phase Workflow Actions plan (see [Orchestrator Design](../3_design/orchestrator.md) §3, §6).
+- ~~**FR-DT-9**~~ _Moved to Orchestrator/Workflow Actions._ The hard dependency that Delivery Targets must resolve before Field Mapping begins is an orchestrator sequencing constraint, not a requirement on this service. It is owned by the Orchestrator and documented in [Orchestrator Design](../3_design/orchestrator.md) §3 and [ADR-0007](../decisions/0007-llm-decision-service-decomposition.md).
+- ~~**FR-DT-10**~~ _Moved to Orchestrator/Workflow Actions._ The `select_delivery_targets` named seam and its position in the workflow are defined by the Orchestrator, not this service. See [Orchestrator Design](../3_design/orchestrator.md) §3, §6 and FR-DT-34 (§8) for the stub-replacement requirement that does bind this service.
 - **FR-DT-11** The service SHALL use a managed model-access adapter consistent with [ADR-0010](../decisions/0010-llm-model-access-strategy.md). For the POC, the primary provider SHALL be Amazon Bedrock, invoked through the Converse API.
 - **FR-DT-12** The service SHALL support configurable model ID, prompt-template version, and generation parameters without requiring a contract change.
 - **FR-DT-13** The service SHALL default to low-temperature generation appropriate for a stable, reproducible routing decision.
@@ -113,7 +125,7 @@ The repo-wide architectural contract is that **LLM reasoning is always paired wi
 - **FR-DT-21** Invalid selections SHALL still be stored as **failed artifacts** or failed invocation records with their validation errors attached, as evidence for prompt tuning and model comparison. They SHALL NOT be reusable as successful selection artifacts.
 - **FR-DT-22** The service SHALL record which prompt template and model produced each selection so prompt or model changes can be compared later against the frozen evaluation corpus from [ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md).
 - **FR-DT-23** The service's Layer B capability evaluation against the frozen ADR-0013 corpus SHALL be implemented using the shared DeepEval test harness ([ADR-0021](../decisions/0021-llm-testing-tooling-extensions.md)). Because target selection compares a produced set against a canonical expected set, this is expected to be a deterministic custom metric (set correctness), not an LLM-as-judge metric.
-- **FR-DT-24** The service SHALL screen free-text values in the supplied learner and policy context for prompt-injection attempts before they are included in a Bedrock prompt ([ADR-0021](../decisions/0021-llm-testing-tooling-extensions.md)).
+- **FR-DT-24** The service SHALL screen free-text values in the supplied learner context for prompt-injection attempts before they are included in a Bedrock prompt ([ADR-0021](../decisions/0021-llm-testing-tooling-extensions.md)).
 - **FR-DT-25** The service SHALL support uncached evaluation runs and SHALL default to uncached generation for POC evaluation and test-oriented development.
 - **FR-DT-26** The service MAY support a configuration switch that enables stored-selection reuse for production-like behavior once the team wants to exercise that path; reuse SHALL be opt-in, not the default evaluation path.
 

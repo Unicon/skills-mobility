@@ -12,6 +12,8 @@ The **Delivery Targets LLM Decision Service** is the routing boundary inside the
 
 Per [ADR-0007](../decisions/0007-llm-decision-service-decomposition.md), this is "primarily a routing and eligibility decision. It reasons over event type, learner state, and available targets to produce a small set of destinations. The prompt is relatively stable and the output schema is simple." That makes this service structurally simpler than the Field Mapping service: there is one decision, one small structured output, and no artifact generation (no JSONata, no placeholders, no synthesis requests).
 
+A **Policy Rules Service** (for deterministic policy enforcement against institutional eligibility rules) is out of scope for the POC. For this service, eligibility reasoning is carried entirely by the human-readable descriptions in the available-delivery-targets catalog (§5) and by LLM judgment against those descriptions.
+
 The available delivery targets for the POC come from [ADR-0016](../decisions/0016-delivery-routing-topology.md):
 
 | Delivery target | Delivery action | Adapter | Runtime |
@@ -83,9 +85,14 @@ The synchronous response should be small:
 }
 ```
 
-This keeps the Orchestrator contract stable and lightweight. `selected_targets` is included as a flat list of identifiers because the very next step — the delivery-phase Workflow Actions call — needs exactly that list to build its plan; the per-target confidence and rationale live in the stored artifact and the invocation log, retrievable through the returned references.
+This keeps the Orchestrator contract stable and lightweight. `selected_targets` is included as a flat list of identifiers because the very next step — the delivery-phase Workflow Actions call — needs exactly that list to build its plan; the per-target confidence and rationale live in the stored artifact, retrievable through `selection_artifact_ref`.
 
-The Orchestrator passes `selection_artifact_ref` (and the flat `selected_targets` list) through as the step's output binding; it does not need every rationale inline if it can retrieve that detail through the logged reference. For local debugging only, the boundary may optionally support an inline-expansion mode that returns the stored artifact directly. That should not be the default production-like path.
+The two refs serve distinct purposes:
+
+- `selection_artifact_ref` points to the **business decision artifact** — which targets were selected, each with confidence and rationale. This is what downstream steps and auditors navigate to understand or replay the routing decision.
+- `llm_invocation_log_ref` points to the **technical invocation record** — model ID, prompt-template version, token counts, latency, raw model output. This is what operators and prompt engineers navigate to diagnose model behavior and compare across prompt or model changes.
+
+Both refs are returned even for failed invocations; the records are retained as evidence for prompt tuning. For local debugging only, the boundary may optionally support an inline-expansion mode that returns the stored artifact directly. That should not be the default production-like path.
 
 ## 4. Runtime Shape
 
@@ -94,7 +101,7 @@ The recommended runtime flow is:
 ```text
 Orchestrator
   -> Delivery Targets boundary
-      -> accept event_type, source_system, learner context, policy context inline
+      -> accept event_type, source_system, learner context inline
       -> resolve the available-delivery-targets catalog from service-managed configuration
       -> screen free-text context values for prompt injection (ADR-0021)
       -> build Bedrock request payload
@@ -124,10 +131,16 @@ Recommended catalog contents, per target:
 
 - `delivery_target` identifier (`learncard_issuer`, `learncard_wallet`, `smart_resume`)
 - `delivery_action` (ADR-0016 action, e.g. `issue_learncard_badge`)
-- human-readable description of what the target is and what kind of credential/data it accepts
-- eligibility notes the model should weigh (for example, which event types typically route to this target)
+- human-readable description of what the target is and what kind of credential/data it accepts — written in the voice of an institution administrator filling out a configuration form, not a polished doc-site summary (see FR-DT-5a)
+- eligibility notes the model should weigh (for example, which event types or learner-profile states typically route to this target)
 
-> Open question: ADR-0016 defines the delivery-action-to-adapter topology but does not define per-target *eligibility attributes*. How much of eligibility is expressed as deterministic catalog data (and later enforced by the Policy Rules Service) versus left to LLM judgment is unresolved. For the POC the catalog should carry enough descriptive/eligibility text to make the routing choice explainable, and the deterministic hard gate (§8) is limited to catalog membership until a policy design defines richer eligibility rules.
+The admin-voice framing matters for evaluation: the LLM's routing performance is being assessed against natural admin-authored descriptions. Over-editing catalog entries for literary quality would skew that evaluation. Write descriptions as a realistic admin would; don't clean them up.
+
+> Open question: ADR-0016 defines the delivery-action-to-adapter topology but does not define per-target *eligibility attributes*. For the POC, eligibility is expressed through the catalog's human-readable descriptions and resolved by LLM judgment; the deterministic hard gate (§9) is limited to catalog membership. Deterministic policy enforcement against richer eligibility rules (a future Policy Rules Service) is out of scope for the POC.
+
+> Future work: Requirements and design docs for the **SmartResume Adapter** and the **Mock SmartResume** are still needed, matching the existing LearnCard documentation, so the real SmartResume can drop in. Those are separate deliverables not in scope for this service.
+
+The intended routing bifurcation for evaluation is: `learncard_issuer` + `learncard_wallet` for digital-credential-enabled courses; `smart_resume` for non-credential-enabled courses or learners where SmartResume is the appropriate record. The sample data for the non-credential path was on hold when this design was written — catalog and prompt authors should document any assumptions they make about SmartResume eligibility so they can be revisited when that data is finalized.
 
 The important constraint, as with the Field Mapping catalogs, is that catalog edits are reviewable and versioned. The store should not begin as a manually curated runtime-only database with no committed source of truth.
 
@@ -143,14 +156,15 @@ The request should be transient-context-first:
   "event_id": "evt_123",
   "event_type": "skill_mastered",
   "source_system": "mock_lms",
-  "learner_context": { "...": "transient context bundle subset" },
-  "policy_context": { "...": "transient context bundle subset" }
+  "learner_context": { "...": "transient context bundle subset" }
 }
 ```
 
-Per [ADR-0007](../decisions/0007-llm-decision-service-decomposition.md), the key inputs are event type, learner context, policy context, and the available delivery targets. The available targets are **not** in the request — the service resolves them from its own catalog (§5), so the Orchestrator does not have to enumerate targets or know catalog identifiers.
+Per [ADR-0007](../decisions/0007-llm-decision-service-decomposition.md), the key inputs are event type, learner context, and the available delivery targets. The available targets are **not** in the request — the service resolves them from its own catalog (§5), so the Orchestrator does not have to enumerate targets or know catalog identifiers.
 
-The Orchestrator passes the learner and policy context inline by default, consistent with how it treats the Context Builder bundle as opaque JSON ([Orchestrator Design](./orchestrator.md) §4). If a context payload is already stored or is too large to pass inline comfortably, the contract may allow an optional reference instead. That is a fallback, not the default.
+A `policy_context` field is not included in the POC request contract — a Policy Rules Service is out of scope for the POC (see §1). If policy context is introduced in a future phase, it can be added as an additional request field without changing the core contract.
+
+The Orchestrator passes the learner context inline by default, consistent with how it treats the Context Builder bundle as opaque JSON ([Orchestrator Design](./orchestrator.md) §4). If a context payload is already stored or is too large to pass inline comfortably, the contract may allow an optional reference instead. That is a fallback, not the default.
 
 Prompt templates, model IDs, temperatures, and generation parameters are runtime configuration of the service, not core business inputs on every request.
 
@@ -161,7 +175,7 @@ The initial implementation should make **one Bedrock Converse request** for each
 That one request should contain:
 
 - one **system prompt** template file that defines the service role and hard rules,
-- one **request message** assembled from the current event, learner context, and policy context,
+- one **request message** assembled from the current event and learner context,
 - one **structured-output schema** that constrains the model's response.
 
 Bedrock's Converse API uses role labels such as `system`, `user`, and `assistant`. Here the Bedrock `user` role message is an application-built request message in a server-to-server pipeline, not a human chat message.
@@ -173,7 +187,6 @@ The request message should include, in structured or clearly delimited form:
 - `event_type`
 - `source_system`
 - the learner context relevant to routing eligibility
-- the policy context relevant to routing eligibility
 - the resolved available-delivery-targets catalog (identifiers, descriptions, eligibility notes)
 
 ### Bedrock response output
@@ -190,13 +203,13 @@ The system prompt and request message together should tell the model all of the 
 
 - it is selecting which downstream targets should receive transformed data for this event,
 - it may select only from the supplied available-delivery-targets catalog,
-- it should weigh event type, learner context, and policy context against each target's eligibility notes,
+- it should weigh event type and learner context against each target's eligibility notes,
 - it must assign each selected target a confidence and a rationale,
 - it must not invent targets or delivery mechanics, and must not decide transformation or workflow steps.
 
 ### Prompt tuning emphasis
 
-Prompt tuning for this service will likely focus on the **eligibility boundary**: when an event/learner/policy combination warrants a given target versus not. Expected tuning levers include clarifying each target's eligibility notes in the catalog, adding representative examples of correct routing decisions, and calibrating how confidently the model should select a target given partial context. Prompt templates should live in version-controlled files so changes can be reviewed and compared against the evaluation corpus.
+Prompt tuning for this service will likely focus on the **eligibility boundary**: when an event/learner combination warrants a given target versus not. Expected tuning levers include clarifying each target's eligibility notes in the catalog, adding representative examples of correct routing decisions, and calibrating how confidently the model should select a target given partial context. Prompt templates should live in version-controlled files so changes can be reviewed and compared against the evaluation corpus.
 
 ## 8. Bedrock Invocation Design
 
@@ -206,7 +219,7 @@ Amazon Bedrock is the POC's primary managed inference platform per [ADR-0010](..
 
 For the POC, the concrete adapter implementation should target Bedrock's **Converse API**. The Bedrock interaction sequence for this service is:
 
-1. screen free-text values in the learner/policy context for prompt-injection attempts ([ADR-0021](../decisions/0021-llm-testing-tooling-extensions.md)) before they reach the prompt
+1. screen free-text values in the learner context for prompt-injection attempts ([ADR-0021](../decisions/0021-llm-testing-tooling-extensions.md)) before they reach the prompt
 2. build the prompt and structured-output schema
 3. call the provider adapter, which invokes Bedrock `Converse` through the AWS SDK
 4. parse the returned structured object
