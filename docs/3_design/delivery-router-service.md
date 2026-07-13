@@ -78,7 +78,11 @@ The response shape should be stable across adapters even when the nested `result
 - `dispatcher/` — action-to-adapter resolution and dispatch rules
 - `clients/` — thin HTTP clients for downstream adapters
 - `config/` — adapter bindings, timeout/retry configuration, and delivery config lookup
-- `deliverylog/` — standardized delivery-attempt and delivery-result record emission
+
+Delivery-attempt and delivery-result log lines are emitted inline in `api/` via the
+stdlib `logging` module (the consistent pattern across the Python services — there is
+no separate logging module); the Orchestrator owns the persisted correlated execution
+view (ADR-0016).
 
 The router should not contain target-specific field mapping code. Any adapter-specific logic inside `clients/` should be mechanical request assembly only.
 
