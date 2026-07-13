@@ -10,7 +10,7 @@
 | [0002](./0002-frontend-architecture.md) | Frontend Architecture (two React SPAs, S3+CloudFront, CloudFront-layer auth) | Accepted |
 | [0003](./0003-programming-language.md) | Primary Programming Language Selection (Python-first) | Accepted |
 | [0004](./0004-lif-usage.md) | LIF Component Usage in the Initial POC | Accepted |
-| [0005](./0005-schema-mapping-langauge.md) | Schema Mapping Language (JSONata) | Accepted |
+| [0005](./0005-schema-mapping-language.md) | Schema Mapping Language (JSONata) | Accepted |
 | [0006](./0006-other-open-source-usage.md) | Other Open Source Usage | Accepted |
 | [0007](./0007-llm-decision-service-decomposition.md) | LLM Decision Service Decomposition (delivery targets / transformation mappings / workflow actions) | Accepted |
 | [0008](./0008-transformation-mapping-service-decomposition.md) | Transformation Mapping Service Decomposition | Accepted |
@@ -22,8 +22,11 @@
 | [0014](./0014-poc-storage-strategy.md) | POC Storage Strategy | Accepted |
 | [0015](./0015-orchestrator-execution-model.md) | Event Consumer and Orchestrator Worker Execution Model (Lambda + SQS) | Accepted |
 | [0016](./0016-delivery-routing-topology.md) | Delivery Routing Topology and Adapter Boundaries | Proposed |
+| [0017](./0017-three-transformation-phases.md) | Three Transformation Phases for the Default Expected POC Path | Accepted |
 | [0018](./0018-admin-ui-frontend-stack.md) | Admin UI Frontend Stack and Design-Token Architecture (Radix + Open Props + Radix Colors + Motion; no Tailwind/shadcn) | Accepted |
 | [0019](./0019-adr-governance-and-lifecycle.md) | ADR Governance and Lifecycle: Living Documents with Visible Reversals | Proposed |
+| [0020](./0020-js-ts-workspace-tooling.md) | JS/TS Workspace Tooling and Token Publishing (npm workspaces, single root lockfile, no build step) | Accepted |
+| [0021](./0021-llm-testing-tooling-extensions.md) | LLM Testing Tooling Extensions to ADR-0013 (DeepEval, DSPy, Argilla, guardrails, prompt injection, embeddings/re-ranker field mapping) | Proposed |
 
 ## Conventions
 

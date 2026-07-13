@@ -1,7 +1,8 @@
 """FastAPI application factory for the Orchestrator.
 
 `POST /run-workflow` runs the planner + executor paths and persists the trail;
-`GET /executions/{id}` returns the correlated execution metadata.
+`GET /executions` lists recent executions (optionally filtered by `correlation_id`)
+and `GET /executions/{id}` returns the correlated execution metadata.
 `PUT /admin/plan-lookup-toggle` enables/disables reusable delivery-phase plan
 lookup (FR-OR-28) and `DELETE /admin/plans/{id}` forces regeneration (FR-OR-29).
 Seams default to the Phase-1 stubs.
@@ -89,9 +90,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             field_mapping=app.state.field_mapping,
             issuer_id=settings.issuer_id,
             delivery_config_ref=settings.delivery_config_ref,
+            recipient_profile_id=settings.demo_recipient_profile_id,
             reusable_plan_lookup=app.state.reusable_plan_lookup_enabled,
         )
         return metadata.model_dump()
+
+    @app.get("/executions")
+    def list_executions(
+        limit: int = 50, correlation_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        store: ExecutionStore = app.state.store
+        rows = store.list_executions(limit=limit, correlation_id=correlation_id)
+        return [r.model_dump() for r in rows]
 
     @app.get("/executions/{execution_id}")
     def get_execution(execution_id: str) -> dict[str, Any]:

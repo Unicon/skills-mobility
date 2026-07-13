@@ -46,8 +46,10 @@ from mock_lms.catalog import (
     RubricCriterion,
     RubricRating,
     Submission,
+    SubmissionCriterionAssessment,
     User,
 )
+from mock_lms.generators.content import SubjectContent, content_for, pick
 
 # Fixed date window — keeps generation independent of the wall clock.
 _WINDOW_START = datetime(2026, 1, 13, tzinfo=UTC)
@@ -211,7 +213,9 @@ def generate(
     fake.seed_instance(seed)
 
     catalog = Catalog()
-    for kind, rc in _select_roster(csv_dir, n_courses, learners_per_course):
+    for course_idx, (kind, rc) in enumerate(
+        _select_roster(csv_dir, n_courses, learners_per_course)
+    ):
         course = Course(
             id=rc.course_id,
             name=rc.name,
@@ -231,9 +235,9 @@ def generate(
                 )
             )
         if kind is CourseKind.STANDARD:
-            _generate_standard(catalog, course, rc, fake)
+            _generate_standard(catalog, course, rc, fake, course_idx)
         else:
-            _generate_digital_credential(catalog, course, rc, fake)
+            _generate_digital_credential(catalog, course, rc, fake, course_idx)
 
     return GenerationResult(catalog=catalog)
 
@@ -242,7 +246,8 @@ def _due(fake: Faker) -> datetime:
     return fake.date_time_between(_WINDOW_START, _WINDOW_END, tzinfo=UTC)
 
 
-def _rubric(course_id: str, assignment_id: str, title: str) -> Rubric:
+def _rubric(course_id: str, assignment_id: str, title: str, content: SubjectContent) -> Rubric:
+    """Subject-specific rubric (issue #23): real, varied criteria + ratings."""
     return Rubric(
         id=f"{course_id}-RUB-{assignment_id}",
         course_id=course_id,
@@ -250,34 +255,50 @@ def _rubric(course_id: str, assignment_id: str, title: str) -> Rubric:
         title=f"{title} Rubric",
         criteria=[
             RubricCriterion(
-                id=f"{assignment_id}-C1",
-                description="Demonstrates understanding of core concepts",
-                points=5.0,
-                ratings=[
-                    RubricRating(description="Exceeds", points=5.0),
-                    RubricRating(description="Meets", points=3.0),
-                    RubricRating(description="Approaching", points=1.0),
-                ],
-            ),
-            RubricCriterion(
-                id=f"{assignment_id}-C2",
-                description="Applies concepts to a realistic problem",
-                points=5.0,
-                ratings=[
-                    RubricRating(description="Exceeds", points=5.0),
-                    RubricRating(description="Meets", points=3.0),
-                    RubricRating(description="Approaching", points=1.0),
-                ],
-            ),
+                id=f"{assignment_id}-{c.key}",
+                description=c.description,
+                points=c.points,
+                ratings=[RubricRating(description=d, points=p) for d, p in c.ratings],
+            )
+            for c in content.rubric_criteria
         ],
     )
 
 
+def _rubric_assessment(
+    rubric: Rubric, content: SubjectContent, passed: bool, variation: int
+) -> list[SubmissionCriterionAssessment]:
+    """Per-criterion assessment for a submission — top rating when the learner
+    met the standard, a lower one otherwise (Canvas ``rubric_assessment``)."""
+    out: list[SubmissionCriterionAssessment] = []
+    for i, crit in enumerate(rubric.criteria):
+        rating = crit.ratings[0] if passed else crit.ratings[min(1, len(crit.ratings) - 1)]
+        comment = content.grader_comments[(variation + i) % len(content.grader_comments)]
+        out.append(
+            SubmissionCriterionAssessment(
+                criterion_id=crit.id,
+                points=rating.points,
+                rating_description=rating.description,
+                comments=comment,
+            )
+        )
+    return out
+
+
 def _graded_submission(
-    course_id: str, assignment_id: str, user_id: str, score: float, fake: Faker
+    course_id: str,
+    assignment_id: str,
+    user_id: str,
+    score: float,
+    fake: Faker,
+    *,
+    rubric: Rubric,
+    content: SubjectContent,
+    variation: int,
 ) -> Submission:
     submitted = fake.date_time_between(_WINDOW_START, _WINDOW_END, tzinfo=UTC)
     graded = fake.date_time_between(submitted, _WINDOW_END, tzinfo=UTC)
+    passed = score >= _PASS_SCORE
     return Submission(
         id=f"{course_id}-SUB-{assignment_id}-{user_id}",
         course_id=course_id,
@@ -286,14 +307,59 @@ def _graded_submission(
         score=score,
         grade=_grade(score),
         workflow_state="graded",
+        body=content.submission_bodies[variation % len(content.submission_bodies)],
+        rubric_assessment=_rubric_assessment(rubric, content, passed, variation),
         submitted_at=submitted,
         graded_at=graded,
     )
 
 
-def _generate_standard(catalog: Catalog, course: Course, rc: _RosterCourse, fake: Faker) -> None:
+def _module_with_pages(
+    catalog: Catalog,
+    cid: str,
+    module_no: int,
+    name: str,
+    assignment: Assignment,
+    content: SubjectContent,
+    course_idx: int,
+) -> None:
+    """Build a module of two instructional content pages (real bodies) + the
+    graded assignment. The Page module-items let the Context Builder's
+    module_pages chain return real pages (issue #23)."""
+    items: list[ModuleItem] = []
+    for k in range(2):
+        title, body = pick(content.pages, course_idx * 4 + module_no * 2 + k)
+        page = Page(
+            id=f"{cid}-PAGE-M{module_no}-{k + 1}",
+            course_id=cid,
+            url=f"m{module_no}-p{k + 1}",
+            title=title,
+            body=body,
+        )
+        catalog.pages.append(page)
+        items.append(
+            ModuleItem(
+                id=f"{cid}-MOD-{module_no}-P{k + 1}", title=title, type="Page", content_id=page.id
+            )
+        )
+    items.append(
+        ModuleItem(
+            id=f"{cid}-MOD-{module_no}-I1", title=assignment.name, type="Assignment",
+            content_id=assignment.id,
+        )
+    )
+    catalog.modules.append(
+        Module(id=f"{cid}-MOD-{module_no}", course_id=cid, name=name, position=module_no,
+               items=items)
+    )
+
+
+def _generate_standard(
+    catalog: Catalog, course: Course, rc: _RosterCourse, fake: Faker, course_idx: int
+) -> None:
     cid = course.id
     subject = course.name.removeprefix("Introduction to ").strip() or course.name
+    content = content_for(course.course_code)
 
     # Outcome-title convention: a competency is "N.0.0" (an integer then all
     # zeros); a sub-competency is "N.M.0" (a second non-zero segment). The
@@ -303,14 +369,14 @@ def _generate_standard(catalog: Catalog, course: Course, rc: _RosterCourse, fake
         id=f"{cid}-OUT-1",
         title=f"1.0.0 {subject} Principles",
         display_name=f"Apply core principles of {subject.lower()}",
-        description=f"Learner can independently apply {subject.lower()} to analyze a problem.",
+        description=content.competency_description,
         code="1.0.0",
     )
     sub_competency = Outcome(
         id=f"{cid}-OUT-1-2",
         title=f"1.2.0 Prepare a {subject.lower()} work product",
         display_name=f"Complete a discrete {subject.lower()} task",
-        description=f"Learner can complete a single bounded {subject.lower()} task accurately.",
+        description=content.sub_competency_description,
         code="1.2.0",
     )
     catalog.outcomes.extend([competency, sub_competency])
@@ -319,7 +385,7 @@ def _generate_standard(catalog: Catalog, course: Course, rc: _RosterCourse, fake
         id=f"{cid}-A-M1",
         course_id=cid,
         name="Module 1 Assessment",
-        description=f"Demonstrate the {subject} competency.",
+        description=pick(content.module_assignment_descriptions, course_idx * 2),
         due_at=_due(fake),
         role=AssignmentRole.MODULE,
         module_id=f"{cid}-MOD-1",
@@ -329,7 +395,7 @@ def _generate_standard(catalog: Catalog, course: Course, rc: _RosterCourse, fake
         id=f"{cid}-A-M2",
         course_id=cid,
         name="Module 2 Assessment",
-        description=f"Demonstrate a {subject} sub-skill.",
+        description=pick(content.module_assignment_descriptions, course_idx * 2 + 1),
         due_at=_due(fake),
         role=AssignmentRole.MODULE,
         module_id=f"{cid}-MOD-2",
@@ -339,38 +405,24 @@ def _generate_standard(catalog: Catalog, course: Course, rc: _RosterCourse, fake
         id=f"{cid}-A-FINAL",
         course_id=cid,
         name=f"Final {subject} Exam",
-        description=f"Comprehensive {subject} assessment.",
+        description=content.final_assignment_description,
         due_at=_due(fake),
         role=AssignmentRole.FINAL,
     )
     catalog.assignments.extend([a_m1, a_m2, a_final])
-    catalog.modules.extend(
-        [
-            Module(
-                id=f"{cid}-MOD-1",
-                course_id=cid,
-                name=f"Module 1: Foundations of {subject}",
-                position=1,
-                items=[ModuleItem(id=f"{cid}-MOD-1-I1", title=a_m1.name, type="Assignment",
-                                  content_id=a_m1.id)],
-            ),
-            Module(
-                id=f"{cid}-MOD-2",
-                course_id=cid,
-                name=f"Module 2: Applying {subject}",
-                position=2,
-                items=[ModuleItem(id=f"{cid}-MOD-2-I1", title=a_m2.name, type="Assignment",
-                                  content_id=a_m2.id)],
-            ),
-        ]
-    )
+    _module_with_pages(catalog, cid, 1, f"Module 1: Foundations of {subject}", a_m1, content,
+                       course_idx)
+    _module_with_pages(catalog, cid, 2, f"Module 2: Applying {subject}", a_m2, content, course_idx)
     catalog.pages.append(
         Page(id=f"{cid}-PAGE-syllabus", course_id=cid, url="syllabus", title="Course Syllabus",
-             body=f"Foundations of {subject}, assessed across two modules and a final.")
+             body=f"{course.name}: foundations of {subject.lower()}, assessed across two modules "
+                  "and a comprehensive final. Each module pairs instructional readings with a "
+                  "graded assessment aligned to a learning outcome.")
     )
-    final_rubric = _rubric(cid, a_final.id, a_final.name)
-    a_final.rubric_id = final_rubric.id
-    catalog.rubrics.append(final_rubric)
+    rubrics = {a.id: _rubric(cid, a.id, a.name, content) for a in (a_m1, a_m2, a_final)}
+    for a in (a_m1, a_m2, a_final):
+        a.rubric_id = rubrics[a.id].id
+    catalog.rubrics.extend(rubrics.values())
 
     # Learner work: first learner passes, second fails, rest pass — so the final
     # Action can demonstrate both the passing and failing course_completed variant.
@@ -379,7 +431,10 @@ def _generate_standard(catalog: Catalog, course: Course, rc: _RosterCourse, fake
         for assignment in (a_m1, a_m2, a_final):
             score = final_score if assignment is a_final else _PASS_SCORE
             catalog.submissions.append(
-                _graded_submission(cid, assignment.id, learner.id, score, fake)
+                _graded_submission(
+                    cid, assignment.id, learner.id, score, fake,
+                    rubric=rubrics[assignment.id], content=content, variation=idx,
+                )
             )
         for outcome in (competency, sub_competency):
             catalog.outcome_results.append(
@@ -414,16 +469,17 @@ def _generate_standard(catalog: Catalog, course: Course, rc: _RosterCourse, fake
 
 
 def _generate_digital_credential(
-    catalog: Catalog, course: Course, rc: _RosterCourse, fake: Faker
+    catalog: Catalog, course: Course, rc: _RosterCourse, fake: Faker, course_idx: int
 ) -> None:
     cid = course.id
     subject = course.name.removeprefix("Introduction to ").strip() or course.name
+    content = content_for(course.course_code)
 
     competency = Outcome(
         id=f"{cid}-OUT-1",
         title=f"1.0.0 {subject} Competency",
         display_name=f"Demonstrate {subject.lower()} competency",
-        description=f"Learner demonstrates {subject.lower()} competency to a credential standard.",
+        description=content.competency_description,
         code="1.0.0",
     )
     catalog.outcomes.append(competency)
@@ -460,7 +516,7 @@ def _generate_digital_credential(
         id=f"{cid}-A-M1",
         course_id=cid,
         name="Module 1 Project",
-        description=f"Project evidencing a {subject} competency.",
+        description=pick(content.module_assignment_descriptions, course_idx * 2),
         due_at=_due(fake),
         role=AssignmentRole.MODULE,
         module_id=f"{cid}-MOD-1",
@@ -470,7 +526,7 @@ def _generate_digital_credential(
         id=f"{cid}-A-M2",
         course_id=cid,
         name="Module 2 Project",
-        description=f"Project evidencing a second {subject} competency.",
+        description=pick(content.module_assignment_descriptions, course_idx * 2 + 1),
         due_at=_due(fake),
         role=AssignmentRole.MODULE,
         module_id=f"{cid}-MOD-2",
@@ -480,34 +536,32 @@ def _generate_digital_credential(
         id=f"{cid}-A-FINAL",
         course_id=cid,
         name=f"{subject} Capstone",
-        description=f"Capstone for the {course.name} credential.",
+        description=content.final_assignment_description,
         due_at=_due(fake),
         role=AssignmentRole.FINAL,
         badge_id=badge_course.id,
     )
     catalog.assignments.extend([a_m1, a_m2, a_final])
-    catalog.modules.extend(
-        [
-            Module(id=f"{cid}-MOD-1", course_id=cid, name="Module 1", position=1,
-                   items=[ModuleItem(id=f"{cid}-MOD-1-I1", title=a_m1.name, type="Assignment",
-                                     content_id=a_m1.id)]),
-            Module(id=f"{cid}-MOD-2", course_id=cid, name="Module 2", position=2,
-                   items=[ModuleItem(id=f"{cid}-MOD-2-I1", title=a_m2.name, type="Assignment",
-                                     content_id=a_m2.id)]),
-        ]
-    )
+    _module_with_pages(catalog, cid, 1, "Module 1", a_m1, content, course_idx)
+    _module_with_pages(catalog, cid, 2, "Module 2", a_m2, content, course_idx)
     catalog.pages.append(
         Page(id=f"{cid}-PAGE-syllabus", course_id=cid, url="syllabus", title="Course Syllabus",
-             body=f"{course.name}: a digital-credential course issuing badges per module.")
+             body=f"{course.name}: a digital-credential {subject.lower()} course that issues a "
+                  "badge per module and a course credential at the capstone. Each module pairs "
+                  "instructional readings with a project evidencing the competency.")
     )
-    final_rubric = _rubric(cid, a_final.id, a_final.name)
-    a_final.rubric_id = final_rubric.id
-    catalog.rubrics.append(final_rubric)
+    rubrics = {a.id: _rubric(cid, a.id, a.name, content) for a in (a_m1, a_m2, a_final)}
+    for a in (a_m1, a_m2, a_final):
+        a.rubric_id = rubrics[a.id].id
+    catalog.rubrics.extend(rubrics.values())
 
     for assignment in (a_m1, a_m2, a_final):
-        for learner in rc.learners:
+        for idx, learner in enumerate(rc.learners):
             catalog.submissions.append(
-                _graded_submission(cid, assignment.id, learner.id, _PASS_SCORE, fake)
+                _graded_submission(
+                    cid, assignment.id, learner.id, _PASS_SCORE, fake,
+                    rubric=rubrics[assignment.id], content=content, variation=idx,
+                )
             )
 
     catalog.actions.extend(

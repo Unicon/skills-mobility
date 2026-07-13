@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-06-25
-- Related: [ADR-0001](./0001-repo-structure.md) · [ADR-0002](./0002-frontend-architecture.md) · [Admin UI Requirements](../2_requirements/admin-ui.md) · [Admin UI Design](../3_design/admin-ui.md) · [Mock LMS Design](../3_design/mock-lms.md)
+- Related: [ADR-0001](./0001-repo-structure.md) · [ADR-0002](./0002-frontend-architecture.md) · [ADR-0020](./0020-js-ts-workspace-tooling.md) · [Admin UI Requirements](../2_requirements/admin-ui.md) · [Admin UI Design](../3_design/admin-ui.md) · [Mock LMS Design](../3_design/mock-lms.md)
 
 ## Context
 

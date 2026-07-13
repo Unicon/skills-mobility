@@ -20,10 +20,11 @@ running services and no live LearnCard. The real Context Builder (#20, over
 
 ```
 src/orchestrator/
-  app.py       FastAPI factory: POST /run-workflow, GET /executions/{id},
+  app.py       FastAPI factory: POST /run-workflow, GET /executions[/{id}],
                PUT /admin/plan-lookup-toggle, DELETE /admin/plans/{id}, /healthz
   config.py    settings (ORCHESTRATOR_PORT, ORCHESTRATOR_DB_PATH, ORCHESTRATOR_ISSUER_ID,
-               LEARNCARD_DELIVERY_CONFIG_REF, *_URL seams, reusable_plan_lookup_enabled)
+               LEARNCARD_DELIVERY_CONFIG_REF, LEARNCARD_DEMO_RECIPIENT_PROFILE_ID,
+               *_URL seams, reusable_plan_lookup_enabled)
   engine.py    orchestration: planner path + executor path + execution-state persistence
   planner.py   pre-target gate, Delivery Targets stub, delivery-phase plan artifact
   executor.py  step loop: resolve input bindings, dispatch, persist each StepResult
@@ -39,13 +40,17 @@ src/orchestrator/
 - `POST /run-workflow {execution_id, event_id, correlation_id, event}` — runs the
   plan and persists the trail; returns the `ExecutionMetadata`.
 - `GET /executions/{id}` — the correlated execution metadata (status + per-step log + result).
+- `GET /executions?limit=&correlation_id=` — recent executions (newest first), compact
+  summary rows with completed/total step progress; `correlation_id` filters to one
+  Action run's executions. The Admin UI's list + cross-app pivot (#28).
 - `PUT /admin/plan-lookup-toggle {enabled}` — turn reusable delivery-phase plan lookup on/off (FR-OR-28).
 - `DELETE /admin/plans/{plan_id}` — drop a stored plan to force regeneration (FR-OR-29).
 
 ## What's stubbed (Phase 1)
 
 - **Workflow Actions / Delivery Targets** → deterministic gate (`continue`) + fixed target set.
-- **Field Mapping / Field Synthesis** → contract-shaped stubs (return the #27 §10 response envelope / synthesized-values map; the plan supplies `transformation_type`, `delivery_target`, and `synthesis_allowed` as independent literals; no real artifacts yet); **Translation Executor** → the OBv3/wallet-payload builders.
+- **Recipient** → the POC resolves + delivers to one fixed pre-provisioned wallet by handle (`LEARNCARD_DEMO_RECIPIENT_PROFILE_ID`, default `smi-demo-learner`), not the event's learner (ADR-0020).
+- **Field Mapping** → calls the real Field Mapping service when `ORCHESTRATOR_FIELD_MAPPING_URL` is set (best-effort — a failure doesn't fail the workflow), else a contract-shaped stub returning the #27 §10 envelope. **Field Synthesis** → contract-shaped stub. **Translation Executor** → the OBv3/wallet-payload builders (`obv3.py`) still produce the delivered payload; wiring the mapping's JSONata into delivery is a later slice.
 - **Profile Resolver / Delivery Router (+ LearnCard adapters)** → canned profile/DID + signed VC + accepted delivery. Set `ORCHESTRATOR_PROFILE_RESOLVER_URL` (#51) and/or `ORCHESTRATOR_DELIVERY_ROUTER_URL` (#56) to call the real services over HTTP instead.
 
 ## Run / test

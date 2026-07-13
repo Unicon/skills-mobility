@@ -37,6 +37,7 @@ def run_workflow(
     field_mapping: FieldMappingClient,
     issuer_id: str,
     delivery_config_ref: str,
+    recipient_profile_id: str,
     reusable_plan_lookup: bool = False,
 ) -> ExecutionMetadata:
     metadata = request.event.get("metadata", {})
@@ -91,7 +92,9 @@ def run_workflow(
         "bundle": bundle,
         "issuer_id": issuer_id,
         "delivery_config_ref": delivery_config_ref,
-        "learner_id_value": metadata.get("user_id", ""),
+        # POC resolves + delivers to the fixed demo recipient wallet, not the event's
+        # learner (ADR-0020); the originating learner stays on the stored event.
+        "learner_id_value": recipient_profile_id,
     }
     envelope = EnvelopeContext(
         workflow_id=execution_id,  # Phase 1: one workflow per execution.

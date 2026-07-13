@@ -39,7 +39,7 @@ class ActionDeps:
 
 def _resolve_learncard_profile(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
     return deps.profile_resolver.resolve(
-        inputs.get("learner_id_type", "email"),
+        inputs.get("learner_id_type", "profile_id"),
         inputs.get("learner_id_value", ""),
         deps.envelope,
         "resolve_learncard_profile",
