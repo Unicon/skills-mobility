@@ -28,18 +28,21 @@ same-origin.
 # terminal 1 — backend (from repo root)
 uv run mock-lms                  # http://127.0.0.1:8000
 
-# terminal 2 — UI
-cd apps/mock-lms
+# terminal 2 — UI (npm workspace, ADR-0020) — install once from the repo root
 npm install
-npm run dev                      # http://localhost:5173
+npm run dev -w apps/mock-lms     # http://localhost:5173
 ```
 
 ## Build / check
 
 ```bash
-npm run build        # tsc --noEmit + vite build -> dist/
-npm run typecheck
+npm run build -w apps/mock-lms       # tsc --noEmit + vite build -> dist/
+npm run typecheck -w apps/mock-lms
 ```
+
+Depends on the shared `@skills-mobility/ui` and `@skills-mobility/contracts`
+workspace packages (`packages/ui`, `packages/contracts`) for design tokens,
+shared primitives, and the API client/types.
 
 Design: dark "mission-control" instrumentation aesthetic — gold credential
 signal, live-green status, per-event telemetry colors, Archivo + JetBrains Mono.

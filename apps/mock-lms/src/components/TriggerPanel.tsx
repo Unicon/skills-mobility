@@ -1,6 +1,7 @@
+import type { ActionView, CourseWithActions, EventEnvelope, RunResult, Scope } from "@skills-mobility/contracts";
+import { CopyableId, eventColor } from "@skills-mobility/ui";
 import type { CSSProperties } from "react";
-import type { ActionView, CourseWithActions, EventEnvelope, RunResult, Scope } from "../types";
-import { eventColor, shortId } from "../util";
+import { shortId } from "../util";
 
 export function TriggerPanel({
   course,
@@ -12,7 +13,7 @@ export function TriggerPanel({
   onRun,
   lastRun,
   onOpenEnvelope,
-  onCopy,
+  onCopySuccess,
 }: {
   course: CourseWithActions | null;
   scope: Scope;
@@ -23,7 +24,7 @@ export function TriggerPanel({
   onRun: (action: ActionView) => void;
   lastRun: RunResult | null;
   onOpenEnvelope: (env: EventEnvelope) => void;
-  onCopy: (text: string, label: string) => void;
+  onCopySuccess: (label: string) => void;
 }) {
   const runAction =
     course && lastRun ? course.actions.find((a) => a.id === lastRun.action_id) : null;
@@ -106,13 +107,12 @@ export function TriggerPanel({
               <div className="card" style={{ borderColor: "rgba(230,180,80,0.4)" }}>
                 <header>
                   <h3>Emitted</h3>
-                  <span
-                    className="tag mono copyable"
-                    title="Copy correlation id"
-                    onClick={() => onCopy(lastRun.correlation_id, "correlation id")}
-                  >
-                    {shortId(lastRun.correlation_id)}
-                  </span>
+                  <CopyableId
+                    value={lastRun.correlation_id}
+                    display={shortId(lastRun.correlation_id)}
+                    label="correlation id"
+                    onCopied={onCopySuccess}
+                  />
                 </header>
                 <div className="rows">
                   <div className="timeline">

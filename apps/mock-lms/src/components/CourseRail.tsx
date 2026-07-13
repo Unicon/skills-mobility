@@ -1,4 +1,4 @@
-import type { CourseWithActions } from "../types";
+import type { CourseWithActions } from "@skills-mobility/contracts";
 
 const KIND_LABEL: Record<string, string> = {
   standard: "standard",
