@@ -122,7 +122,7 @@ infra/       # IaC / deployment (CDK) — not yet populated
 docs/        # docs by lifecycle phase (1_product, 2_requirements, 3_design, 4_operations) + decisions/ (ADRs)
 ```
 
-Dependency rules: `apps/` may use `packages/` but not `services/`; `services/` may use `libs/` (and generated clients) but must not import other `services/` directly (use APIs/events); `libs/` depends on neither `apps/` nor `services/`. Shared Python⇄TS contracts need a documented source of truth.
+Dependency rules: `apps/` may use `packages/` but not `services/`; `services/` may use `libs/` (and generated clients) but must not import other `services/` directly (use APIs/events); `libs/` depends on neither `apps/` nor `services/`. Shared Python⇄TS contracts need a documented source of truth — for the execution read model it is `services/orchestrator/src/orchestrator/schemas.py`, mirrored by hand in `packages/contracts/src/types.ts`.
 
 ## Git & PR conventions
 
@@ -164,6 +164,7 @@ Dependency rules: `apps/` may use `packages/` but not `services/`; `services/` m
 [ ] Tests pass: uv run pytest (and npm run build for UI changes)
 [ ] Lint clean: uv run ruff check .
 [ ] Types clean: uv run mypy libs/*/src services/*/src
+[ ] packages/contracts/src/types.ts synced if the orchestrator execution read model changed
 [ ] No secrets, passwords, or hardcoded hostnames
 [ ] No AI attribution in commits or PR descriptions
 [ ] Docs/ADRs updated if the change affects structure or decisions

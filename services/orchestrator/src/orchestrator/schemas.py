@@ -3,6 +3,12 @@
 Typed envelope fields with opaque JSON where the shape varies by step
 (FR-OR-22): the full Context Builder bundle and step-specific payloads stay
 ``dict[str, Any]`` rather than fully-modeled domain objects.
+
+This file is the source of truth for the execution read model served by
+``GET /executions``. The Admin UI consumes a hand-maintained TypeScript mirror
+(``packages/contracts/src/types.ts``); when changing ``WorkflowStatus``,
+``GateDecision``, ``StepResult``, ``StepProgress``, ``ExecutionSummary``, or
+``ExecutionMetadata``, update the mirror to match.
 """
 
 from __future__ import annotations

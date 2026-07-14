@@ -116,8 +116,9 @@ export interface RunResult {
   emitted: EventEnvelope[];
 }
 
-// Orchestrator execution read model (Admin UI half). Derived client-side from
-// services/orchestrator/src/orchestrator/schemas.py, not imported from the backend.
+// Orchestrator execution read model (Admin UI half). Hand-maintained mirror of
+// services/orchestrator/src/orchestrator/schemas.py — that file is the source of
+// truth; when its execution read-model schemas change, update these to match.
 
 export type WorkflowStatus = "created" | "planning" | "ready" | "running" | "completed" | "failed";
 
