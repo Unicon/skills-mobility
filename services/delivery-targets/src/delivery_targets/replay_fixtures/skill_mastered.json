@@ -1,0 +1,14 @@
+{
+  "selections": [
+    {
+      "delivery_target": "learncard_issuer",
+      "confidence": 0.95,
+      "rationale": "A skill_mastered event produces a verifiable achievement that should be issued as an Open Badge credential via the LearnCard issuer."
+    },
+    {
+      "delivery_target": "learncard_wallet",
+      "confidence": 0.92,
+      "rationale": "The issued badge should be delivered to the learner's LearnCard wallet for storage and sharing."
+    }
+  ]
+}
