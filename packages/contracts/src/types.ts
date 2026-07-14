@@ -115,3 +115,54 @@ export interface RunResult {
   scope: Scope;
   emitted: EventEnvelope[];
 }
+
+// Orchestrator execution read model (Admin UI half). Hand-maintained mirror of
+// services/orchestrator/src/orchestrator/schemas.py — that file is the source of
+// truth; when its execution read-model schemas change, update these to match.
+
+export type WorkflowStatus = "created" | "planning" | "ready" | "running" | "completed" | "failed";
+
+export interface StepProgress {
+  completed: number;
+  total: number;
+}
+
+export interface ExecutionSummary {
+  execution_id: string;
+  correlation_id: string;
+  event_type: string | null;
+  status: WorkflowStatus;
+  step_progress: StepProgress;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StepResult {
+  step_id: number;
+  action_id: string;
+  status: "succeeded" | "skipped" | "failed";
+  attempt: number;
+  output: Record<string, unknown>;
+  error: Record<string, unknown> | null;
+  started_at: string;
+  finished_at: string;
+}
+
+export interface GateDecision {
+  decision: "continue_to_delivery_targets" | "terminate";
+  confidence: number;
+  rationale: string;
+}
+
+export interface ExecutionMetadata {
+  execution_id: string;
+  correlation_id: string;
+  event_type: string | null;
+  status: WorkflowStatus;
+  gate_decision: GateDecision | null;
+  plan_id: string | null;
+  steps: StepResult[];
+  result: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}

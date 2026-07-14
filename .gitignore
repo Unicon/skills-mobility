@@ -134,3 +134,8 @@ node_modules/
 # Claude Code — personal local settings
 # ==========================================
 .claude/settings.local.json
+
+# ==========================================
+# Local planning docs (scratch, not for the repo)
+# ==========================================
+_plans/
