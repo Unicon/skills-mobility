@@ -19,13 +19,17 @@ from orchestrator import engine
 from orchestrator.clients import (
     ContextBuilderClient,
     DeliveryRouterClient,
+    DeliveryTargetsClient,
     HttpContextBuilderClient,
     HttpDeliveryRouterClient,
+    HttpDeliveryTargetsClient,
     HttpProfileResolverClient,
+    HttpWorkflowActionsClient,
     ProfileResolverClient,
     StubContextBuilder,
     StubDeliveryRouter,
     StubProfileResolver,
+    WorkflowActionsClient,
 )
 from orchestrator.config import Settings, get_settings
 from orchestrator.schemas import WorkflowStartRequest
@@ -66,6 +70,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.profile_resolver = profile_resolver
     app.state.delivery_router = delivery_router
+    # LLM Decision Service planner seams (#77/#78): real HTTP clients when their
+    # URLs are set, else None → the engine uses the deterministic planner stubs.
+    delivery_targets: DeliveryTargetsClient | None = (
+        HttpDeliveryTargetsClient(settings.delivery_targets_url)
+        if settings.delivery_targets_url
+        else None
+    )
+    workflow_actions: WorkflowActionsClient | None = (
+        HttpWorkflowActionsClient(settings.workflow_actions_url)
+        if settings.workflow_actions_url
+        else None
+    )
+    app.state.delivery_targets = delivery_targets
+    app.state.workflow_actions = workflow_actions
     # Runtime-toggleable plan lookup (seeded from settings; FR-OR-28).
     app.state.reusable_plan_lookup_enabled = settings.reusable_plan_lookup_enabled
 
@@ -80,6 +98,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             issuer_id=settings.issuer_id,
             delivery_config_ref=settings.delivery_config_ref,
             recipient_profile_id=settings.demo_recipient_profile_id,
+            delivery_targets=app.state.delivery_targets,
+            workflow_actions=app.state.workflow_actions,
             reusable_plan_lookup=app.state.reusable_plan_lookup_enabled,
         )
         return metadata.model_dump()
