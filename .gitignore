@@ -86,6 +86,7 @@ logs/
 # Generated Audit Data
 # ==========================================
 audit-output/
+artifact-output/
 execution-traces/
 
 # ==========================================

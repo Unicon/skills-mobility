@@ -1,0 +1,87 @@
+{
+  "applicability": {
+    "event_type": "skill_mastered",
+    "source_system": "mock_lms",
+    "selected_targets": ["learncard_issuer", "learncard_wallet"]
+  },
+  "steps": [
+    {
+      "step_id": 1,
+      "type": "call",
+      "action_id": "resolve_learncard_profile",
+      "inputs": {
+        "learner_id_type": {"source": "literal", "value": "profile_id"},
+        "learner_id_value": {"source": "workflow", "path": "learner_id_value"},
+        "delivery_config_ref": {"source": "workflow", "path": "delivery_config_ref"}
+      },
+      "produces": "resolved_profile"
+    },
+    {
+      "step_id": 2,
+      "type": "call",
+      "action_id": "generate_issuer_payload_mapping",
+      "inputs": {},
+      "produces": "issuer_mapping"
+    },
+    {
+      "step_id": 3,
+      "type": "call",
+      "action_id": "generate_issuer_payload_synthesis",
+      "inputs": {},
+      "produces": "issuer_synthesis"
+    },
+    {
+      "step_id": 4,
+      "type": "call",
+      "action_id": "execute_issuer_payload_translation",
+      "inputs": {
+        "bundle": {"source": "workflow", "path": "bundle"},
+        "issuer_id": {"source": "workflow", "path": "issuer_id"},
+        "resolved_profile": {"source": "step", "step_id": 1},
+        "delivery_target": {"source": "literal", "value": "learncard_issuer"},
+        "mapping": {"source": "step", "step_id": 2},
+        "synthesis": {"source": "step", "step_id": 3}
+      },
+      "produces": "issuer_payload"
+    },
+    {
+      "step_id": 5,
+      "type": "call",
+      "action_id": "issue_learncard_badge",
+      "inputs": {
+        "issuer_payload": {"source": "step", "step_id": 4}
+      },
+      "produces": "issued"
+    },
+    {
+      "step_id": 6,
+      "type": "call",
+      "action_id": "generate_wallet_payload_mapping",
+      "inputs": {},
+      "produces": "wallet_mapping"
+    },
+    {
+      "step_id": 7,
+      "type": "call",
+      "action_id": "execute_wallet_payload_translation",
+      "inputs": {
+        "issued": {"source": "step", "step_id": 5},
+        "resolved_profile": {"source": "step", "step_id": 1},
+        "delivery_target": {"source": "literal", "value": "learncard_wallet"},
+        "mapping": {"source": "step", "step_id": 6}
+      },
+      "produces": "wallet_payload"
+    },
+    {
+      "step_id": 8,
+      "type": "call",
+      "action_id": "deliver_to_learncard_wallet",
+      "inputs": {
+        "wallet_payload": {"source": "step", "step_id": 7}
+      },
+      "produces": "delivered"
+    }
+  ],
+  "confidence": 0.94,
+  "rationale": "Dual-target LearnCard issuance and wallet delivery: resolve profile, generate issuer mapping and synthesis, translate and issue badge, generate wallet mapping, translate and deliver to wallet."
+}
