@@ -1,0 +1,20 @@
+[
+  {
+    "delivery_target": "learncard_issuer",
+    "delivery_action": "issue_learncard_badge",
+    "description": "Issues a verifiable Open Badge credential via the LearnCard issuer service. Use this target when the course or skill event is credential-enabled and the learner should receive a digitally-signed achievement badge. This target is typically paired with the LearnCard wallet target so the issued badge is also delivered to the learner's wallet.",
+    "eligibility_notes": "Appropriate for skill_mastered and course_completed events where the course has digital credential issuance enabled. Requires an issuer DID to be configured for the source system. Not appropriate for non-credential-enabled courses or where the learner does not have a resolvable DID."
+  },
+  {
+    "delivery_target": "learncard_wallet",
+    "delivery_action": "deliver_to_learncard_wallet",
+    "description": "Delivers an issued credential to the learner's LearnCard wallet. Use this when the learner has a LearnCard profile and should receive the credential in their wallet for long-term storage and sharing. This target depends on the learncard_issuer target having been selected — it delivers the issued badge, not the raw event data.",
+    "eligibility_notes": "Appropriate when learncard_issuer is also selected and the learner has a resolvable LearnCard wallet profile (recipient_profile_id present in learner context). Not appropriate on its own without the issuer target. Not appropriate for non-credential-enabled courses."
+  },
+  {
+    "delivery_target": "smart_resume",
+    "delivery_action": "deliver_to_smartresume",
+    "description": "Sends the learner achievement data to SmartResume for inclusion in the learner's professional record. Use this when the course or event is not credential-enabled (no Open Badge issuance) but the achievement should still be recorded in the learner's SmartResume profile. Also consider this target when SmartResume is the institution's primary record-of-learning system.",
+    "eligibility_notes": "Appropriate for non-credential-enabled courses or where SmartResume is the designated downstream system. Typically mutually exclusive with learncard_issuer/learncard_wallet for a given event — a credential-enabled course routes to LearnCard, a non-credential course routes to SmartResume. However, dual routing is possible if the institution configures both systems."
+  }
+]

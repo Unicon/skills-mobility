@@ -12,6 +12,6 @@ test('deriveSeed is deterministic (same label -> same seed)', () => {
   assert.equal(deriveSeed('learner'), deriveSeed('learner'));
 });
 
-test('deriveSeed differs by label (issuer != learner)', () => {
-  assert.notEqual(deriveSeed('issuer'), deriveSeed('learner'));
+test('deriveSeed differs by label (organization != learner)', () => {
+  assert.notEqual(deriveSeed('organization'), deriveSeed('learner'));
 });

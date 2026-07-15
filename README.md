@@ -38,10 +38,9 @@ uv run pytest              # run the full test suite
 ```
 
 ```bash
-# Demo UI (React + Vite)
-cd apps/mock-lms
+# Demo UI (React + Vite) — npm workspace, install once from the repo root
 npm install
-npm run dev                # http://localhost:5173 (proxies /api + /demo to the backend on :8000)
+npm run dev -w apps/mock-lms   # http://localhost:5173 (proxies /api + /demo to the backend on :8000)
 ```
 
 Per-component detail and "try it" steps live in the component READMEs:

@@ -1,0 +1,86 @@
+"""The Delivery Targets service pipeline (design §4 / §9).
+
+load catalog -> one adapter selection -> §9 validation -> store artifacts ->
+§3 response. There is exactly one model attempt (FR-DT-14); repair-retry is
+not implemented. A validated selection is stored as a successful artifact; an
+invalid one is stored as a failed artifact with its errors, and the response
+reports ``failed`` (FR-DT-21). Invalid output is never silently rescued.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from .artifact_store import ArtifactStore
+from .catalog_store import CatalogStore
+from .contracts import (
+    SelectionArtifact,
+    SelectionRequest,
+    SelectionResponse,
+)
+from .llm_adapter import LLMAdapter
+from .validators import validate_selection
+
+
+class SelectionService:
+    def __init__(
+        self,
+        *,
+        settings: Any,
+        adapter: LLMAdapter,
+        catalog_store: CatalogStore,
+        artifact_store: ArtifactStore,
+    ) -> None:
+        self._settings = settings
+        self._adapter = adapter
+        self._catalog_store = catalog_store
+        self._artifact_store = artifact_store
+
+    def select(self, request: SelectionRequest) -> SelectionResponse:
+        catalog = self._catalog_store.load_targets()
+        catalog_target_ids = {entry["delivery_target"] for entry in catalog}
+
+        # Exactly one attempt (FR-DT-14); no hidden repair retry.
+        generation = self._adapter.select(request, catalog=catalog)
+        errors = validate_selection(generation, catalog_target_ids=catalog_target_ids)
+
+        log_ref = self._artifact_store.store_invocation_log(
+            _invocation_log(request, generation, errors),
+            key=request.execution_id,
+        )
+
+        if errors:
+            self._artifact_store.store_failed(
+                request.execution_id, "; ".join(errors)
+            )
+            return SelectionResponse.failed(llm_invocation_log_ref=log_ref)
+
+        artifact = SelectionArtifact(
+            execution_id=request.execution_id,
+            event_type=request.event_type,
+            source_system=request.source_system,
+            selections=generation.selections,
+        )
+        selection_ref = self._artifact_store.store_selection(artifact)
+        selected_targets = [sel.delivery_target for sel in generation.selections]
+        return SelectionResponse.succeeded(
+            selection_artifact_ref=selection_ref,
+            selected_targets=selected_targets,
+            llm_invocation_log_ref=log_ref,
+        )
+
+
+def _invocation_log(
+    request: SelectionRequest,
+    generation: Any,
+    errors: list[str],
+) -> dict[str, Any]:
+    return {
+        "status": "failed" if errors else "succeeded",
+        "execution_id": request.execution_id,
+        "event_type": request.event_type,
+        "source_system": request.source_system,
+        "selected_targets": [sel.delivery_target for sel in generation.selections],
+        "validation_errors": errors,
+        "corpus_scenario_id": None,
+    }

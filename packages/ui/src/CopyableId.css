@@ -1,0 +1,23 @@
+.copyable-id {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid var(--line-bright);
+  background: none;
+  color: var(--ink-dim);
+  white-space: nowrap;
+  cursor: copy;
+  transition: color 0.15s, border-color 0.15s;
+}
+.copyable-id:hover {
+  color: var(--gold-bright);
+}
+.copyable-id:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+.copyable-id-failed {
+  color: var(--danger);
+  border-color: var(--danger);
+}
