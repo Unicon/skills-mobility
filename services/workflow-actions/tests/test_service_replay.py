@@ -5,12 +5,15 @@ from typing import Any
 from workflow_actions.contracts import (
     GateGeneration,
     GateRequest,
+    LlmCallMeta,
     PlanApplicability,
     PlanGeneration,
     PlanRequest,
     PlanStep,
 )
 from workflow_actions.plan_store import PlanStore
+
+_REPLAY_META = LlmCallMeta(provider="replay", model_id="replay", temperature=0.0)
 
 
 class _CountingAdapter:
@@ -28,18 +31,20 @@ class _CountingAdapter:
         self.gate_calls = 0
         self.plan_calls = 0
 
-    def gate(self, request: GateRequest, *, gating_prose: str) -> GateGeneration:
+    def gate(
+        self, request: GateRequest, *, gating_prose: str
+    ) -> tuple[GateGeneration, LlmCallMeta]:
         self.gate_calls += 1
         if self.fixed_gate is not None:
-            return self.fixed_gate
+            return self.fixed_gate, _REPLAY_META
         return self.inner.gate(request, gating_prose=gating_prose)
 
     def plan(
         self, request: PlanRequest, *, registry_view: list[dict[str, str]]
-    ) -> PlanGeneration:
+    ) -> tuple[PlanGeneration, LlmCallMeta]:
         self.plan_calls += 1
         if self.fixed_plan is not None:
-            return self.fixed_plan
+            return self.fixed_plan, _REPLAY_META
         return self.inner.plan(request, registry_view=registry_view)
 
 
@@ -109,6 +114,15 @@ def test_gate_invocation_log_stored(
     log = plan_store._read(resp.llm_invocation_log_ref)
     assert log["stage"] == "pre_target_gate"
     assert log["execution_id"] == "exec_1"
+    # ADR-0010 §60: model-call metadata + the prompt sent + structured output.
+    for field in (
+        "service", "phase", "event_id", "provider", "model_id", "temperature",
+        "input_tokens", "output_tokens", "latency_ms", "system_prompt", "user_prompt",
+        "decision", "rationale",
+    ):
+        assert field in log, f"missing invocation-log field: {field}"
+    assert log["provider"] == "replay"
+    assert log["system_prompt"]  # the input a live model would receive
 
 
 # ---------------------------------------------------------------------------
@@ -212,6 +226,15 @@ def test_plan_invocation_log_stored(
     log = plan_store._read(resp.llm_invocation_log_ref)
     assert log["stage"] == "delivery_phase_plan"
     assert log["execution_id"] == "exec_1"
+    # ADR-0010 §60: model-call metadata + the prompt sent + structured output.
+    for field in (
+        "service", "phase", "event_id", "provider", "model_id", "temperature",
+        "input_tokens", "output_tokens", "latency_ms", "system_prompt", "user_prompt",
+        "confidence", "rationale",
+    ):
+        assert field in log, f"missing invocation-log field: {field}"
+    assert log["provider"] == "replay"
+    assert log["system_prompt"]  # the input a live model would receive
 
 
 def test_plan_generator_metadata_set_correctly(

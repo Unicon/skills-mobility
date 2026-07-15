@@ -9,12 +9,13 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
-from .contracts import MappingGeneration, MappingRequest
+from .contracts import LlmCallMeta, MappingGeneration, MappingRequest
 
 
 class LLMAdapter(Protocol):
     def generate(
         self, request: MappingRequest, *, target_schema: dict[str, Any]
-    ) -> MappingGeneration:
-        """Produce one mapping generation for the request (exactly one attempt)."""
+    ) -> tuple[MappingGeneration, LlmCallMeta]:
+        """Produce one mapping generation for the request (exactly one attempt),
+        with the model-call metadata captured for the invocation log (ADR-0010 §60)."""
         ...

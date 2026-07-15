@@ -30,6 +30,7 @@ class _FakeBedrock:
                 }
             },
             "stopReason": "tool_use",
+            "usage": {"inputTokens": 210, "outputTokens": 33, "totalTokens": 243},
         }
 
 
@@ -71,7 +72,7 @@ def test_gate_builds_converse_request_and_parses_output() -> None:
         region="us-east-1",
         client=fake,
     )
-    gen = adapter.gate(_gate_request(), gating_prose="Terminate on failing grades.")
+    gen, meta = adapter.gate(_gate_request(), gating_prose="Terminate on failing grades.")
 
     assert isinstance(gen, GateGeneration)
     assert gen.decision == "continue_to_delivery_targets"
@@ -82,6 +83,12 @@ def test_gate_builds_converse_request_and_parses_output() -> None:
     assert kwargs["inferenceConfig"]["temperature"] == 0.0
     assert kwargs["toolConfig"]["toolChoice"]["tool"]["name"] == "emit_gate_decision"
     assert kwargs["toolConfig"]["tools"][0]["toolSpec"]["inputSchema"]["json"]["type"] == "object"
+    # ADR-0010 §60: the adapter captures per-invocation model metadata.
+    assert meta.provider == "bedrock"
+    assert meta.input_tokens == 210
+    assert meta.output_tokens == 33
+    assert meta.latency_ms is not None
+    assert meta.system_prompt and meta.user_prompt
 
 
 def test_plan_builds_converse_request_and_parses_output() -> None:
@@ -109,7 +116,7 @@ def test_plan_builds_converse_request_and_parses_output() -> None:
         region="us-east-1",
         client=fake,
     )
-    gen = adapter.plan(_plan_request(), registry_view=_registry_view())
+    gen, meta = adapter.plan(_plan_request(), registry_view=_registry_view())
 
     assert isinstance(gen, PlanGeneration)
     assert len(gen.steps) == 1
@@ -118,6 +125,10 @@ def test_plan_builds_converse_request_and_parses_output() -> None:
     assert kwargs is not None
     assert kwargs["toolConfig"]["toolChoice"]["tool"]["name"] == "emit_plan"
     assert kwargs["inferenceConfig"]["temperature"] == 0.0
+    # ADR-0010 §60: metadata captured for the plan stage too.
+    assert meta.provider == "bedrock"
+    assert meta.output_tokens == 33
+    assert meta.system_prompt and meta.user_prompt
 
 
 def test_extract_tool_input_raises_without_tooluse() -> None:
@@ -137,7 +148,7 @@ def test_adapter_lazy_client_not_created_until_called() -> None:
         region="us-east-1",
         client=fake,
     )
-    gen = adapter.gate(_gate_request(), gating_prose="Terminate on failures.")
+    gen, _meta = adapter.gate(_gate_request(), gating_prose="Terminate on failures.")
     assert gen.decision == "continue_to_delivery_targets"
 
 

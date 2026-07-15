@@ -12,17 +12,19 @@ AWS SDK chain (FR-FM-29); no API-key layer.
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
-import boto3  # type: ignore[import-untyped]
+import boto3
 
-from .contracts import MappingGeneration, MappingRequest
+from .contracts import LlmCallMeta, MappingGeneration, MappingRequest
 from .prompt_builder import build_user_message, system_prompt
 from .screen import screen_for_injection
 
 logger = logging.getLogger(__name__)
 
 _TOOL_NAME = "emit_mapping"
+_TEMPERATURE = 0.0
 
 
 class BedrockResponseError(Exception):
@@ -50,7 +52,7 @@ class BedrockAdapter:
 
     def generate(
         self, request: MappingRequest, *, target_schema: dict[str, Any]
-    ) -> MappingGeneration:
+    ) -> tuple[MappingGeneration, LlmCallMeta]:
         # FR-FM-27b: screen free-text before it reaches the prompt.
         findings = screen_for_injection(request.source_payloads)
         if findings:
@@ -60,12 +62,14 @@ class BedrockAdapter:
             )
 
         tool_schema = MappingGeneration.model_json_schema()
+        sys_text = system_prompt()
         user_text = build_user_message(request, target_schema)
+        started = time.perf_counter()
         response = self._bedrock().converse(
             modelId=self._model_id,
-            system=[{"text": system_prompt()}],
+            system=[{"text": sys_text}],
             messages=[{"role": "user", "content": [{"text": user_text}]}],
-            inferenceConfig={"temperature": 0.0, "maxTokens": self._max_tokens},
+            inferenceConfig={"temperature": _TEMPERATURE, "maxTokens": self._max_tokens},
             toolConfig={
                 "tools": [
                     {
@@ -79,7 +83,19 @@ class BedrockAdapter:
                 "toolChoice": {"tool": {"name": _TOOL_NAME}},
             },
         )
-        return MappingGeneration(**_extract_tool_input(response))
+        latency_ms = (time.perf_counter() - started) * 1000.0
+        usage = response.get("usage", {})
+        meta = LlmCallMeta(
+            provider="bedrock",
+            model_id=self._model_id,
+            temperature=_TEMPERATURE,
+            input_tokens=usage.get("inputTokens"),
+            output_tokens=usage.get("outputTokens"),
+            latency_ms=latency_ms,
+            system_prompt=sys_text,
+            user_prompt=user_text,
+        )
+        return MappingGeneration(**_extract_tool_input(response)), meta
 
 
 def _extract_tool_input(response: dict[str, Any]) -> dict[str, Any]:

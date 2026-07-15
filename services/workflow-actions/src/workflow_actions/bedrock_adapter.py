@@ -12,11 +12,18 @@ normal AWS SDK credential chain; no API-key layer.
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 import boto3
 
-from .contracts import GateGeneration, GateRequest, PlanGeneration, PlanRequest
+from .contracts import (
+    GateGeneration,
+    GateRequest,
+    LlmCallMeta,
+    PlanGeneration,
+    PlanRequest,
+)
 from .prompt_builder import (
     build_gate_user_message,
     build_plan_user_message,
@@ -29,6 +36,7 @@ logger = logging.getLogger(__name__)
 
 _GATE_TOOL_NAME = "emit_gate_decision"
 _PLAN_TOOL_NAME = "emit_plan"
+_TEMPERATURE = 0.0
 
 
 class BedrockResponseError(Exception):
@@ -54,7 +62,47 @@ class BedrockAdapter:
             self._client = boto3.client("bedrock-runtime", region_name=self._region)
         return self._client
 
-    def gate(self, request: GateRequest, *, gating_prose: str) -> GateGeneration:
+    def _converse(
+        self, *, system_text: str, user_text: str, tool_name: str, tool_desc: str,
+        tool_schema: dict[str, Any],
+    ) -> tuple[dict[str, Any], LlmCallMeta]:
+        """Run one forced-tool-use Converse call and capture its §60 metadata."""
+        started = time.perf_counter()
+        response = self._bedrock().converse(
+            modelId=self._model_id,
+            system=[{"text": system_text}],
+            messages=[{"role": "user", "content": [{"text": user_text}]}],
+            inferenceConfig={"temperature": _TEMPERATURE, "maxTokens": self._max_tokens},
+            toolConfig={
+                "tools": [
+                    {
+                        "toolSpec": {
+                            "name": tool_name,
+                            "description": tool_desc,
+                            "inputSchema": {"json": tool_schema},
+                        }
+                    }
+                ],
+                "toolChoice": {"tool": {"name": tool_name}},
+            },
+        )
+        latency_ms = (time.perf_counter() - started) * 1000.0
+        usage = response.get("usage", {})
+        meta = LlmCallMeta(
+            provider="bedrock",
+            model_id=self._model_id,
+            temperature=_TEMPERATURE,
+            input_tokens=usage.get("inputTokens"),
+            output_tokens=usage.get("outputTokens"),
+            latency_ms=latency_ms,
+            system_prompt=system_text,
+            user_prompt=user_text,
+        )
+        return response, meta
+
+    def gate(
+        self, request: GateRequest, *, gating_prose: str
+    ) -> tuple[GateGeneration, LlmCallMeta]:
         # Screen free-text before it reaches the prompt.
         findings = screen_context(request.context_bundle)
         findings += screen_context({"event": request.event})
@@ -64,31 +112,18 @@ class BedrockAdapter:
                 [f.path for f in findings],
             )
 
-        tool_schema = GateGeneration.model_json_schema()
-        user_text = build_gate_user_message(request)
-        response = self._bedrock().converse(
-            modelId=self._model_id,
-            system=[{"text": gate_system_prompt(gating_prose)}],
-            messages=[{"role": "user", "content": [{"text": user_text}]}],
-            inferenceConfig={"temperature": 0.0, "maxTokens": self._max_tokens},
-            toolConfig={
-                "tools": [
-                    {
-                        "toolSpec": {
-                            "name": _GATE_TOOL_NAME,
-                            "description": "Emit the gate decision.",
-                            "inputSchema": {"json": tool_schema},
-                        }
-                    }
-                ],
-                "toolChoice": {"tool": {"name": _GATE_TOOL_NAME}},
-            },
+        response, meta = self._converse(
+            system_text=gate_system_prompt(gating_prose),
+            user_text=build_gate_user_message(request),
+            tool_name=_GATE_TOOL_NAME,
+            tool_desc="Emit the gate decision.",
+            tool_schema=GateGeneration.model_json_schema(),
         )
-        return GateGeneration(**_extract_tool_input(response))
+        return GateGeneration(**_extract_tool_input(response)), meta
 
     def plan(
         self, request: PlanRequest, *, registry_view: list[dict[str, str]]
-    ) -> PlanGeneration:
+    ) -> tuple[PlanGeneration, LlmCallMeta]:
         # Screen free-text before it reaches the prompt.
         findings = screen_context(request.context_bundle)
         findings += screen_context({"event": request.event})
@@ -98,27 +133,14 @@ class BedrockAdapter:
                 [f.path for f in findings],
             )
 
-        tool_schema = PlanGeneration.model_json_schema()
-        user_text = build_plan_user_message(request)
-        response = self._bedrock().converse(
-            modelId=self._model_id,
-            system=[{"text": plan_system_prompt(registry_view)}],
-            messages=[{"role": "user", "content": [{"text": user_text}]}],
-            inferenceConfig={"temperature": 0.0, "maxTokens": self._max_tokens},
-            toolConfig={
-                "tools": [
-                    {
-                        "toolSpec": {
-                            "name": _PLAN_TOOL_NAME,
-                            "description": "Emit the delivery-phase plan.",
-                            "inputSchema": {"json": tool_schema},
-                        }
-                    }
-                ],
-                "toolChoice": {"tool": {"name": _PLAN_TOOL_NAME}},
-            },
+        response, meta = self._converse(
+            system_text=plan_system_prompt(registry_view),
+            user_text=build_plan_user_message(request),
+            tool_name=_PLAN_TOOL_NAME,
+            tool_desc="Emit the delivery-phase plan.",
+            tool_schema=PlanGeneration.model_json_schema(),
         )
-        return PlanGeneration(**_extract_tool_input(response))
+        return PlanGeneration(**_extract_tool_input(response)), meta
 
 
 def _extract_tool_input(response: dict[str, Any]) -> dict[str, Any]:

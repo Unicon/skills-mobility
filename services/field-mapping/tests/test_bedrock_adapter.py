@@ -23,6 +23,7 @@ class _FakeBedrock:
                 }
             },
             "stopReason": "tool_use",
+            "usage": {"inputTokens": 512, "outputTokens": 88, "totalTokens": 600},
         }
 
 
@@ -60,7 +61,9 @@ def test_adapter_builds_converse_request_and_parses_tool_output() -> None:
         client=fake,
     )
 
-    gen = adapter.generate(_wallet_request(), target_schema={"required": ["recipient_profile_id"]})
+    gen, meta = adapter.generate(
+        _wallet_request(), target_schema={"required": ["recipient_profile_id"]}
+    )
 
     assert isinstance(gen, MappingGeneration)
     assert gen.confidence == 0.95
@@ -71,6 +74,12 @@ def test_adapter_builds_converse_request_and_parses_tool_output() -> None:
     assert kwargs["inferenceConfig"]["temperature"] == 0.0
     assert kwargs["toolConfig"]["toolChoice"]["tool"]["name"] == "emit_mapping"
     assert kwargs["toolConfig"]["tools"][0]["toolSpec"]["inputSchema"]["json"]["type"] == "object"
+    # ADR-0010 §60: the adapter captures per-invocation model metadata.
+    assert meta.provider == "bedrock"
+    assert meta.input_tokens == 512
+    assert meta.output_tokens == 88
+    assert meta.latency_ms is not None
+    assert meta.system_prompt and meta.user_prompt
 
 
 def test_extract_tool_input_raises_without_tooluse() -> None:

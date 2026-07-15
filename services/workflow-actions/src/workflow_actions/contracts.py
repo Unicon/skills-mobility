@@ -230,3 +230,18 @@ class PlanGeneration(BaseModel):
     steps: list[PlanStep]
     confidence: float
     rationale: str
+
+
+class LlmCallMeta(BaseModel):
+    """Per-invocation model-call metadata the adapter captures (ADR-0010 §60), so
+    the invocation log can show exactly what the model received and returned.
+    Replay mode uses sentinel values (provider ``replay``, no token/latency)."""
+
+    provider: str
+    model_id: str
+    temperature: float
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    latency_ms: float | None = None
+    system_prompt: str | None = None
+    user_prompt: str | None = None

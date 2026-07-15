@@ -16,6 +16,7 @@ from .artifact_loader import load_source_payloads
 from .artifact_store import ArtifactStore, FailedArtifactError, stable_key
 from .catalog_store import CatalogStore
 from .contracts import (
+    LlmCallMeta,
     MappingArtifact,
     MappingGeneration,
     MappingRequest,
@@ -68,10 +69,10 @@ class MappingService:
                 return reused
 
         # Exactly one attempt (FR-FM-18); repair-retry is not implemented.
-        generation = self._adapter.generate(request, target_schema=target_schema)
+        generation, meta = self._adapter.generate(request, target_schema=target_schema)
         errors = validate_generation(generation, request=request, target_schema=target_schema)
         log_ref = self._artifacts.store_invocation_log(
-            _invocation_log(request, generation, errors), key=key
+            _invocation_log(request, generation, meta, errors), key=key
         )
 
         if errors:
@@ -137,14 +138,34 @@ class MappingService:
 
 
 def _invocation_log(
-    request: MappingRequest, generation: MappingGeneration, errors: list[str]
+    request: MappingRequest,
+    generation: MappingGeneration,
+    meta: LlmCallMeta,
+    errors: list[str],
 ) -> dict[str, Any]:
+    # ADR-0010 §60: capture per-invocation model metadata (model/provider/temperature/
+    # tokens/latency) plus the prompt sent and the structured output, so the audit
+    # trail shows exactly what the model received and returned.
     return {
         "status": "failed" if errors else "succeeded",
+        "service": "field-mapping",
+        "phase": str(request.transformation_type),
+        "event_id": request.event_id,
+        "execution_id": request.execution_id,
         "transformation_type": str(request.transformation_type),
         "delivery_target": str(request.delivery_target) if request.delivery_target else None,
         "source_system": request.source_system,
         "fetch_profile_id": request.fetch_profile_id,
+        "provider": meta.provider,
+        "model_id": meta.model_id,
+        "temperature": meta.temperature,
+        "input_tokens": meta.input_tokens,
+        "output_tokens": meta.output_tokens,
+        "latency_ms": meta.latency_ms,
+        "system_prompt": meta.system_prompt,
+        "user_prompt": meta.user_prompt,
+        "jsonata": generation.jsonata,
+        "placeholder_ids": generation.placeholder_ids,
         "confidence": generation.confidence,
         "rationale": generation.rationale,
         "validation_errors": errors,
