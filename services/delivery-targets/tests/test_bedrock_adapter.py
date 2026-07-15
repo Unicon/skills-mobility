@@ -29,6 +29,7 @@ class _FakeBedrock:
                 }
             },
             "stopReason": "tool_use",
+            "usage": {"inputTokens": 321, "outputTokens": 42, "totalTokens": 363},
         }
 
 
@@ -70,7 +71,7 @@ def test_adapter_builds_converse_request_and_parses_tool_output() -> None:
         client=fake,
     )
 
-    gen = adapter.select(_skill_mastered_request(), catalog=_catalog())
+    gen, meta = adapter.select(_skill_mastered_request(), catalog=_catalog())
 
     assert isinstance(gen, SelectionGeneration)
     assert gen.selections[0].confidence == 0.95
@@ -81,6 +82,14 @@ def test_adapter_builds_converse_request_and_parses_tool_output() -> None:
     assert kwargs["inferenceConfig"]["temperature"] == 0.0
     assert kwargs["toolConfig"]["toolChoice"]["tool"]["name"] == "emit_selection"
     assert kwargs["toolConfig"]["tools"][0]["toolSpec"]["inputSchema"]["json"]["type"] == "object"
+    # ADR-0010 §60: the adapter captures per-invocation model metadata.
+    assert meta.provider == "bedrock"
+    assert meta.model_id == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    assert meta.temperature == 0.0
+    assert meta.input_tokens == 321
+    assert meta.output_tokens == 42
+    assert meta.latency_ms is not None
+    assert meta.system_prompt and meta.user_prompt
 
 
 def test_extract_tool_input_raises_without_tooluse() -> None:
@@ -101,5 +110,5 @@ def test_adapter_lazy_client_not_created_until_select_is_called() -> None:
     )
     # The internal _client is set immediately when passed — this just verifies
     # it works without a real boto3 import.
-    gen = adapter.select(_skill_mastered_request(), catalog=_catalog())
+    gen, _meta = adapter.select(_skill_mastered_request(), catalog=_catalog())
     assert gen.selections[0].delivery_target == "learncard_issuer"

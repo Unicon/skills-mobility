@@ -2,7 +2,14 @@ from typing import Any
 
 import pytest
 from delivery_targets.artifact_store import ArtifactStore, FailedArtifactError
-from delivery_targets.contracts import SelectionGeneration, SelectionRequest, TargetSelection
+from delivery_targets.contracts import (
+    LlmCallMeta,
+    SelectionGeneration,
+    SelectionRequest,
+    TargetSelection,
+)
+
+_REPLAY_META = LlmCallMeta(provider="replay", model_id="replay", temperature=0.0)
 
 
 class _CountingAdapter:
@@ -15,10 +22,10 @@ class _CountingAdapter:
 
     def select(
         self, request: SelectionRequest, *, catalog: list[dict[str, Any]]
-    ) -> SelectionGeneration:
+    ) -> tuple[SelectionGeneration, LlmCallMeta]:
         self.calls += 1
         if self.fixed is not None:
-            return self.fixed
+            return self.fixed, _REPLAY_META
         return self.inner.select(request, catalog=catalog)
 
 
@@ -38,6 +45,25 @@ def test_skill_mastered_replay_end_to_end(
     artifact = artifact_store.load_selection(resp.selection_artifact_ref)
     assert artifact.event_type == "skill_mastered"
     assert len(artifact.selections) == 2
+
+
+def test_invocation_log_captures_adr0010_metadata(
+    make_service: Any,
+    artifact_store: ArtifactStore,
+    skill_mastered_request: SelectionRequest,
+) -> None:
+    resp = make_service().select(skill_mastered_request)
+    log = artifact_store._read(resp.llm_invocation_log_ref or "")
+    # ADR-0010 §60: model-call metadata + the prompt sent + structured output.
+    for field in (
+        "service", "phase", "event_id", "provider", "model_id", "temperature",
+        "input_tokens", "output_tokens", "latency_ms", "system_prompt", "user_prompt",
+        "selections",
+    ):
+        assert field in log, f"missing invocation-log field: {field}"
+    assert log["provider"] == "replay"
+    assert log["system_prompt"]  # the input a live model would receive
+    assert log["selections"][0]["rationale"]  # output rationale (§64)
 
 
 def test_course_completed_replay_routes_to_smart_resume(

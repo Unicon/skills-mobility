@@ -11,17 +11,19 @@ AWS SDK chain (FR-DT-28); no API-key layer.
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 import boto3
 
-from .contracts import SelectionGeneration, SelectionRequest
+from .contracts import LlmCallMeta, SelectionGeneration, SelectionRequest
 from .prompt_builder import build_user_message, system_prompt
 from .screen import screen_for_injection
 
 logger = logging.getLogger(__name__)
 
 _TOOL_NAME = "emit_selection"
+_TEMPERATURE = 0.0
 
 
 class BedrockResponseError(Exception):
@@ -49,7 +51,7 @@ class BedrockAdapter:
 
     def select(
         self, request: SelectionRequest, *, catalog: list[dict[str, Any]]
-    ) -> SelectionGeneration:
+    ) -> tuple[SelectionGeneration, LlmCallMeta]:
         # FR-DT-24: screen free-text before it reaches the prompt.
         findings = screen_for_injection(request.learner_context)
         if findings:
@@ -59,12 +61,14 @@ class BedrockAdapter:
             )
 
         tool_schema = SelectionGeneration.model_json_schema()
+        sys_text = system_prompt()
         user_text = build_user_message(request, catalog)
+        started = time.perf_counter()
         response = self._bedrock().converse(
             modelId=self._model_id,
-            system=[{"text": system_prompt()}],
+            system=[{"text": sys_text}],
             messages=[{"role": "user", "content": [{"text": user_text}]}],
-            inferenceConfig={"temperature": 0.0, "maxTokens": self._max_tokens},
+            inferenceConfig={"temperature": _TEMPERATURE, "maxTokens": self._max_tokens},
             toolConfig={
                 "tools": [
                     {
@@ -78,7 +82,19 @@ class BedrockAdapter:
                 "toolChoice": {"tool": {"name": _TOOL_NAME}},
             },
         )
-        return SelectionGeneration(**_extract_tool_input(response))
+        latency_ms = (time.perf_counter() - started) * 1000.0
+        usage = response.get("usage", {})
+        meta = LlmCallMeta(
+            provider="bedrock",
+            model_id=self._model_id,
+            temperature=_TEMPERATURE,
+            input_tokens=usage.get("inputTokens"),
+            output_tokens=usage.get("outputTokens"),
+            latency_ms=latency_ms,
+            system_prompt=sys_text,
+            user_prompt=user_text,
+        )
+        return SelectionGeneration(**_extract_tool_input(response)), meta
 
 
 def _extract_tool_input(response: dict[str, Any]) -> dict[str, Any]:

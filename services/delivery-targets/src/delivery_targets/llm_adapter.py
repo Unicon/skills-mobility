@@ -9,12 +9,13 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
-from .contracts import SelectionGeneration, SelectionRequest
+from .contracts import LlmCallMeta, SelectionGeneration, SelectionRequest
 
 
 class LLMAdapter(Protocol):
     def select(
         self, request: SelectionRequest, *, catalog: list[dict[str, Any]]
-    ) -> SelectionGeneration:
-        """Produce one selection generation for the request (exactly one attempt)."""
+    ) -> tuple[SelectionGeneration, LlmCallMeta]:
+        """Produce one selection generation for the request (exactly one attempt),
+        with the model-call metadata captured for the invocation log (ADR-0010 §60)."""
         ...

@@ -41,11 +41,11 @@ class SelectionService:
         catalog_target_ids = {entry["delivery_target"] for entry in catalog}
 
         # Exactly one attempt (FR-DT-14); no hidden repair retry.
-        generation = self._adapter.select(request, catalog=catalog)
+        generation, meta = self._adapter.select(request, catalog=catalog)
         errors = validate_selection(generation, catalog_target_ids=catalog_target_ids)
 
         log_ref = self._artifact_store.store_invocation_log(
-            _invocation_log(request, generation, errors),
+            _invocation_log(request, generation, meta, errors),
             key=request.execution_id,
         )
 
@@ -73,13 +73,29 @@ class SelectionService:
 def _invocation_log(
     request: SelectionRequest,
     generation: Any,
+    meta: Any,
     errors: list[str],
 ) -> dict[str, Any]:
+    # ADR-0010 §60: capture per-invocation model metadata (model/provider/temperature/
+    # tokens/latency) plus the prompt sent and the structured output, so the audit
+    # trail shows exactly what the model received and returned.
     return {
         "status": "failed" if errors else "succeeded",
+        "service": "delivery-targets",
+        "phase": "delivery_targets",
+        "event_id": request.event_id,
         "execution_id": request.execution_id,
         "event_type": request.event_type,
         "source_system": request.source_system,
+        "provider": meta.provider,
+        "model_id": meta.model_id,
+        "temperature": meta.temperature,
+        "input_tokens": meta.input_tokens,
+        "output_tokens": meta.output_tokens,
+        "latency_ms": meta.latency_ms,
+        "system_prompt": meta.system_prompt,
+        "user_prompt": meta.user_prompt,
+        "selections": [sel.model_dump() for sel in generation.selections],
         "selected_targets": [sel.delivery_target for sel in generation.selections],
         "validation_errors": errors,
         "corpus_scenario_id": None,

@@ -14,7 +14,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .contracts import SelectionGeneration, SelectionRequest
+from .contracts import LlmCallMeta, SelectionGeneration, SelectionRequest
+from .prompt_builder import build_user_message, system_prompt
 
 _DEFAULT_FIXTURES_DIR = Path(__file__).resolve().parent / "replay_fixtures"
 
@@ -25,10 +26,19 @@ class ReplayAdapter:
 
     def select(
         self, request: SelectionRequest, *, catalog: list[dict[str, Any]]
-    ) -> SelectionGeneration:
+    ) -> tuple[SelectionGeneration, LlmCallMeta]:
         # Try event_type-specific fixture first, then fall back to default.
         path = self._dir / f"{request.event_type}.json"
         if not path.exists():
             path = self._dir / "default.json"
         raw: dict[str, Any] = json.loads(path.read_text())
-        return SelectionGeneration(**raw)
+        # Replay makes no live call, but the prompt is deterministic — capture it so
+        # the invocation log still shows exactly what a live model would receive.
+        meta = LlmCallMeta(
+            provider="replay",
+            model_id="replay",
+            temperature=0.0,
+            system_prompt=system_prompt(),
+            user_prompt=build_user_message(request, catalog),
+        )
+        return SelectionGeneration(**raw), meta
