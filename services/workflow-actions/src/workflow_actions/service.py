@@ -49,11 +49,11 @@ class WorkflowActionsService:
         prose = gating_prose()
 
         # Exactly one attempt; no repair retry.
-        generation = self._adapter.gate(request, gating_prose=prose)
+        generation, meta = self._adapter.gate(request, gating_prose=prose)
         errors = validate_gate(generation)
 
         log_ref = self._plan_store.store_invocation_log(
-            _gate_invocation_log(request, generation, errors, self._settings),
+            _gate_invocation_log(request, generation, meta, errors, self._settings),
             key=f"gate-{request.execution_id}",
         )
 
@@ -72,7 +72,7 @@ class WorkflowActionsService:
         registry_view = prompt_projection()
 
         # Exactly one attempt; no repair retry.
-        generation = self._adapter.plan(request, registry_view=registry_view)
+        generation, meta = self._adapter.plan(request, registry_view=registry_view)
         errors = validate_plan(
             generation,
             registry=registry,
@@ -99,7 +99,7 @@ class WorkflowActionsService:
         )
 
         log_ref = self._plan_store.store_invocation_log(
-            _plan_invocation_log(request, generation, errors, self._settings),
+            _plan_invocation_log(request, generation, meta, errors, self._settings),
             key=f"plan-{request.execution_id}",
         )
 
@@ -122,21 +122,37 @@ def _plan_id(request: PlanRequest) -> str:
     return f"{request.event_type}.{targets}.v1"
 
 
+# ADR-0010 §60: capture per-invocation model metadata (provider/model/temperature/
+# tokens/latency) plus the prompt sent and the structured output, so the audit trail
+# shows exactly what the model received and returned. ``model_id`` prefers the meta
+# (the model actually used) and falls back to the configured id.
 def _gate_invocation_log(
     request: GateRequest,
     generation: Any,
+    meta: Any,
     errors: list[str],
     settings: Any,
 ) -> dict[str, Any]:
     return {
+        "service": "workflow-actions",
         "stage": "pre_target_gate",
+        "phase": "pre_target_gate",
         "status": "failed" if errors else "succeeded",
+        "event_id": request.event_id,
         "execution_id": request.execution_id,
         "event_type": request.event_type,
+        "provider": meta.provider,
+        "model_id": meta.model_id or settings.model_id,
+        "temperature": meta.temperature,
+        "input_tokens": meta.input_tokens,
+        "output_tokens": meta.output_tokens,
+        "latency_ms": meta.latency_ms,
+        "system_prompt": meta.system_prompt,
+        "user_prompt": meta.user_prompt,
         "decision": generation.decision,
         "confidence": generation.confidence,
+        "rationale": generation.rationale,
         "validation_errors": errors,
-        "model_id": settings.model_id,
         "prompt_template_version": GATE_PROMPT_VERSION,
         "corpus_scenario_id": None,
     }
@@ -145,19 +161,31 @@ def _gate_invocation_log(
 def _plan_invocation_log(
     request: PlanRequest,
     generation: Any,
+    meta: Any,
     errors: list[str],
     settings: Any,
 ) -> dict[str, Any]:
     return {
+        "service": "workflow-actions",
         "stage": "delivery_phase_plan",
+        "phase": "delivery_phase_plan",
         "status": "failed" if errors else "succeeded",
+        "event_id": request.event_id,
         "execution_id": request.execution_id,
         "event_type": request.event_type,
         "source_system": request.source_system,
         "selected_targets": list(request.selected_targets),
+        "provider": meta.provider,
+        "model_id": meta.model_id or settings.model_id,
+        "temperature": meta.temperature,
+        "input_tokens": meta.input_tokens,
+        "output_tokens": meta.output_tokens,
+        "latency_ms": meta.latency_ms,
+        "system_prompt": meta.system_prompt,
+        "user_prompt": meta.user_prompt,
         "confidence": generation.confidence,
+        "rationale": generation.rationale,
         "validation_errors": errors,
-        "model_id": settings.model_id,
         "prompt_template_version": PLAN_PROMPT_VERSION,
         "corpus_scenario_id": None,
     }

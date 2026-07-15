@@ -14,29 +14,56 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .contracts import GateGeneration, GateRequest, PlanGeneration, PlanRequest
+from .contracts import (
+    GateGeneration,
+    GateRequest,
+    LlmCallMeta,
+    PlanGeneration,
+    PlanRequest,
+)
+from .prompt_builder import (
+    build_gate_user_message,
+    build_plan_user_message,
+    gate_system_prompt,
+    plan_system_prompt,
+)
 
 _FIXTURES_DIR = Path(__file__).resolve().parent / "replay_fixtures"
 
 _SUPPORTED_EVENT_TYPES = frozenset(["skill_mastered", "course_completed"])
 
 
+def _replay_meta(system_prompt: str, user_prompt: str) -> LlmCallMeta:
+    # Replay makes no live call, but the prompt is deterministic — capture it so
+    # the invocation log still shows exactly what a live model would receive.
+    return LlmCallMeta(
+        provider="replay",
+        model_id="replay",
+        temperature=0.0,
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+    )
+
+
 class ReplayAdapter:
     def __init__(self, fixtures_dir: Path | None = None) -> None:
         self._dir = fixtures_dir or _FIXTURES_DIR
 
-    def gate(self, request: GateRequest, *, gating_prose: str) -> GateGeneration:
+    def gate(
+        self, request: GateRequest, *, gating_prose: str
+    ) -> tuple[GateGeneration, LlmCallMeta]:
         # Try event_type-specific fixture, fall back to unsupported.
         if request.event_type in _SUPPORTED_EVENT_TYPES:
             fixture_name = f"gate_{request.event_type}.json"
         else:
             fixture_name = "gate_unsupported.json"
         raw = json.loads((self._dir / fixture_name).read_text())
-        return GateGeneration(**raw)
+        meta = _replay_meta(gate_system_prompt(gating_prose), build_gate_user_message(request))
+        return GateGeneration(**raw), meta
 
     def plan(
         self, request: PlanRequest, *, registry_view: list[dict[str, str]]
-    ) -> PlanGeneration:
+    ) -> tuple[PlanGeneration, LlmCallMeta]:
         # Phase 1: the dual-LearnCard fixture covers the happy path.
         raw = json.loads((self._dir / "plan_learncard_dual.json").read_text())
         # Patch applicability to match the actual request.
@@ -45,4 +72,5 @@ class ReplayAdapter:
             "source_system": request.source_system,
             "selected_targets": list(request.selected_targets),
         }
-        return PlanGeneration(**raw)
+        meta = _replay_meta(plan_system_prompt(registry_view), build_plan_user_message(request))
+        return PlanGeneration(**raw), meta
