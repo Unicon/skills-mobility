@@ -2,8 +2,10 @@ from typing import Any
 
 import pytest
 from field_mapping.artifact_store import ArtifactStore, FailedArtifactError, stable_key
-from field_mapping.contracts import MappingGeneration, MappingRequest
+from field_mapping.contracts import LlmCallMeta, MappingGeneration, MappingRequest
 from field_mapping.replay_adapter import ReplayAdapter
+
+_REPLAY_META = LlmCallMeta(provider="replay", model_id="replay", temperature=0.0)
 
 
 class _CountingAdapter:
@@ -16,11 +18,27 @@ class _CountingAdapter:
 
     def generate(
         self, request: MappingRequest, *, target_schema: dict[str, Any]
-    ) -> MappingGeneration:
+    ) -> tuple[MappingGeneration, LlmCallMeta]:
         self.calls += 1
         if self.fixed is not None:
-            return self.fixed
+            return self.fixed, _REPLAY_META
         return self.inner.generate(request, target_schema=target_schema)
+
+
+def test_invocation_log_captures_adr0010_metadata(
+    make_service: Any, artifact_store: ArtifactStore, wallet_request: MappingRequest
+) -> None:
+    resp = make_service().map(wallet_request)
+    log = artifact_store._read(resp.llm_invocation_log_ref or "")
+    # ADR-0010 §60: model-call metadata + the prompt sent + structured output.
+    for field in (
+        "service", "phase", "event_id", "provider", "model_id", "temperature",
+        "input_tokens", "output_tokens", "latency_ms", "system_prompt", "user_prompt",
+        "jsonata", "confidence", "rationale",
+    ):
+        assert field in log, f"missing invocation-log field: {field}"
+    assert log["provider"] == "replay"
+    assert log["system_prompt"]  # the input a live model would receive
 
 
 def test_wallet_payload_replay_end_to_end(
