@@ -95,10 +95,27 @@ def run_workflow(
     plan = store.get_plan_by_key(key) if reusable_plan_lookup else None
     if plan is None:
         # Delivery-phase plan — Workflow Actions Stage 2 (best-effort; deterministic fallback).
-        plan = _resolve_plan(
+        generated_at = datetime.now(UTC).isoformat()
+        reference = planner.delivery_phase_plan(event_type, targets, generated_at)
+        proposed = _resolve_plan(
             workflow_actions, event_type, source_system, targets, request.event, bundle,
-            datetime.now(UTC).isoformat(), envelope,
+            generated_at, envelope,
         )
+        # Guardrail: the executor feeds each action solely from that step's declared
+        # input bindings, so an LLM plan whose steps omit the inputs an action reads is
+        # not runnable. Validate the proposal against the deterministic reference; if it
+        # doesn't conform, execute the deterministic plan instead. The LLM's gate
+        # decision and proposed plan_id stay in the trail — LLM output never flows
+        # straight to delivery (ADR-0007).
+        if _plan_conforms(proposed, reference):
+            plan = proposed
+        else:
+            logger.warning(
+                "workflow-actions plan not executor-conformant (execution_id=%s "
+                "proposed_plan_id=%s); executing deterministic plan %s",
+                execution_id, proposed.plan_id, reference.plan_id,
+            )
+            plan = reference
         store.save_plan(plan, key)
         logger.info("delivery-phase plan generated: execution_id=%s plan_id=%s", execution_id,
                     plan.plan_id)
@@ -184,6 +201,21 @@ def _resolve_plan(
         except Exception as err:  # noqa: BLE001 — best-effort seam
             logger.warning("workflow-actions plan failed (non-fatal; deterministic plan): %s", err)
     return planner.delivery_phase_plan(event_type, targets, generated_at)
+
+
+def _plan_conforms(plan: DeliveryPhasePlan, reference: DeliveryPhasePlan) -> bool:
+    """Whether ``plan`` is runnable by the executor. The executor resolves every
+    action's inputs from that step's declared bindings, so a runnable plan must match
+    the deterministic reference step-for-step (same actions, in order) and declare at
+    least the inputs each action reads. Extra declared inputs are allowed."""
+    if len(plan.steps) != len(reference.steps):
+        return False
+    for step, ref in zip(plan.steps, reference.steps, strict=True):
+        if step.action_id != ref.action_id:
+            return False
+        if not set(ref.inputs).issubset(step.inputs):
+            return False
+    return True
 
 
 def _metadata(store: ExecutionStore, execution_id: str) -> ExecutionMetadata:

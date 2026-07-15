@@ -9,7 +9,7 @@ from orchestrator.clients import (
     HttpDeliveryTargetsClient,
     HttpWorkflowActionsClient,
 )
-from orchestrator.engine import _resolve_gate, _resolve_plan, _resolve_targets
+from orchestrator.engine import _plan_conforms, _resolve_gate, _resolve_plan, _resolve_targets
 from orchestrator.schemas import DeliveryPhasePlan, GateDecision
 
 _CTX = EnvelopeContext(
@@ -79,6 +79,26 @@ def test_plan_falls_back_when_service_raises() -> None:
     )
     assert isinstance(plan, DeliveryPhasePlan)
     assert plan.plan_id  # the deterministic plan
+
+
+# --- plan conformance guardrail (LLM plan must feed the executor's bindings) ---
+
+_TARGETS = ["learncard_issuer", "learncard_wallet"]
+
+
+def test_deterministic_plan_conforms_with_itself() -> None:
+    ref = planner.delivery_phase_plan("skill_mastered", _TARGETS, "2026-01-01T00:00:00Z")
+    assert _plan_conforms(ref, ref) is True
+
+
+def test_llm_shaped_plan_is_nonconformant() -> None:
+    # Mimic the WA LLM output: same actions/order, but steps drop the literal/step-ref
+    # inputs the executor feeds each action — so it must not be run.
+    ref = planner.delivery_phase_plan("skill_mastered", _TARGETS, "2026-01-01T00:00:00Z")
+    stripped = ref.model_copy(
+        update={"steps": [s.model_copy(update={"inputs": {}}) for s in ref.steps]}
+    )
+    assert _plan_conforms(stripped, ref) is False
 
 
 # --- HTTP client parsing / decision normalization ---
