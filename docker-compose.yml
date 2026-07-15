@@ -84,6 +84,47 @@ services:
       timeout: 3s
       retries: 5
 
+  # Delivery Targets LLM Decision Service (live Bedrock; #77). The orchestrator calls
+  # it at target selection (best-effort — deterministic fixed targets otherwise). Also
+  # smoke-testable via POST :8130/select-delivery-targets. Startup is AWS-free (lazy client).
+  delivery-targets:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('delivery_targets.api:create_app', factory=True, host='0.0.0.0', port=8130)"]
+    environment:
+      DELIVERY_TARGETS_MODE: bedrock
+      DELIVERY_TARGETS_MODEL_ID: ${DELIVERY_TARGETS_MODEL_ID:-us.anthropic.claude-haiku-4-5-20251001-v1:0}
+      DELIVERY_TARGETS_AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+    ports: ["8130:8130"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8130/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Workflow Actions LLM Decision Service (live Bedrock; #78). The orchestrator calls it
+  # for the pre-target gate and the delivery-phase plan (best-effort — deterministic
+  # gate/plan otherwise). Smoke-testable via POST :8140/pre-target-gate and
+  # :8140/delivery-phase-plan. Startup is AWS-free (lazy client).
+  workflow-actions:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('workflow_actions.api:create_app', factory=True, host='0.0.0.0', port=8140)"]
+    environment:
+      WORKFLOW_ACTIONS_MODE: bedrock
+      WORKFLOW_ACTIONS_MODEL_ID: ${WORKFLOW_ACTIONS_MODEL_ID:-us.anthropic.claude-haiku-4-5-20251001-v1:0}
+      WORKFLOW_ACTIONS_AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+    ports: ["8140:8140"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8140/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   orchestrator:
     <<: *python
     command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('orchestrator.app:create_app', factory=True, host='0.0.0.0', port=8400)"]
@@ -93,6 +134,9 @@ services:
       ORCHESTRATOR_DELIVERY_ROUTER_URL: http://delivery-router:8800
       # Field Mapping is called at the mapping steps (best-effort; #27 item 8).
       ORCHESTRATOR_FIELD_MAPPING_URL: http://field-mapping:8120
+      # LLM Decision Service planner seams (best-effort; #77/#78).
+      ORCHESTRATOR_DELIVERY_TARGETS_URL: http://delivery-targets:8130
+      ORCHESTRATOR_WORKFLOW_ACTIONS_URL: http://workflow-actions:8140
       # The signed OBv3's issuer must be the real (resolvable) demo issuer DID, not
       # the placeholder default — else the issuer adapter's SDK sign fails resolving it.
       ORCHESTRATOR_ISSUER_ID: ${LEARNCARD_ISSUER_DID:-did:web:poc.skills-mobility.example}
@@ -108,6 +152,10 @@ services:
       delivery-router:
         condition: service_healthy
       field-mapping:
+        condition: service_healthy
+      delivery-targets:
+        condition: service_healthy
+      workflow-actions:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8400/healthz')"]
