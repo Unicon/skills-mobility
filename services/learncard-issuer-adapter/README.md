@@ -30,30 +30,46 @@ test/          vitest tests: schema validation, SDK wrapper (mocked), HTTP route
 
 ## Setup: issuer seed + profile
 
-The adapter needs a LearnCard wallet **seed** and a **service-profile id**. Two ways:
-
-**Self-serve (stand it up / smoke-test now).** The seed is any 64-char hex; the
-adapter creates the service profile on first issuance if it doesn't exist, so no
-separate profile step is needed (seed generation + profile creation are self-serve
-against the public demo network — #39 finding):
+The adapter signs as the issuing institution — the demo **organization** profile.
+A LearnCard network profile can only be signed for with the seed its keys were
+derived from, so the seed isn't arbitrary: a random seed can't issue as an
+existing identity (it hits `Profile already exists!` then `Key mismatch`).
 
 ```bash
+cd services/learncard-issuer-adapter
 cp .env.example .env
-# a LearnCard wallet seed (64-char hex):
-echo "SECURE_SEED=$(openssl rand -hex 32)" >> .env
-echo "PROFILE_ID=smi-demo-issuer"          >> .env
-echo 'PROFILE_NAME=SMI Demo Issuer'        >> .env
 ```
 
-**Coordinated demo.** To match the *fixed* demo issuer identity the recipient
-resolves against, use the seed/profile minted by `tools/learncard-demo`
-(ADR-0020, PR #54) instead of a random seed — copy its `SECURE_SEED`/`PROFILE_ID`
-into this `.env`.
+**Coordinated demo (default).** The identity is the `organization` profile that
+`tools/learncard-demo` provisions (`smi-demo-organization`, ADR-0020, PR #54). The
+adapter **derives the seed from the public label** — the same scheme as that tool
+(`deriveSeed('organization')`) — so no secret is copied by hand. `.env.example`
+already ships these values; edit `.env` **in place** (don't append — that
+duplicates keys) if you need to change them:
+
+```
+SEED_LABEL=organization
+PROFILE_ID=smi-demo-organization
+PROFILE_NAME=SMI Demo Organization
+```
+
+**Standalone throwaway identity.** To stand up your *own* fresh identity instead,
+set a raw `SECURE_SEED` (e.g. `openssl rand -hex 32`) **and** a `PROFILE_ID` that
+is not already registered — the adapter creates that new service profile on first
+issuance. `SECURE_SEED`, when set, overrides `SEED_LABEL`. Until a seed + profile
+resolve, `/healthz` reports `configured: false`.
 
 ### Sample request payload
 
 `payload.unsigned_vc` is a full unsigned OBv3; the recipient's resolved LearnCard
-DID goes in **`credentialSubject.id`** (the Profile Resolver put it there upstream):
+DID goes in **`credentialSubject.id`** (the Profile Resolver put it there upstream).
+The `@context` **must** include the OBv3 context alongside the VC v1 context — the
+OBv3 terms (`achievement`, `AchievementSubject`, `OpenBadgeCredential`) are undefined
+in VC v1 alone, so DIDKit can't expand them to canonicalize/sign and fails with
+`Expansion failed: Key expansion failed` (this mirrors `orchestrator/obv3.py`). The
+sample's `issuer` hardcodes the demo `smi-demo-organization` DID; if you test with a
+different `SEED_LABEL`/`PROFILE_ID`, set `issuer` to your identity's DID or signing
+fails (or silently signs as the wrong issuer):
 
 ```json
 {
@@ -62,9 +78,12 @@ DID goes in **`credentialSubject.id`** (the Profile Resolver put it there upstre
   "correlation_id": "corr_1", "delivery_config_ref": "learncard-dev",
   "payload": {
     "unsigned_vc": {
-      "@context": ["https://www.w3.org/2018/credentials/v1"],
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+      ],
       "type": ["VerifiableCredential", "OpenBadgeCredential"],
-      "issuer": "did:web:network.learncard.com:users:smi-demo-issuer",
+      "issuer": "did:web:network.learncard.com:users:smi-demo-organization",
       "credentialSubject": {
         "id": "did:web:network.learncard.com:users:smi-demo-learner",
         "type": ["AchievementSubject"],

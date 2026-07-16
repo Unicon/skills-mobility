@@ -8,10 +8,10 @@ const issueCredentialMock = vi.fn();
 
 vi.mock("@learncard/init", () => ({
   initLearnCard: vi.fn(async () => ({
-    id: { did: () => "did:web:network.learncard.com:users:smi-demo-issuer" },
+    id: { did: () => "did:web:network.learncard.com:users:smi-demo-organization" },
     invoke: {
       issueCredential: issueCredentialMock,
-      getProfile: vi.fn(async () => ({ profileId: "smi-demo-issuer" })),
+      getProfile: vi.fn(async () => ({ profileId: "smi-demo-organization" })),
       createServiceProfile: vi.fn(async () => ({})),
     },
   })),
@@ -20,8 +20,8 @@ vi.mock("@learncard/init", () => ({
 const cfg: IssuerConfig = {
   port: 8910,
   secureSeed: "deadbeef",
-  profileId: "smi-demo-issuer",
-  profileName: "SMI Demo Issuer",
+  profileId: "smi-demo-organization",
+  profileName: "SMI Demo Organization",
 };
 
 const validBody = {

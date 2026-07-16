@@ -9,7 +9,7 @@ const createServiceProfileMock = vi.fn();
 
 vi.mock("@learncard/init", () => ({
   initLearnCard: vi.fn(async () => ({
-    id: { did: () => "did:web:network.learncard.com:users:smi-demo-issuer" },
+    id: { did: () => "did:web:network.learncard.com:users:smi-demo-organization" },
     invoke: {
       issueCredential: issueCredentialMock,
       getProfile: getProfileMock,
@@ -21,8 +21,8 @@ vi.mock("@learncard/init", () => ({
 const configured: IssuerConfig = {
   port: 8910,
   secureSeed: "deadbeef",
-  profileId: "smi-demo-issuer",
-  profileName: "SMI Demo Issuer",
+  profileId: "smi-demo-organization",
+  profileName: "SMI Demo Organization",
 };
 const unconfigured: IssuerConfig = {
   port: 8910,
@@ -45,7 +45,7 @@ beforeEach(() => {
     // Real LearnCard output is a DataIntegrityProof (matches the README status line).
     proof: { type: "DataIntegrityProof", cryptosuite: "eddsa-rdfc-2022" },
   }));
-  getProfileMock.mockResolvedValue({ profileId: "smi-demo-issuer" }); // exists by default
+  getProfileMock.mockResolvedValue({ profileId: "smi-demo-organization" }); // exists by default
   createServiceProfileMock.mockResolvedValue({});
 });
 
@@ -67,7 +67,7 @@ describe("issueCredential", () => {
     expect((result.issuedCredential.proof as { type: string }).type).toBe("DataIntegrityProof");
     expect(result.issuedCredential.credentialSubject).toEqual(unsigned.credentialSubject);
     // No `id` on the signed VC -> reference falls back to the issuer DID.
-    expect(result.externalReferenceId).toBe("did:web:network.learncard.com:users:smi-demo-issuer");
+    expect(result.externalReferenceId).toBe("did:web:network.learncard.com:users:smi-demo-organization");
   });
 
   it("creates the issuer service profile when it doesn't exist yet (FR-LCI-6)", async () => {
@@ -77,14 +77,14 @@ describe("issueCredential", () => {
 
     expect(createServiceProfileMock).toHaveBeenCalledTimes(1);
     expect(createServiceProfileMock).toHaveBeenCalledWith({
-      profileId: "smi-demo-issuer",
-      displayName: "SMI Demo Issuer",
+      profileId: "smi-demo-organization",
+      displayName: "SMI Demo Organization",
       isServiceProfile: true,
     });
   });
 
   it("does not re-create the profile when it already exists", async () => {
-    getProfileMock.mockResolvedValue({ profileId: "smi-demo-issuer" });
+    getProfileMock.mockResolvedValue({ profileId: "smi-demo-organization" });
     const { issueCredential } = await load();
     await issueCredential(configured, {});
 

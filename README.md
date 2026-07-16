@@ -17,10 +17,10 @@ Monorepo (ADR-0001). The backend lives in `services/`, the frontend in `apps/`, 
 
 | Directory | What lives here |
 |---|---|
-| [`apps/`](./apps/) | Deployable **React + TypeScript** SPAs (demo UIs). Today: [`apps/mock-lms/`](./apps/mock-lms/) — the presenter demo console. |
-| [`services/`](./services/) | Deployable **Python / FastAPI** backend services. Today: [`services/mock-lms/`](./services/mock-lms/) — Canvas-style LMS APIs + credential-event emission. |
+| [`apps/`](./apps/) | Deployable **React + TypeScript** SPAs (demo UIs). Today: [`apps/mock-lms/`](./apps/mock-lms/) — the presenter demo console; [`apps/admin/`](./apps/admin/) — the read-only Orchestrator observability console. |
+| [`services/`](./services/) | Deployable **Python / FastAPI** backend services. Today: [`services/mock-lms/`](./services/mock-lms/) — Canvas-style LMS APIs + credential-event emission; [`services/event-consumer/`](./services/event-consumer/) — the workflow ingress boundary; [`services/orchestrator/`](./services/orchestrator/) — the Phase-1 plan executor. |
 | [`libs/`](./libs/) | Shared **first-party Python libraries** reused by services (not third-party deps). Today: [`libs/events/`](./libs/events/) — the event contracts. |
-| `packages/` | Shared TypeScript / cross-stack packages (generated clients, contracts). Not yet populated. |
+| [`packages/`](./packages/) | Shared TypeScript / cross-stack packages. Today: [`packages/contracts/`](./packages/contracts/) — shared types + the Mock LMS/Orchestrator API clients; [`packages/ui/`](./packages/ui/) — design tokens + shared UI primitives. |
 | `infra/` | Infrastructure as code (CDK). Not yet populated. |
 | [`docs/`](./docs/) | Docs by lifecycle phase (`1_product`, `2_requirements`, `3_design`, `4_operations`) plus [`decisions/`](./docs/decisions/) (ADRs). |
 
@@ -33,18 +33,27 @@ Prerequisites: **Python 3.12**, [**uv**](https://docs.astral.sh/uv/), and **Node
 ```bash
 # Backend + shared libs (uv workspace) — from the repo root
 uv sync --all-packages     # create the venv + install all workspace members
-uv run mock-lms            # serve the Mock LMS API at http://127.0.0.1:8000 (OpenAPI docs at /docs)
 uv run pytest              # run the full test suite
+
+# Three backends chain together — Mock LMS emits to the Event Consumer, which
+# hands off to the Orchestrator — but each hop is opt-in via env var, so start
+# them in this order for events to flow end-to-end:
+uv run orchestrator                                                          # :8400
+EVENT_CONSUMER_ORCHESTRATOR_URL=http://127.0.0.1:8400 uv run event-consumer  # :8200
+MOCK_LMS_EVENT_CONSUMER_URL=http://127.0.0.1:8200 uv run mock-lms           # :8000
 ```
 
 ```bash
-# Demo UI (React + Vite) — npm workspace, install once from the repo root
+# Demo UIs (React + Vite) — npm workspace, install once from the repo root
 npm install
 npm run dev -w apps/mock-lms   # http://localhost:5173 (proxies /api + /demo to the backend on :8000)
+npm run dev -w apps/admin      # http://localhost:5174 (proxies /executions + /healthz to the backend on :8400)
 ```
 
 Per-component detail and "try it" steps live in the component READMEs:
-[`services/mock-lms/`](./services/mock-lms/README.md) · [`apps/mock-lms/`](./apps/mock-lms/README.md).
+[`services/mock-lms/`](./services/mock-lms/README.md) · [`apps/mock-lms/`](./apps/mock-lms/README.md) ·
+[`services/event-consumer/`](./services/event-consumer/README.md) ·
+[`services/orchestrator/`](./services/orchestrator/README.md) · [`apps/admin/`](./apps/admin/README.md).
 
 ## Initial POC Scope
 
