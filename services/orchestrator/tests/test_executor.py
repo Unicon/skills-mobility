@@ -205,7 +205,10 @@ def test_deliver_to_smartresume_action_dispatches_correct_payload():
     assert len(router.calls) == 1
     action, payload = router.calls[0]
     assert action == "deliver_to_smartresume"
-    assert payload["credentials"] == [unsigned_vc]
+    cred = payload["credentials"][0]
+    assert cred["id"] == "urn:poc:credential:exec_1"  # stamped from envelope execution_id
+    assert cred["type"] == unsigned_vc["type"]  # original OB3 fields preserved
+    assert cred["@context"] == unsigned_vc["@context"]
     assert payload["recipient"]["id"] == "did:web:example.com:users:alice"
     assert payload["recipient"]["email"] == "alice@example.com"
     assert payload["recipient"]["givenName"] == "Alice"

@@ -179,7 +179,10 @@ def _deliver_to_learncard_wallet(inputs: dict[str, Any], deps: ActionDeps) -> di
 
 
 def _deliver_to_smartresume(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
-    ob3 = inputs["issuer_payload"]["unsigned_vc"]
+    # SmartResume requires a top-level credential id; the unsigned OBv3 has none
+    # (issuance would normally assign it), so stamp a deterministic one.
+    ob3 = dict(inputs["issuer_payload"]["unsigned_vc"])
+    ob3.setdefault("id", f"urn:poc:credential:{deps.envelope.execution_id}")
     resolved_profile = inputs["resolved_profile"]
     learner = (inputs["bundle"].get("source_data") or {}).get("learner_profile") or {}
     email = learner.get("email", "")

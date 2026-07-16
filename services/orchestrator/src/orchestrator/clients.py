@@ -170,6 +170,7 @@ class HttpContextBuilderClient:
 _ADAPTER_KEY_BY_ACTION = {
     "issue_learncard_badge": "learncard_issuer",
     "deliver_to_learncard_wallet": "learncard_wallet",
+    "deliver_to_smartresume": "smart_resume",
 }
 
 
