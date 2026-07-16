@@ -178,6 +178,25 @@ def _deliver_to_learncard_wallet(inputs: dict[str, Any], deps: ActionDeps) -> di
     )
 
 
+def _deliver_to_smartresume(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
+    ob3 = inputs["issuer_payload"]["unsigned_vc"]
+    resolved_profile = inputs["resolved_profile"]
+    learner = (inputs["bundle"].get("source_data") or {}).get("learner_profile") or {}
+    email = learner.get("email", "")
+    recipient: dict[str, Any] = {
+        "id": resolved_profile.get("did") or f"mailto:{email}",
+        "email": email,
+    }
+    if learner.get("givenName"):
+        recipient["givenName"] = learner["givenName"]
+    if learner.get("familyName"):
+        recipient["familyName"] = learner["familyName"]
+    payload = {"recipient": recipient, "credentials": [ob3]}
+    return deps.delivery_router.dispatch(
+        "deliver_to_smartresume", payload, deps.envelope, "deliver_to_smartresume"
+    )
+
+
 Action = Callable[[dict[str, Any], ActionDeps], dict[str, Any]]
 
 ACTIONS: dict[str, Action] = {
@@ -189,4 +208,5 @@ ACTIONS: dict[str, Action] = {
     "generate_wallet_payload_mapping": _generate_payload_mapping,
     "execute_wallet_payload_translation": _execute_wallet_payload_translation,
     "deliver_to_learncard_wallet": _deliver_to_learncard_wallet,
+    "deliver_to_smartresume": _deliver_to_smartresume,
 }
