@@ -97,20 +97,24 @@ class MappingService:
             )
         )
         synthesis_ref: str | None = None
+        synthesis_artifact: SynthesisRequestArtifact | None = None
         if generation.placeholder_ids:
-            synthesis_ref = self._artifacts.store_synthesis_request(
-                SynthesisRequestArtifact(
-                    transformation_type=request.transformation_type,
-                    requests=generation.synthesis_requests,
-                ),
-                key=key,
+            synthesis_artifact = SynthesisRequestArtifact(
+                transformation_type=request.transformation_type,
+                requests=generation.synthesis_requests,
             )
+            synthesis_ref = self._artifacts.store_synthesis_request(synthesis_artifact, key=key)
         return MappingResponse.succeeded(
             mapping_artifact_ref=mapping_ref,
             synthesis_request_ref=synthesis_ref,
             llm_invocation_log_ref=log_ref,
             synthesis_allowed=request.synthesis_allowed,
             placeholder_ids=generation.placeholder_ids,
+            # exclude_none so the inline artifact matches the Field Synthesis brief
+            # schema (its source_payloads/paths default to empty, not null).
+            synthesis_request=(
+                synthesis_artifact.model_dump(exclude_none=True) if synthesis_artifact else None
+            ),
         )
 
     def _required_aliases(self, request: MappingRequest) -> list[str]:

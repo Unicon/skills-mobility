@@ -67,6 +67,7 @@ class SynthesisService:
         return SynthesisResponse.succeeded(
             synthesis_result_ref=result_ref,
             llm_invocation_log_ref=log_ref,
+            values=generation.values,
         )
 
     def _resolve_synthesis_request(

@@ -160,6 +160,9 @@ services:
       ORCHESTRATOR_DELIVERY_ROUTER_URL: http://delivery-router:8800
       # Field Mapping is called at the mapping steps (best-effort; #27 item 8).
       ORCHESTRATOR_FIELD_MAPPING_URL: http://field-mapping:8120
+      # Field Synthesis is called at the synthesis step when the mapping marks fields
+      # for synthesis (best-effort; #85). Passes the mapping's inline synthesis request.
+      ORCHESTRATOR_FIELD_SYNTHESIS_URL: http://field-synthesis:8150
       # LLM Decision Service planner seams (best-effort; #77/#78).
       ORCHESTRATOR_DELIVERY_TARGETS_URL: http://delivery-targets:8130
       ORCHESTRATOR_WORKFLOW_ACTIONS_URL: http://workflow-actions:8140

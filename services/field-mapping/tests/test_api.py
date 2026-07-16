@@ -15,6 +15,7 @@ _SEAM_KEYS = {
     "synthesis_request_ref",
     "requires_synthesis",
     "llm_invocation_log_ref",
+    "synthesis_request",
 }
 
 
