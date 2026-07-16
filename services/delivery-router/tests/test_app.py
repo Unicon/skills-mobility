@@ -14,17 +14,23 @@ from fastapi.testclient import TestClient
 ENDPOINT = "/delivery-actions"
 ISSUER_URL = "http://issuer.test"
 WALLET_URL = "http://wallet.test"
+SMARTRESUME_URL = "http://smartresume.test"
 
 # (action, adapter_key) pairs
 WALLET = ("deliver_to_learncard_wallet", "learncard_wallet")
 ISSUER = ("issue_learncard_badge", "learncard_issuer")
+SMARTRESUME = ("deliver_to_smartresume", "smart_resume")
 PAYLOAD = {"recipient_profile_id": "smi-demo-learner", "signed_credential": {"x": 1}}
 
 
 def _app(
     handler: Callable[[httpx.Request], httpx.Response], *, retry_limit: int = 1
 ) -> TestClient:
-    settings = Settings(learncard_issuer_url=ISSUER_URL, learncard_wallet_url=WALLET_URL)
+    settings = Settings(
+        learncard_issuer_url=ISSUER_URL,
+        learncard_wallet_url=WALLET_URL,
+        smartresume_url=SMARTRESUME_URL,
+    )
     client = AdapterClient(retry_limit=retry_limit, transport=httpx.MockTransport(handler))
     return TestClient(create_app(settings, client))
 
@@ -89,6 +95,26 @@ def test_issuer_dispatch_routes_to_issuer() -> None:
     assert str(seen[0].url) == f"{ISSUER_URL}/internal/issue-learncard-badge"
 
 
+def test_smartresume_dispatch_routes_to_smartresume() -> None:
+    seen: list[httpx.Request] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "status": "succeeded",
+                "external_reference_id": "https://my.smartresume.com/createmyresume/abc",
+            },
+        )
+
+    body = _app(handle).post(ENDPOINT, json=_request(*SMARTRESUME)).json()
+    assert body["status"] == "succeeded"
+    assert body["adapter_key"] == "smart_resume"
+    assert body["action"] == "deliver_to_smartresume"
+    assert str(seen[0].url) == f"{SMARTRESUME_URL}/internal/deliver-to-smartresume"
+
+
 def test_adapter_failure_is_passed_through() -> None:
     def handle(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
@@ -131,8 +157,7 @@ def test_unknown_action_is_422() -> None:
     def handle(request: httpx.Request) -> httpx.Response:
         raise AssertionError("should not dispatch an invalid action")
 
-    # A value that will never be a real action (deliver_to_smartresume is a *planned*
-    # action per requirements §2 / design §6, so it must not be used here).
+    # A value that will never be a real action (must not collide with a registered one).
     resp = _app(handle).post(ENDPOINT, json=_request("bogus_action", "learncard_wallet"))
     assert resp.status_code == 422
 
