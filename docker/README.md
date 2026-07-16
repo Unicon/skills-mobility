@@ -80,15 +80,6 @@ The **LearnCard Issuer Adapter** is the one non-Python service (Node/TS), so it
 has its own image (`docker/Dockerfile.node`: `npm ci` + `tsc` build, `express`
 listens on `0.0.0.0`).
 
-## Depends on (branches → main)
-
-This compose references the delivery services' code + the orchestrator's delivery
-wiring, so it is only buildable once these are on `main`: the LearnCard stack
-(#48/#49/#50/#51/#56), the demo provisioning (#54), and the orchestrator seam
-wiring (#58) + demo-recipient resolution (#59). Until then `docker compose config`
-validates, but `up --build` needs those merged (the shared Python image installs
-the workspace via `uv sync --frozen`, which needs their `uv.lock` members).
-
 ## Not included
 
 The mock-lms React UI runs separately (`cd apps/mock-lms && npm run dev`) — this
