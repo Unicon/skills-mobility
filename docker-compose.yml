@@ -130,6 +130,27 @@ services:
       timeout: 3s
       retries: 5
 
+  # Field Synthesis LLM Decision Service (live Bedrock; #85). Generates human-facing
+  # text for credential fields Field Mapping marks for synthesis. Smoke-testable via
+  # POST :8150/synthesize-fields. Not yet wired into the orchestrator (the synthesis
+  # seam is still the {"synthesized": {}} stub — that wiring is a follow-up).
+  field-synthesis:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('field_synthesis.api:create_app', factory=True, host='0.0.0.0', port=8150)"]
+    environment:
+      FIELD_SYNTHESIS_MODE: bedrock
+      FIELD_SYNTHESIS_MODEL_ID: ${FIELD_SYNTHESIS_MODEL_ID:-us.anthropic.claude-haiku-4-5-20251001-v1:0}
+      FIELD_SYNTHESIS_AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+    ports: ["8150:8150"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8150/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   orchestrator:
     <<: *python
     command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('orchestrator.app:create_app', factory=True, host='0.0.0.0', port=8400)"]
@@ -191,11 +212,14 @@ services:
     environment:
       DELIVERY_ROUTER_LEARNCARD_ISSUER_URL: http://learncard-issuer-adapter:8910
       DELIVERY_ROUTER_LEARNCARD_WALLET_URL: http://learncard-wallet-adapter:8900
+      DELIVERY_ROUTER_SMARTRESUME_URL: http://smartresume-adapter:8920
     ports: ["8800:8800"]
     depends_on:
       learncard-issuer-adapter:
         condition: service_healthy
       learncard-wallet-adapter:
+        condition: service_healthy
+      smartresume-adapter:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8800/healthz')"]
@@ -238,6 +262,40 @@ services:
     ports: ["8900:8900"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8900/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # --- SmartResume delivery (#87) ---
+
+  # Deterministic stand-in for the real SmartResume CredentialConnect API so the demo
+  # runs offline. Implements /api/v1/token + /api/v1/credentials.
+  mock-smartresume:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('mock_smartresume.app:create_app', factory=True, host='0.0.0.0', port=8930)"]
+    ports: ["8930:8930"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8930/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # SmartResume delivery adapter — behind the Delivery Router (deliver_to_smartresume).
+  # Points at the mock in the demo; set SMARTRESUME_ADAPTER_API_URL + real creds for
+  # staging/prod. Smoke-testable via the router or POST :8920/internal/deliver-to-smartresume.
+  smartresume-adapter:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('smartresume_adapter.app:create_app', factory=True, host='0.0.0.0', port=8920)"]
+    environment:
+      SMARTRESUME_ADAPTER_API_URL: ${SMARTRESUME_ADAPTER_API_URL:-http://mock-smartresume:8930}
+      SMARTRESUME_ADAPTER_CLIENT_ID: ${SMARTRESUME_ADAPTER_CLIENT_ID:-demo-client}
+      SMARTRESUME_ADAPTER_ACCESS_KEY: ${SMARTRESUME_ADAPTER_ACCESS_KEY:-demo-key}
+    ports: ["8920:8920"]
+    depends_on:
+      mock-smartresume:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8920/healthz')"]
       interval: 10s
       timeout: 3s
       retries: 5
