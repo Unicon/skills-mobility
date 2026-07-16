@@ -106,6 +106,11 @@ class SynthesisResponse(BaseModel):
     status: Literal["succeeded", "failed"]
     synthesis_result_ref: str | None
     llm_invocation_log_ref: str | None
+    # The generated values inline, so the Orchestrator can merge them under
+    # ``synthesized.*`` without dereferencing the stored artifact — the services
+    # keep separate artifact stores, so a bare ref does not resolve across the
+    # boundary. Present on success; None on failure.
+    values: dict[str, str] | None = None
 
     @classmethod
     def succeeded(
@@ -113,11 +118,13 @@ class SynthesisResponse(BaseModel):
         *,
         synthesis_result_ref: str,
         llm_invocation_log_ref: str,
+        values: dict[str, str],
     ) -> Self:
         return cls(
             status="succeeded",
             synthesis_result_ref=synthesis_result_ref,
             llm_invocation_log_ref=llm_invocation_log_ref,
+            values=values,
         )
 
     @classmethod
