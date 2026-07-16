@@ -7,7 +7,12 @@ from orchestrator.actions import (
     _generate_payload_mapping,
     _mapping_source_payloads,
 )
-from orchestrator.clients import EnvelopeContext, StubDeliveryRouter, StubProfileResolver
+from orchestrator.clients import (
+    EnvelopeContext,
+    StubDeliveryRouter,
+    StubFieldSynthesis,
+    StubProfileResolver,
+)
 
 _ENV = EnvelopeContext(
     workflow_id="e1", execution_id="e1", correlation_id="c1", delivery_config_ref="cfg"
@@ -33,6 +38,7 @@ def _deps(field_mapping: Any) -> ActionDeps:
         profile_resolver=StubProfileResolver(),
         delivery_router=StubDeliveryRouter(),
         field_mapping=field_mapping,
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer",
         envelope=_ENV,
     )

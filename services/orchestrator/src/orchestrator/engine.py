@@ -20,6 +20,7 @@ from orchestrator.clients import (
     DeliveryTargetsClient,
     EnvelopeContext,
     FieldMappingClient,
+    FieldSynthesisClient,
     ProfileResolverClient,
     WorkflowActionsClient,
 )
@@ -43,6 +44,7 @@ def run_workflow(
     profile_resolver: ProfileResolverClient,
     delivery_router: DeliveryRouterClient,
     field_mapping: FieldMappingClient,
+    field_synthesis: FieldSynthesisClient,
     issuer_id: str,
     delivery_config_ref: str,
     recipient_profile_id: str,
@@ -141,6 +143,7 @@ def run_workflow(
         profile_resolver=profile_resolver,
         delivery_router=delivery_router,
         field_mapping=field_mapping,
+        field_synthesis=field_synthesis,
         issuer_id=issuer_id,
         envelope=envelope,
     )

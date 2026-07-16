@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     # (best-effort — the deterministic obv3 stand-in still produces the payload);
     # else the Phase-1 stub returns null refs.
     field_mapping_url: str | None = None
+    # #85 Field Synthesis service. When set, the synthesis step calls it for real
+    # (best-effort — empty synthesized values otherwise) with the synthesis-request
+    # the mapping response carries inline; else the Phase-1 stub returns no values.
+    field_synthesis_url: str | None = None
     # #27/ADR-0007 LLM Decision Service planner seams. When set, the planner path
     # calls these for real (best-effort — a failure falls back to the deterministic
     # gate/targets/plan stubs); else the stubs are used.
