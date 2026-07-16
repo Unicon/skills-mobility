@@ -20,7 +20,7 @@ from orchestrator.clients import (
     ProfileResolverClient,
 )
 from orchestrator.executor import execute_plan
-from orchestrator.schemas import ExecutionMetadata, WorkflowStartRequest
+from orchestrator.schemas import DecisionArtifact, ExecutionMetadata, WorkflowStartRequest
 from orchestrator.store import ExecutionStore
 
 logger = logging.getLogger(__name__)
@@ -60,7 +60,12 @@ def run_workflow(
         return _metadata(store, execution_id)
 
     gate = planner.pre_target_gate(event_type)
-    store.record_gate_decision(execution_id, gate)
+    store.record_decision(
+        execution_id,
+        DecisionArtifact(
+            kind="gate", confidence=gate.confidence, rationale=gate.rationale, outcome=gate.decision
+        ),
+    )
     logger.info("gate decision: execution_id=%s decision=%s", execution_id, gate.decision)
     if gate.decision != "continue_to_delivery_targets":
         store.set_result(
@@ -76,11 +81,13 @@ def run_workflow(
     if plan is None:
         plan = planner.delivery_phase_plan(event_type, targets, datetime.now(UTC).isoformat())
         store.save_plan(plan, key)
-        logger.info("delivery-phase plan generated: execution_id=%s plan_id=%s", execution_id,
-                    plan.plan_id)
+        logger.info(
+            "delivery-phase plan generated: execution_id=%s plan_id=%s", execution_id, plan.plan_id
+        )
     else:
-        logger.info("delivery-phase plan reused: execution_id=%s plan_id=%s", execution_id,
-                    plan.plan_id)
+        logger.info(
+            "delivery-phase plan reused: execution_id=%s plan_id=%s", execution_id, plan.plan_id
+        )
     store.set_plan(execution_id, plan.plan_id)
     store.set_status(execution_id, "ready")
 

@@ -66,7 +66,8 @@ def test_resolves_fixed_demo_recipient_by_profile_id(sample_event):
 def test_gate_continue_runs_full_plan(sample_event):
     meta = _run(sample_event, store=ExecutionStore(":memory:"))
     assert meta.status == "completed"
-    assert meta.gate_decision["decision"] == "continue_to_delivery_targets"
+    assert meta.decisions[0].kind == "gate"
+    assert meta.decisions[0].outcome == "continue_to_delivery_targets"
     assert meta.plan_id == "phase1-skill_mastered.v1"
     assert len(meta.steps) == 8
 
@@ -87,7 +88,8 @@ def test_gate_terminate_skips_delivery():
     event = {"metadata": {"event_name": "badge_awarded", "user_id": "U1"}, "body": {}}
     meta = _run(event, store=ExecutionStore(":memory:"))
     assert meta.status == "completed"
-    assert meta.gate_decision["decision"] == "terminate"
+    assert meta.decisions[0].kind == "gate"
+    assert meta.decisions[0].outcome == "terminate"
     assert meta.plan_id is None
     assert meta.steps == []
     assert meta.result["outcome"] == "terminated_before_delivery"

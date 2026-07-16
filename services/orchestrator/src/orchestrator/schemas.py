@@ -7,8 +7,9 @@ Typed envelope fields with opaque JSON where the shape varies by step
 This file is the source of truth for the execution read model served by
 ``GET /executions``. The Admin UI consumes a hand-maintained TypeScript mirror
 (``packages/contracts/src/types.ts``); when changing ``WorkflowStatus``,
-``GateDecision``, ``StepResult``, ``StepProgress``, ``ExecutionSummary``, or
-``ExecutionMetadata``, update the mirror to match.
+``GateDecision``, ``DecisionKind``, ``DecisionCandidate``, ``DecisionArtifact``,
+``StepResult``, ``StepProgress``, ``ExecutionSummary``, or ``ExecutionMetadata``,
+update the mirror to match.
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ from typing import Any, Literal
 from pydantic import BaseModel
 
 GateDecisionType = Literal["continue_to_delivery_targets", "terminate"]
+DecisionKind = Literal["gate", "delivery_targets", "field_mapping", "workflow_actions_plan"]
 InputSource = Literal["workflow", "step", "literal"]
 StepType = Literal["call", "wait", "for_each", "terminate"]
 StepStatus = Literal["succeeded", "skipped", "failed"]
@@ -41,6 +43,32 @@ class GateDecision(BaseModel):
     decision: GateDecisionType
     confidence: float = 1.0
     rationale: str = ""
+
+
+class DecisionCandidate(BaseModel):
+    """One considered-but-not-necessarily-chosen option within a
+    ``DecisionArtifact`` (e.g. one delivery target)."""
+
+    label: str
+    confidence: float
+    rationale: str = ""
+    selected: bool = False
+
+
+class DecisionArtifact(BaseModel):
+    """Generic audit/read-model projection of an LLM Decision Service's output
+    (ADR-0007) — the explainability record shown in the Admin UI, not the
+    service's own return type (see ``GateDecision``, which this is built from
+    for the ``gate`` kind)."""
+
+    kind: DecisionKind
+    confidence: float | None = None
+    rationale: str = ""
+    outcome: str = ""
+    candidates: list[DecisionCandidate] = []
+    artifact_ref: str | None = None
+    invocation_log_ref: str | None = None
+    created_at: str = ""
 
 
 class InputBinding(BaseModel):
@@ -132,7 +160,7 @@ class ExecutionMetadata(BaseModel):
     correlation_id: str = ""  # surfaced for the Admin UI cross-app pivot (#28 G3)
     event_type: str | None = None
     status: WorkflowStatus
-    gate_decision: dict[str, Any] | None = None
+    decisions: list[DecisionArtifact] = []
     plan_id: str | None = None
     steps: list[StepResult] = []
     result: dict[str, Any] = {}
