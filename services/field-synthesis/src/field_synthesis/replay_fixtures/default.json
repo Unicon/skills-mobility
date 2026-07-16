@@ -1,0 +1,8 @@
+{
+  "values": {
+    "field_a": "Sample text for field A.",
+    "field_b": "Sample text for field B."
+  },
+  "confidence": 0.85,
+  "rationale": "Generated from supplied source payloads."
+}
