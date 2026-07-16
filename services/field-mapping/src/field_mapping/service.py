@@ -10,6 +10,7 @@ silently rescued.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from .artifact_loader import load_source_payloads
@@ -22,6 +23,7 @@ from .contracts import (
     MappingRequest,
     MappingResponse,
     SynthesisRequestArtifact,
+    SynthesisRequestEntry,
     TransformationType,
 )
 from .llm_adapter import LLMAdapter
@@ -101,7 +103,9 @@ class MappingService:
         if generation.placeholder_ids:
             synthesis_artifact = SynthesisRequestArtifact(
                 transformation_type=request.transformation_type,
-                requests=generation.synthesis_requests,
+                requests=_ground_synthesis_briefs(
+                    generation.synthesis_requests, request.source_payloads
+                ),
             )
             synthesis_ref = self._artifacts.store_synthesis_request(synthesis_artifact, key=key)
         return MappingResponse.succeeded(
@@ -139,6 +143,46 @@ class MappingService:
             synthesis_allowed=request.synthesis_allowed,
             placeholder_ids=artifact.placeholder_ids,
         )
+
+
+_LEADING_KEY = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)")
+
+
+def _referenced_top_level_keys(paths: list[str]) -> list[str]:
+    """The distinct top-level source keys the paths name (e.g. ``course.name`` and
+    ``pages[?id='x'].body`` -> ``course``, ``pages``). Tolerant of the ad-hoc path
+    syntax the LLM emits — we only need the leading segment, not full-path eval."""
+    keys: list[str] = []
+    for path in paths:
+        segment = path.removeprefix("source_payloads.")
+        match = _LEADING_KEY.match(segment)
+        if match:
+            key = match.group(1)
+            if key != "source_payloads" and key not in keys:
+                keys.append(key)
+    return keys
+
+
+def _ground_synthesis_briefs(
+    requests: list[SynthesisRequestEntry], source_payloads: dict[str, Any]
+) -> list[SynthesisRequestEntry]:
+    """Make each synthesis brief self-contained for the (separate-store) Field
+    Synthesis service by populating its ``source_payloads`` snapshot from the source
+    data this service already holds. When the LLM referenced only
+    ``source_payload_paths``, snapshot the top-level source slices those paths name
+    (full source_payloads if none resolve). Briefs that already carry a snapshot are
+    left untouched (§2: a provided snapshot is authoritative)."""
+    grounded: list[SynthesisRequestEntry] = []
+    for brief in requests:
+        if brief.source_payloads is not None:
+            grounded.append(brief)
+            continue
+        keys = _referenced_top_level_keys(brief.source_payload_paths or [])
+        snapshot = {k: source_payloads[k] for k in keys if k in source_payloads}
+        if not snapshot:
+            snapshot = dict(source_payloads)
+        grounded.append(brief.model_copy(update={"source_payloads": snapshot}))
+    return grounded
 
 
 def _invocation_log(
