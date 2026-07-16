@@ -62,7 +62,14 @@ resolve, `/healthz` reports `configured: false`.
 ### Sample request payload
 
 `payload.unsigned_vc` is a full unsigned OBv3; the recipient's resolved LearnCard
-DID goes in **`credentialSubject.id`** (the Profile Resolver put it there upstream):
+DID goes in **`credentialSubject.id`** (the Profile Resolver put it there upstream).
+The `@context` **must** include the OBv3 context alongside the VC v1 context — the
+OBv3 terms (`achievement`, `AchievementSubject`, `OpenBadgeCredential`) are undefined
+in VC v1 alone, so DIDKit can't expand them to canonicalize/sign and fails with
+`Expansion failed: Key expansion failed` (this mirrors `orchestrator/obv3.py`). The
+sample's `issuer` hardcodes the demo `smi-demo-organization` DID; if you test with a
+different `SEED_LABEL`/`PROFILE_ID`, set `issuer` to your identity's DID or signing
+fails (or silently signs as the wrong issuer):
 
 ```json
 {
@@ -71,7 +78,10 @@ DID goes in **`credentialSubject.id`** (the Profile Resolver put it there upstre
   "correlation_id": "corr_1", "delivery_config_ref": "learncard-dev",
   "payload": {
     "unsigned_vc": {
-      "@context": ["https://www.w3.org/2018/credentials/v1"],
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+      ],
       "type": ["VerifiableCredential", "OpenBadgeCredential"],
       "issuer": "did:web:network.learncard.com:users:smi-demo-organization",
       "credentialSubject": {
