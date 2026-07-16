@@ -11,6 +11,8 @@ package = false
 
 [tool.uv.workspace]
 members = ["libs/*", "services/*"]
+# The LearnCard issuer adapter is a Node/TS service, not a Python uv member.
+exclude = ["services/learncard-issuer-adapter"]
 
 [tool.uv.sources]
 skills-mobility-events = { workspace = true }
