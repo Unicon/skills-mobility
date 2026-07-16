@@ -51,6 +51,37 @@ class _RaisingDT:
         raise RuntimeError("service down")
 
 
+class _StubWA:
+    """Configured Workflow Actions client that succeeds — exercises the wrapper's
+    pass-through return path (which otherwise only runs against a live service)."""
+
+    def __init__(self, *, gate: GateDecision, plan: DeliveryPhasePlan) -> None:
+        self._gate = gate
+        self._plan = plan
+        self.gate_calls = 0
+        self.plan_calls = 0
+
+    def pre_target_gate(self, *a: Any, **k: Any) -> GateDecision:
+        self.gate_calls += 1
+        return self._gate
+
+    def delivery_phase_plan(self, *a: Any, **k: Any) -> DeliveryPhasePlan:
+        self.plan_calls += 1
+        return self._plan
+
+
+class _StubDT:
+    """Configured Delivery Targets client that succeeds (pass-through return path)."""
+
+    def __init__(self, targets: list[str]) -> None:
+        self._targets = targets
+        self.calls = 0
+
+    def select_targets(self, *a: Any, **k: Any) -> list[str]:
+        self.calls += 1
+        return self._targets
+
+
 # --- best-effort fallback (the whole point of the seam) ---
 
 
@@ -79,6 +110,37 @@ def test_plan_falls_back_when_service_raises() -> None:
     )
     assert isinstance(plan, DeliveryPhasePlan)
     assert plan.plan_id  # the deterministic plan
+
+
+# --- configured-and-succeeds: the wrapper returns the service's result ---
+# (these exercise the pass-through return line that otherwise only runs in production)
+
+
+def test_gate_uses_service_result_when_configured_and_succeeds() -> None:
+    decision = GateDecision(decision="terminate", confidence=0.7, rationale="failing grade")
+    plan = planner.delivery_phase_plan("skill_mastered", _TARGETS, "2026-01-01T00:00:00Z")
+    wa = _StubWA(gate=decision, plan=plan)
+    result = _resolve_gate(wa, "skill_mastered", {}, {}, _CTX)
+    assert wa.gate_calls == 1
+    assert result is decision  # service result, not the deterministic gate
+
+
+def test_targets_use_service_result_when_configured_and_succeeds() -> None:
+    dt = _StubDT(["smart_resume"])
+    result = _resolve_targets(dt, "course_completed", "mock_lms", {}, _CTX)
+    assert dt.calls == 1
+    assert result == ["smart_resume"]  # service result, not the deterministic default
+
+
+def test_plan_uses_service_result_when_configured_and_succeeds() -> None:
+    plan = planner.delivery_phase_plan("skill_mastered", _TARGETS, "2026-01-01T00:00:00Z")
+    gate = GateDecision(decision="continue_to_delivery_targets", confidence=1.0, rationale="")
+    wa = _StubWA(gate=gate, plan=plan)
+    result = _resolve_plan(
+        wa, "skill_mastered", "mock_lms", _TARGETS, {}, {}, "2026-01-01T00:00:00Z", _CTX,
+    )
+    assert wa.plan_calls == 1
+    assert result is plan  # service result, not deterministic regeneration
 
 
 # --- plan conformance guardrail (LLM plan must feed the executor's bindings) ---
