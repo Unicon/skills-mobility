@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     context_builder_url: str | None = None
     profile_resolver_url: str | None = None  # #51 Profile Resolver
     delivery_router_url: str | None = None  # #56 Delivery Router
+    # #27 Field Mapping service. When set, the mapping steps call it for real
+    # (best-effort — the deterministic obv3 stand-in still produces the payload);
+    # else the Phase-1 stub returns null refs.
+    field_mapping_url: str | None = None
     # #27/ADR-0007 LLM Decision Service planner seams. When set, the planner path
     # calls these for real (best-effort — a failure falls back to the deterministic
     # gate/targets/plan stubs); else the stubs are used.

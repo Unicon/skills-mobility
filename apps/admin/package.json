@@ -1,0 +1,31 @@
+{
+  "name": "admin-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Admin UI — read-only observability console over the Orchestrator, for the Skills Mobility POC",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@radix-ui/react-collapsible": "^1.1.1",
+    "@skills-mobility/contracts": "*",
+    "@skills-mobility/ui": "*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.0.1",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.2",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8",
+    "vitest": "^2.1.3"
+  }
+}

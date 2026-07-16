@@ -1,11 +1,14 @@
-# Local multi-service dev/demo environment for the Phase-1 spine.
+# Local multi-service dev/demo environment: the Phase-1 spine + LearnCard delivery.
 #
 # One shared Python image (docker/Dockerfile.python), run once per service via
-# `command` (binding 0.0.0.0). Services reach each other by compose service name.
+# `command` (binding 0.0.0.0); the Node issuer adapter has its own image
+# (docker/Dockerfile.node). Services reach each other by compose service name.
 # Run:  docker compose up --build
 #
-# Only the 4 services on `main` are here today; the delivery layer joins as its
-# PRs merge (see docker/README.md).
+# LearnCard secrets (LEARNCARD_API_TOKEN, SECURE_SEED, …) come from the demo
+# provisioning step (tools/learncard-demo, ADR-0020) via a gitignored root .env
+# — see .env.example and docker/README.md. Without them the stack still comes up,
+# but the LearnCard adapters/resolver report unconfigured.
 name: skills-mobility
 
 x-python: &python
@@ -22,6 +25,11 @@ services:
     environment:
       MOCK_LMS_EVENT_CONSUMER_URL: http://event-consumer:8200
     ports: ["8000:8000"]
+    # No depends_on event-consumer: mock-lms only calls it at *trigger* time (the
+    # async emit), not at startup, and gating it here would close a startup cycle
+    # (context-builder -> mock-lms -> event-consumer -> orchestrator ->
+    # context-builder). The synchronous read path (context-builder -> mock-lms) is
+    # the one gated instead.
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/healthz')"]
       interval: 10s
@@ -36,6 +44,9 @@ services:
       EVENT_CONSUMER_DB_PATH: /data/event-consumer.db
     volumes: ["event-consumer-data:/data"]
     ports: ["8200:8200"]
+    depends_on:
+      orchestrator:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8200/healthz')"]
       interval: 10s
@@ -48,6 +59,9 @@ services:
     environment:
       CONTEXT_BUILDER_LMS_BASE_URL: http://mock-lms:8000
     ports: ["8100:8100"]
+    depends_on:
+      mock-lms:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8100/healthz')"]
       interval: 10s
@@ -59,11 +73,98 @@ services:
     command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('orchestrator.app:create_app', factory=True, host='0.0.0.0', port=8400)"]
     environment:
       ORCHESTRATOR_CONTEXT_BUILDER_URL: http://context-builder:8100
+      ORCHESTRATOR_PROFILE_RESOLVER_URL: http://profile-resolver:8700
+      ORCHESTRATOR_DELIVERY_ROUTER_URL: http://delivery-router:8800
+      # The signed OBv3's issuer must be the real (resolvable) demo issuer DID, not
+      # the placeholder default — else the issuer adapter's SDK sign fails resolving it.
+      ORCHESTRATOR_ISSUER_ID: ${LEARNCARD_ISSUER_DID:-did:web:poc.skills-mobility.example}
+      LEARNCARD_DEMO_RECIPIENT_PROFILE_ID: ${LEARNCARD_DEMO_RECIPIENT_PROFILE_ID:-smi-demo-learner}
       ORCHESTRATOR_DB_PATH: /data/orchestrator.db
     volumes: ["orchestrator-data:/data"]
     ports: ["8400:8400"]
+    depends_on:
+      context-builder:
+        condition: service_healthy
+      profile-resolver:
+        condition: service_healthy
+      delivery-router:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8400/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # --- LearnCard delivery layer (ADR-0016/0020) ---
+
+  profile-resolver:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('learncard_profile_resolver.app:create_app', factory=True, host='0.0.0.0', port=8700)"]
+    environment:
+      LEARNCARD_PROFILE_RESOLVER_DB_PATH: /data/learncard-profile-resolver.db
+      LEARNCARD_API_URL: ${LEARNCARD_API_URL:-https://network.learncard.com/api}
+      LEARNCARD_API_TOKEN: ${LEARNCARD_API_TOKEN:-}
+    volumes: ["profile-resolver-data:/data"]
+    ports: ["8700:8700"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8700/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  delivery-router:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('delivery_router.app:create_app', factory=True, host='0.0.0.0', port=8800)"]
+    environment:
+      DELIVERY_ROUTER_LEARNCARD_ISSUER_URL: http://learncard-issuer-adapter:8910
+      DELIVERY_ROUTER_LEARNCARD_WALLET_URL: http://learncard-wallet-adapter:8900
+    ports: ["8800:8800"]
+    depends_on:
+      learncard-issuer-adapter:
+        condition: service_healthy
+      learncard-wallet-adapter:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8800/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  learncard-issuer-adapter:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.node
+    image: skills-mobility-node:local
+    restart: unless-stopped
+    environment:
+      PORT: "8910"
+      LOG_LEVEL: info
+      # The demo issuer identity is the *organization* profile tools/learncard-demo
+      # provisions (smi-demo-organization, #54/ADR-0020) — not a separate "issuer".
+      # The adapter derives its signing seed from SEED_LABEL (#48 option b) — nothing
+      # to copy by hand; SECURE_SEED overrides it only for a standalone throwaway id.
+      SEED_LABEL: ${SEED_LABEL:-organization}
+      SECURE_SEED: ${SECURE_SEED:-}
+      PROFILE_ID: ${LEARNCARD_ISSUER_PROFILE_ID:-smi-demo-organization}
+      PROFILE_NAME: ${LEARNCARD_ISSUER_PROFILE_NAME:-SMI Demo Organization}
+    ports: ["8910:8910"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8910/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  learncard-wallet-adapter:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('learncard_wallet_adapter.app:create_app', factory=True, host='0.0.0.0', port=8900)"]
+    environment:
+      LEARNCARD_API_URL: ${LEARNCARD_API_URL:-https://network.learncard.com/api}
+      LEARNCARD_API_TOKEN: ${LEARNCARD_API_TOKEN:-}
+      # Recipient-scoped read token for the delivered-credential read-back (#53/#55).
+      LEARNCARD_RECIPIENT_API_TOKEN: ${LEARNCARD_RECIPIENT_API_TOKEN:-}
+    ports: ["8900:8900"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8900/healthz')"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -71,3 +172,4 @@ services:
 volumes:
   event-consumer-data:
   orchestrator-data:
+  profile-resolver-data:

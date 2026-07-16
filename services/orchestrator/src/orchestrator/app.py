@@ -20,14 +20,17 @@ from orchestrator.clients import (
     ContextBuilderClient,
     DeliveryRouterClient,
     DeliveryTargetsClient,
+    FieldMappingClient,
     HttpContextBuilderClient,
     HttpDeliveryRouterClient,
     HttpDeliveryTargetsClient,
+    HttpFieldMappingClient,
     HttpProfileResolverClient,
     HttpWorkflowActionsClient,
     ProfileResolverClient,
     StubContextBuilder,
     StubDeliveryRouter,
+    StubFieldMapping,
     StubProfileResolver,
     WorkflowActionsClient,
 )
@@ -68,8 +71,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if settings.delivery_router_url
         else StubDeliveryRouter()
     )
+    # Field Mapping (#27): real HTTP client when its URL is set, else the stub.
+    field_mapping: FieldMappingClient = (
+        HttpFieldMappingClient(settings.field_mapping_url)
+        if settings.field_mapping_url
+        else StubFieldMapping()
+    )
     app.state.profile_resolver = profile_resolver
     app.state.delivery_router = delivery_router
+    app.state.field_mapping = field_mapping
     # LLM Decision Service planner seams (#77/#78): real HTTP clients when their
     # URLs are set, else None → the engine uses the deterministic planner stubs.
     delivery_targets: DeliveryTargetsClient | None = (
@@ -95,6 +105,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             context_builder=app.state.context_builder,
             profile_resolver=app.state.profile_resolver,
             delivery_router=app.state.delivery_router,
+            field_mapping=app.state.field_mapping,
             issuer_id=settings.issuer_id,
             delivery_config_ref=settings.delivery_config_ref,
             recipient_profile_id=settings.demo_recipient_profile_id,
