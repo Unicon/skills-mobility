@@ -16,12 +16,17 @@ from delivery_router.schemas import (
     DeliveryActionResponse,
 )
 
-# action -> (adapter, adapter endpoint path). Phase 1: issuer + wallet (design §6).
+# action -> (adapter, adapter endpoint path). Phase 1: issuer + wallet (design §6);
+# plus SmartResume delivery for non-credential-enabled achievements.
 ACTION_ROUTES: dict[Action, tuple[AdapterKey, str]] = {
     Action.ISSUE_LEARNCARD_BADGE: (AdapterKey.LEARNCARD_ISSUER, "/internal/issue-learncard-badge"),
     Action.DELIVER_TO_LEARNCARD_WALLET: (
         AdapterKey.LEARNCARD_WALLET,
         "/internal/deliver-to-learncard-wallet",
+    ),
+    Action.DELIVER_TO_SMARTRESUME: (
+        AdapterKey.SMART_RESUME,
+        "/internal/deliver-to-smartresume",
     ),
 }
 
