@@ -70,6 +70,11 @@ class MappingResponse(BaseModel):
     synthesis_request_ref: str | None
     requires_synthesis: bool
     llm_invocation_log_ref: str | None
+    # The synthesis-request artifact inline (serialized), so the Orchestrator can
+    # hand it straight to the Field Synthesis service — the two services keep
+    # separate artifact stores, so a bare ref does not resolve across the boundary.
+    # Present only when requires_synthesis; None otherwise.
+    synthesis_request: dict[str, Any] | None = None
 
     @classmethod
     def succeeded(
@@ -80,6 +85,7 @@ class MappingResponse(BaseModel):
         llm_invocation_log_ref: str,
         synthesis_allowed: bool,
         placeholder_ids: list[str],
+        synthesis_request: dict[str, Any] | None = None,
     ) -> Self:
         # §10 derivation — can never be true when the request forbade synthesis,
         # regardless of the placeholders/ref present.
@@ -92,6 +98,7 @@ class MappingResponse(BaseModel):
             synthesis_request_ref=synthesis_request_ref,
             requires_synthesis=requires_synthesis,
             llm_invocation_log_ref=llm_invocation_log_ref,
+            synthesis_request=synthesis_request if requires_synthesis else None,
         )
 
     @classmethod
