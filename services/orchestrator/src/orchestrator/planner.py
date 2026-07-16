@@ -26,6 +26,12 @@ _EVENT_TYPE_BY_NAME = {
 }
 _SUPPORTED = frozenset(_EVENT_TYPE_BY_NAME.values())
 _PHASE1_TARGETS = ["learncard_issuer", "learncard_wallet"]
+# The deterministic Context Builder fetch profile per event type — supplied to the
+# Field Mapping seam so it resolves its source catalogs (#27 §4/§5).
+_FETCH_PROFILE_BY_EVENT = {
+    "skill_mastered": "skill_mastered.v1",
+    "course_completed": "course_completed.v1",
+}
 
 
 def event_type_of(event: dict[str, Any]) -> str:
@@ -61,9 +67,11 @@ def _step(step_id: int, action_id: str, inputs: dict[str, InputBinding], produce
     return PlanStep(step_id=step_id, action_id=action_id, inputs=inputs, produces=produces)
 
 
-def _phase1_steps() -> list[PlanStep]:
+def _phase1_steps(fetch_profile_id: str) -> list[PlanStep]:
     """The fixed Phase-1 delivery-phase sequence (design §5). Field Mapping /
-    Field Synthesis seams are preserved as explicit no-op steps (FR-OR-14/15)."""
+    Field Synthesis seams are preserved as explicit steps (FR-OR-14/15); the
+    mapping steps carry the source_system + fetch_profile_id + upstream data the
+    Field Mapping service needs to build its request (#27 §4)."""
     return [
         _step(
             1,
@@ -78,8 +86,35 @@ def _phase1_steps() -> list[PlanStep]:
             },
             "resolved_profile",
         ),
-        _step(2, "generate_issuer_payload_mapping", {}, "issuer_mapping"),
-        _step(3, "generate_issuer_payload_synthesis", {}, "issuer_synthesis"),
+        _step(
+            2,
+            "generate_issuer_payload_mapping",
+            {
+                # transformation_type and delivery_target are independent plan
+                # literals, not a derived pair (#27 §4); synthesis_allowed is the
+                # plan's permission gate for Field Synthesis this phase (#27 §6).
+                "transformation_type": InputBinding(source="literal", value="issuer_payload"),
+                "delivery_target": InputBinding(source="literal", value="learncard_issuer"),
+                "synthesis_allowed": InputBinding(source="literal", value=True),
+                # Source resolution + payload inputs for the Field Mapping request.
+                "source_system": InputBinding(source="literal", value="mock_lms"),
+                "fetch_profile_id": InputBinding(source="literal", value=fetch_profile_id),
+                "bundle": InputBinding(source="workflow", path="bundle"),
+                "issuer_id": InputBinding(source="workflow", path="issuer_id"),
+                "resolved_profile": InputBinding(source="step", step_id=1),
+            },
+            "issuer_mapping",
+        ),
+        _step(
+            3,
+            "generate_issuer_payload_synthesis",
+            {
+                "transformation_type": InputBinding(source="literal", value="issuer_payload"),
+                "delivery_target": InputBinding(source="literal", value="learncard_issuer"),
+                "mapping": InputBinding(source="step", step_id=2),
+            },
+            "issuer_synthesis",
+        ),
         _step(
             4,
             "execute_issuer_payload_translation",
@@ -101,7 +136,24 @@ def _phase1_steps() -> list[PlanStep]:
             {"issuer_payload": InputBinding(source="step", step_id=4)},
             "issued",
         ),
-        _step(6, "generate_wallet_payload_mapping", {}, "wallet_mapping"),
+        _step(
+            6,
+            "generate_wallet_payload_mapping",
+            {
+                # The wallet phase provisions no Field Synthesis step, so the plan
+                # passes synthesis_allowed=false — a property of this plan, not a
+                # rule hardcoded in the FM service or the executor (#27 §6).
+                "transformation_type": InputBinding(source="literal", value="wallet_payload"),
+                "delivery_target": InputBinding(source="literal", value="learncard_wallet"),
+                "synthesis_allowed": InputBinding(source="literal", value=False),
+                # Source resolution + the issued badge for the Field Mapping request.
+                "source_system": InputBinding(source="literal", value="mock_lms"),
+                "fetch_profile_id": InputBinding(source="literal", value=fetch_profile_id),
+                "issued": InputBinding(source="step", step_id=5),
+                "resolved_profile": InputBinding(source="step", step_id=1),
+            },
+            "wallet_mapping",
+        ),
         _step(
             7,
             "execute_wallet_payload_translation",
@@ -138,5 +190,5 @@ def delivery_phase_plan(
         ),
         applicability=PlanApplicability(event_type=event_type, selected_targets=list(targets)),
         rationale="Deterministic Phase 1 LearnCard workflow.",
-        steps=_phase1_steps(),
+        steps=_phase1_steps(_FETCH_PROFILE_BY_EVENT.get(event_type, f"{event_type}.v1")),
     )

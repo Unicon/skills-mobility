@@ -36,6 +36,12 @@ class ProfileResolverClient(Protocol):
     ) -> dict[str, Any]: ...
 
 
+class FieldMappingClient(Protocol):
+    def map(
+        self, request: dict[str, Any], ctx: EnvelopeContext, step_id: str
+    ) -> dict[str, Any]: ...
+
+
 class DeliveryRouterClient(Protocol):
     def dispatch(
         self, action: str, payload: dict[str, Any], ctx: EnvelopeContext, step_id: str
@@ -72,6 +78,21 @@ class StubProfileResolver:
             "profile_id": f"@{handle}",
             "did": f"did:web:network.learncard.com:users:{handle}",
             "resolution_method": "stubbed",
+        }
+
+
+class StubFieldMapping:
+    """Phase-1 Field Mapping stub: the §10 envelope with null refs (every field
+    maps directly, so no placeholders / synthesis). Behaviorally identical to the
+    pre-#27 inline stub; used when no field_mapping_url is configured."""
+
+    def map(self, request: dict[str, Any], ctx: EnvelopeContext, step_id: str) -> dict[str, Any]:
+        return {
+            "status": "succeeded",
+            "mapping_artifact_ref": None,
+            "synthesis_request_ref": None,
+            "requires_synthesis": False,
+            "llm_invocation_log_ref": None,
         }
 
 
@@ -194,6 +215,30 @@ class HttpDeliveryRouterClient:
         )
         # The router normalizes adapter/transport failures to a 200 status envelope;
         # a non-2xx means the router itself is down/misconfigured — fail the step.
+        resp.raise_for_status()
+        body: dict[str, Any] = resp.json()
+        return body
+
+
+class HttpFieldMappingClient:
+    """Real Field Mapping client (#27) — POSTs a MappingRequest to /map and returns
+    the §10 response envelope. The caller (actions._generate_payload_mapping) treats
+    the result as best-effort: a failure does not fail the workflow, because the
+    deterministic obv3 stand-in still produces the delivered payload (build item 8).
+    ``execution_id`` / ``event_id`` are filled from the correlation envelope."""
+
+    def __init__(self, base_url: str, client: httpx.Client | None = None) -> None:
+        self._client = client or httpx.Client(base_url=base_url, timeout=60.0)
+
+    def map(self, request: dict[str, Any], ctx: EnvelopeContext, step_id: str) -> dict[str, Any]:
+        resp = self._client.post(
+            "/map",
+            json={
+                "execution_id": ctx.execution_id,
+                "event_id": ctx.correlation_id,
+                **request,
+            },
+        )
         resp.raise_for_status()
         body: dict[str, Any] = resp.json()
         return body
