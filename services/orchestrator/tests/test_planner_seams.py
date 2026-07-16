@@ -114,6 +114,11 @@ def test_plan_falls_back_when_service_raises() -> None:
     assert plan.confidence is None  # deterministic plan carries no LLM confidence
 
 
+def test_smartresume_plan_conforms_with_itself() -> None:
+    ref = planner.delivery_phase_plan("skill_mastered", ["smart_resume"], "2026-01-01T00:00:00Z")
+    assert _plan_conforms(ref, ref) is True
+
+
 # --- configured-and-succeeds: the wrapper returns the service's result ---
 # (these exercise the pass-through return line that otherwise only runs in production)
 
