@@ -207,9 +207,14 @@ services:
     environment:
       PORT: "8910"
       LOG_LEVEL: info
+      # The demo issuer identity is the *organization* profile tools/learncard-demo
+      # provisions (smi-demo-organization, #54/ADR-0020) — not a separate "issuer".
+      # The adapter derives its signing seed from SEED_LABEL (#48 option b) — nothing
+      # to copy by hand; SECURE_SEED overrides it only for a standalone throwaway id.
+      SEED_LABEL: ${SEED_LABEL:-organization}
       SECURE_SEED: ${SECURE_SEED:-}
-      PROFILE_ID: ${LEARNCARD_ISSUER_PROFILE_ID:-smi-demo-issuer}
-      PROFILE_NAME: ${LEARNCARD_ISSUER_PROFILE_NAME:-SMI Demo Issuer}
+      PROFILE_ID: ${LEARNCARD_ISSUER_PROFILE_ID:-smi-demo-organization}
+      PROFILE_NAME: ${LEARNCARD_ISSUER_PROFILE_NAME:-SMI Demo Organization}
     ports: ["8910:8910"]
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:8910/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
