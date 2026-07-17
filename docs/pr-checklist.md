@@ -26,7 +26,8 @@ Config & secrets (.env)
     (not monkeypatch.chdir into the same dir — that never exercises the real mismatch)
 [ ] .env.example covers every new env var
 [ ] Config constants — incl. non-secret identity labels — live in .env/.env.example, not
-    hardcoded in source (the platform is meant to serve multiple organizations)
+    hardcoded in source (the platform is multi-org; hardcoding blocks per-org
+    customization without a code edit)
 
 Code & API
 [ ] Closed value sets are Literal/StrEnum, not str (turn the documenting comment into the type)
@@ -81,14 +82,10 @@ Project-specific
 Only the items whose rationale isn't self-evident from the checklist above — the rest speak for themselves.
 
 - **`.env` must be *loaded*, not just written** — the second wave's single most-repeated bug. In pydantic-settings, `SettingsConfigDict` with only `env_prefix` set never reads the file; you must also set `env_file`. Without it every value silently defaults to empty and the first request crashes (`Authorization: Bearer ` → `Illegal header value`). Node provisioning scripts have the same trap — call `process.loadEnvFile()`/`dotenv`. *(#49, #50, #51, #54, #55, #56, #59 — seven PRs.)*
-- **`env_file` must be CWD-safe** — a bare relative `".env"` resolves against the process CWD, and we run services from the repo root, not the package dir, so the file is never found. Anchor it to an absolute `Path(__file__)`-relative path. The obvious regression test also fails to catch this if it `monkeypatch.chdir`s into the same dir it wrote `.env` to — the test must load from a *different* cwd. *(#50, #56.)*
 - **Four correlation identifiers on every log line** — a systemic copy-paste template gap Mary flagged "four for four" (Issuer Adapter, Wallet Adapter, Profile Resolver, Delivery Router). Log `workflow_id`, `execution_id`, `step_id`, and `correlation_id` — especially on the failure path, and consider preserving them in the result record — so a run is traceable end to end. *(#48, #50, #51, #56.)*
 - **Logging setup** — uvicorn doesn't configure app loggers, so without `logging.basicConfig(level=settings.log_level.upper())` in `run()` your `logger.info()` calls are silently dropped. Log the audit-relevant transitions (ingress/gate decision, plan reuse-vs-generate, per-step execution, fetch attempts), not just the DB write. *(#20 FR-CB15, #21, #22.)*
 - **README `uv sync` first** — the service isn't importable as a workspace member until installed, so a README whose first step isn't `uv sync --all-packages` fails for anyone but the author; order the smoke-test steps so they don't 404 against each other. *(#4, #20, #21, #22.)*
 - **Port allocation** — avoid clashes and Consul's *full* reserved range (8300–8302, 8500, 8600), which bites under Docker Desktop; the recurring miss was picking 8500/8600 anyway, then leaving stale ports in `.env.example`/README/compose. Landmarks: Mock LMS 8000, Context Builder 8100, Event Consumer 8200, Orchestrator 8400; wallet adapter 8900, issuer 8910. *(#22, #48, #50, #56, #61.)*
 - **Validation vs. grading the LLM** — deterministic validation of a Decision Service's output should check *policy/contract conformance* (schema, registry conformance, binding resolvability), not grade whether the model did its job well. Gating a service failure on "did the plan include the required steps" risks the model learning to satisfy the validator rather than produce a good plan; assert step/output presence in the test harness (Layer B) instead. *(#75.)*
-- **A service owns its registry** — the orchestrator should not fetch the action/delivery-target registry and inject it; each Decision Service reads its own service-specific registry directly. *(#75.)*
-- **Multi-org config** — even non-secret identity labels belong in `.env`/`.env.example`, because the platform is meant to serve multiple organizations and hardcoding blocks customization without a code edit. *(#54.)*
 - **Fail loudly on unknown input** — the flip side of "no silent drops": a helper that defaults an unrecognized course prefix to `"accounting"`, or a catch-all that treats any `createProfile` error as "already exists", hides real problems. Raise on the unexpected; catch only what you expect. *(#34, #54.)*
 - **Don't spoon-feed the LLMs** — mock data/events must mirror real-world signal availability so the Decision Services are genuinely tested — badge acceptance is *discovered* via a fetch, not handed over as a boolean; competency-vs-sub-competency is read from the outcome title prefix, not a flag; and content must genuinely vary per entity (108 submissions from 12 reused bodies makes titles mismatch content). *(#4, #34.)*
-- **Docs track descope** — when code changes scope, update design *and* requirements together; don't leave a stale example (a removed `email` id path) a future contributor would copy to reintroduce the fixed bug, and don't name a module in the design that no sibling service builds. *(#27, #33, #51, #56, #59.)*
