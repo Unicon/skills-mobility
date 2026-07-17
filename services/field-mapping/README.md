@@ -38,6 +38,7 @@ service-internal — the Orchestrator supplies no catalog ids.
 ## Run / test
 
 ```bash
+uv sync --all-packages                    # create venv + install all workspace members
 uv run field-mapping                      # serve on :8120 (replay mode)
 uv run pytest services/field-mapping      # unit + API tests (no AWS needed)
 ```

@@ -7,7 +7,7 @@ from field_mapping.catalog_store import CatalogStore
 from field_mapping.replay_adapter import ReplayAdapter
 from field_mapping.service import MappingService
 
-from .conftest import WALLET_BODY
+from .conftest import ISSUER_BODY, WALLET_BODY
 
 _SEAM_KEYS = {
     "status",
@@ -40,3 +40,21 @@ def test_post_map_contract_violation_is_422(tmp_path: Path) -> None:
     bad = {**WALLET_BODY, "transformation_type": "credential_template"}
     resp = _client(tmp_path).post("/map", json=bad)
     assert resp.status_code == 422
+
+
+def test_no_matching_fixture_returns_404(tmp_path: Path) -> None:
+    # A request for which no replay fixture exists must return 404, not 500.
+    bogus = {
+        **WALLET_BODY,
+        "fetch_profile_id": "nonexistent_profile.v1",
+    }
+    resp = _client(tmp_path).post("/map", json=bogus)
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "no replay fixture for this request"
+
+
+def test_swagger_example_body_returns_200(tmp_path: Path) -> None:
+    # The Swagger example (ISSUER_BODY) must produce a successful mapping, not 500.
+    resp = _client(tmp_path).post("/map", json=ISSUER_BODY)
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "succeeded"
