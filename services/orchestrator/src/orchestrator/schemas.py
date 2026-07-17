@@ -39,7 +39,7 @@ class GateDecision(BaseModel):
     stored for reuse (ADR-0009, FR-OR-20)."""
 
     decision: GateDecisionType
-    confidence: float = 1.0
+    confidence: float | None = None  # None = no LLM confidence supplied (vs a real value)
     rationale: str = ""
 
 
@@ -85,7 +85,7 @@ class DeliveryPhasePlan(BaseModel):
     generated_at: str = ""
     generator: PlanGenerator
     applicability: PlanApplicability
-    confidence: float = 1.0
+    confidence: float | None = None  # None = no LLM confidence supplied (vs a real value)
     rationale: str = ""
     steps: list[PlanStep] = []
 

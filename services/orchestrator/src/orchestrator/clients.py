@@ -401,9 +401,9 @@ class HttpWorkflowActionsClient:
         rationale = str(body.get("rationale") or "")
         if raw == "continue_to_delivery_targets":
             return GateDecision(decision="continue_to_delivery_targets",
-                                confidence=body.get("confidence", 1.0), rationale=rationale)
+                                confidence=body.get("confidence"), rationale=rationale)
         # Any terminate_* reason maps to the orchestrator's "terminate" Literal.
-        return GateDecision(decision="terminate", confidence=body.get("confidence", 1.0),
+        return GateDecision(decision="terminate", confidence=body.get("confidence"),
                             rationale=f"{raw}: {rationale}" if rationale else raw)
 
     def delivery_phase_plan(
