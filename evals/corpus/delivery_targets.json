@@ -1,0 +1,91 @@
+{
+  "_README": "PROVISIONAL LABELS — expected_targets encode the intended bifurcation (credential-enabled courses → LearnCard; standard courses → SmartResume) but the routing use case is still an open question (spec review #75). These labels are NOT a settled contract and will be revised once #75 is resolved.",
+  "scenarios": [
+    {
+      "corpus_scenario_id": "course_completed.credential_enabled.v1",
+      "event_type": "course_completed",
+      "source_system": "mock_lms",
+      "learner_context": {
+        "course": {
+          "name": "Digital Credentials Capstone",
+          "kind": "digital_credential",
+          "description": "A badge-bearing, credential-enabled course."
+        }
+      },
+      "expected_targets": ["learncard_issuer", "learncard_wallet"],
+      "label_status": "provisional"
+    },
+    {
+      "corpus_scenario_id": "course_completed.standard.v1",
+      "event_type": "course_completed",
+      "source_system": "mock_lms",
+      "learner_context": {
+        "course": {
+          "name": "Introduction to Accounting",
+          "kind": "standard",
+          "description": "A standard non-credential course."
+        }
+      },
+      "expected_targets": ["smart_resume"],
+      "label_status": "provisional"
+    },
+    {
+      "corpus_scenario_id": "skill_mastered.credential_enabled.v1",
+      "event_type": "skill_mastered",
+      "source_system": "mock_lms",
+      "learner_context": {
+        "course": {
+          "name": "Applied Securities Analysis",
+          "kind": "digital_credential"
+        },
+        "outcome": {
+          "display_name": "Value a security"
+        }
+      },
+      "expected_targets": ["learncard_issuer", "learncard_wallet"],
+      "label_status": "provisional"
+    },
+    {
+      "corpus_scenario_id": "skill_mastered.standard.v1",
+      "event_type": "skill_mastered",
+      "source_system": "mock_lms",
+      "learner_context": {
+        "course": {
+          "name": "Law, Governance & Ethics",
+          "kind": "standard"
+        },
+        "outcome": {
+          "display_name": "Explain fiduciary duty"
+        }
+      },
+      "expected_targets": ["smart_resume"],
+      "label_status": "provisional"
+    },
+    {
+      "corpus_scenario_id": "course_completed.credential_enabled_2.v1",
+      "event_type": "course_completed",
+      "source_system": "mock_lms",
+      "learner_context": {
+        "course": {
+          "name": "Capital Markets Honors",
+          "kind": "digital_credential"
+        }
+      },
+      "expected_targets": ["learncard_issuer", "learncard_wallet"],
+      "label_status": "provisional"
+    },
+    {
+      "corpus_scenario_id": "course_completed.standard_2.v1",
+      "event_type": "course_completed",
+      "source_system": "mock_lms",
+      "learner_context": {
+        "course": {
+          "name": "Introduction to Finance",
+          "kind": "standard"
+        }
+      },
+      "expected_targets": ["smart_resume"],
+      "label_status": "provisional"
+    }
+  ]
+}
