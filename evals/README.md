@@ -21,6 +21,23 @@ Both services must be running (Docker stack up with Bedrock credentials).
 The script writes a `evals/last-scorecard.md` after each run and exits
 non-zero if any scenario fails.
 
+## Demo — Part 1: one live decision
+
+`run_evals.py` is the *aggregate accuracy* half of the demo. For the
+*per-run explainability* half (the view the admin UI, #82, renders), use:
+
+```bash
+evals/demo_pipeline.sh                     # ACCY-111 / grade-m1 / WU1125875 (defaults)
+evals/demo_pipeline.sh ACCY-111 ACCY-111-grade-final WU1125875
+```
+
+It emits one Canvas-style event from the Mock LMS and runs it through the
+pipeline (synchronous `/run-workflow` with a fresh `execution_id`, so it's
+repeatable despite the event-consumer's re-emit idempotency), printing the live
+gate decision + confidence + rationale and the Delivery Targets selection.
+The demo learner `WU1125875` is enrolled only in `ACCY-111`. See
+[`docs/3_design/evaluating-llm-decisions.md`](../docs/3_design/evaluating-llm-decisions.md).
+
 ## Corpora
 
 ### `corpus/workflow_actions_gate.json`
