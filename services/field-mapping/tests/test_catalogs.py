@@ -21,6 +21,19 @@ _SKILL_MASTERED_RESOURCES = {
     "submission",
 }
 
+# The eight resources the Context Builder course_completed.v1 fetch profile fetches
+# (services/context-builder/.../fetch_profiles/course_completed.yaml output_keys).
+_COURSE_COMPLETED_RESOURCES = {
+    "course",
+    "learner_profile",
+    "enrollment",
+    "modules",
+    "pages",
+    "assignments",
+    "rubrics",
+    "submissions",
+}
+
 
 def _schemas(path: Path) -> Iterator[dict[str, Any]]:
     doc = json.loads(path.read_text())
@@ -61,6 +74,18 @@ def test_skill_mastered_profile_lists_context_builder_resources() -> None:
         schema["x-resource-schema-id"] for path in SOURCES for schema in _schemas(path)
     }
     assert _SKILL_MASTERED_RESOURCES <= resource_ids
+
+
+def test_course_completed_profile_lists_context_builder_resources() -> None:
+    mapping = json.loads(
+        (CATALOGS / "fetch_profiles" / "mock_lms" / "course_completed.v1.json").read_text()
+    )
+    assert set(mapping["resources"]) == _COURSE_COMPLETED_RESOURCES
+    # Every listed resource has a matching source-resource catalog.
+    resource_ids = {
+        schema["x-resource-schema-id"] for path in SOURCES for schema in _schemas(path)
+    }
+    assert _COURSE_COMPLETED_RESOURCES <= resource_ids
 
 
 def test_every_target_field_declares_no_mapping_behavior() -> None:

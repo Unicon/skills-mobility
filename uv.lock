@@ -9,9 +9,11 @@ resolution-markers = [
 [manifest]
 members = [
     "context-builder",
+    "delivery-router",
     "event-consumer",
     "field-mapping",
     "learncard-api",
+    "learncard-profile-resolver",
     "learncard-wallet-adapter",
     "mock-lms",
     "orchestrator",
@@ -256,6 +258,27 @@ wheels = [
 ]
 
 [[package]]
+name = "delivery-router"
+version = "0.1.0"
+source = { editable = "services/delivery-router" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "uvicorn" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "pydantic", specifier = ">=2.7" },
+    { name = "pydantic-settings", specifier = ">=2.4" },
+    { name = "uvicorn", specifier = ">=0.30" },
+]
+
+[[package]]
 name = "event-consumer"
 version = "0.1.0"
 source = { editable = "services/event-consumer" }
@@ -415,6 +438,29 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.27" },
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pydantic-settings", specifier = ">=2" },
+]
+
+[[package]]
+name = "learncard-profile-resolver"
+version = "0.1.0"
+source = { editable = "services/learncard-profile-resolver" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "learncard-api" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "uvicorn" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "learncard-api", editable = "libs/learncard-api" },
+    { name = "pydantic", specifier = ">=2.7" },
+    { name = "pydantic-settings", specifier = ">=2.4" },
+    { name = "uvicorn", specifier = ">=0.30" },
 ]
 
 [[package]]

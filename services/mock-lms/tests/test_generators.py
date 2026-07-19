@@ -29,7 +29,7 @@ def test_imports_two_course_kinds_from_roster():
     kinds = {c.id: c.kind for c in catalog.courses}
     assert set(kinds.values()) == {CourseKind.STANDARD, CourseKind.DIGITAL_CREDENTIAL}
     # Course names + learner emails come straight from the roster CSVs.
-    assert any(c.name == "Introduction to Testing" for c in catalog.courses)
+    assert any(c.name == "Introduction to Accounting" for c in catalog.courses)
     assert all(u.email for u in catalog.users)
 
 
@@ -79,6 +79,53 @@ def test_course_count_and_kind_split_are_configurable():
 def test_requires_at_least_two_courses():
     with pytest.raises(ValueError):
         generate(seed=42, csv_dir=DATA, n_courses=1)
+
+
+def test_submissions_and_rubrics_carry_realistic_content():
+    # Issue #23: realistic content for the Field Mapping / Field Synthesis services.
+    catalog = generate(seed=42, csv_dir=DATA).catalog
+
+    # Every graded assignment has a rubric with multiple, distinct criteria.
+    rubric_assignment_ids = {r.assignment_id for r in catalog.rubrics}
+    assert {a.id for a in catalog.assignments} <= rubric_assignment_ids
+    for r in catalog.rubrics:
+        assert len(r.criteria) >= 3
+        assert len({c.description for c in r.criteria}) == len(r.criteria)  # varied, not cloned
+        assert all(c.ratings for c in r.criteria)
+
+    # Submissions carry a non-empty body + a per-criterion rubric assessment.
+    assert catalog.submissions
+    for s in catalog.submissions:
+        assert s.body.strip()
+        assert s.rubric_assessment
+        assert all(ra.criterion_id and ra.comments for ra in s.rubric_assessment)
+
+
+def test_modules_carry_instructional_pages_and_rich_text():
+    # Issue #23 slices 2-4: rich descriptions + instructional pages.
+    catalog = generate(seed=42, csv_dir=DATA).catalog
+
+    # Every module includes Page content-items (so the Context Builder's
+    # module_pages chain returns real pages) alongside the graded assignment.
+    for m in catalog.modules:
+        types = [i.type for i in m.items]
+        assert "Page" in types and "Assignment" in types
+
+    # Pages have substantive instructional bodies; assignments + outcomes are rich.
+    assert all(p.body.strip() for p in catalog.pages)
+    assert any(len(p.body) > 120 for p in catalog.pages)
+    assert all(len(a.description) > 40 for a in catalog.assignments)
+    assert all(len(o.description) > 60 for o in catalog.outcomes)
+
+
+def test_subject_for_maps_known_prefixes_and_rejects_unknown():
+    from mock_lms.generators.content import subject_for
+
+    assert subject_for("ACCY-111") == "accounting"
+    assert subject_for("FINC-301") == "finance"
+    # An unrecognized prefix must raise, not silently mislabel as accounting (#34).
+    with pytest.raises(ValueError):
+        subject_for("BIOL-101")
 
 
 def test_store_resolves_generated_entities():

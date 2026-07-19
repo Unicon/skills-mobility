@@ -1,7 +1,7 @@
 from typing import Any
 
 from field_mapping.contracts import MappingGeneration, MappingRequest, SynthesisRequestEntry
-from field_mapping.validators import validate_generation
+from field_mapping.validators import _top_level_object_keys, validate_generation
 
 _TARGET: dict[str, Any] = {
     "x-transformation-type": "issuer_payload",
@@ -111,3 +111,33 @@ def test_missing_confidence_or_rationale_fails() -> None:
     )
     assert any("confidence" in e for e in errors)
     assert any("rationale" in e for e in errors)
+
+
+# --- Direct unit tests for _top_level_object_keys ---
+
+
+def test_nested_object_inside_array_inner_keys_not_counted() -> None:
+    # An array of objects: inner keys ("inner_key") must NOT appear as top-level keys.
+    expr = '{ "outer": [{ "inner_key": "v" }] }'
+    keys = _top_level_object_keys(expr)
+    assert "outer" in keys
+    assert "inner_key" not in keys
+
+
+def test_top_level_key_with_escaped_quote_in_value_is_found() -> None:
+    # A top-level key whose string VALUE contains an escaped quote; key must be found.
+    expr = '{ "title": "say \\"hello\\"" }'
+    keys = _top_level_object_keys(expr)
+    assert "title" in keys
+
+
+def test_computed_key_not_counted_as_top_level() -> None:
+    # Documented assumption: the LLM must emit literal field names. A required field
+    # expressed as a computed key (e.g. ("a" & "b")) is NOT counted as top-level and
+    # would be reported missing by the target-required-fields gate.
+    expr = '{ ("a" & "b"): "value", "real_key": "v" }'
+    keys = _top_level_object_keys(expr)
+    assert "real_key" in keys
+    # The computed concatenation result "ab" is not extracted as a key — the parser
+    # only captures quoted string literals that are immediately followed by `:`.
+    assert "ab" not in keys

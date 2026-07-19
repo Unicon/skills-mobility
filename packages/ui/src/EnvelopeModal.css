@@ -1,0 +1,79 @@
+.mono {
+  font-family: var(--font-mono);
+}
+
+.envelope-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  flex: none;
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 6, 7, 0.72);
+  backdrop-filter: blur(4px);
+  z-index: 50;
+}
+.modal-anchor {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 51;
+  width: min(720px, calc(100vw - 64px));
+  max-height: 82vh;
+}
+.modal {
+  width: 100%;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--line-bright);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.modal > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+}
+.modal pre {
+  margin: 0;
+  padding: 18px;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--ink-dim);
+}
+.modal pre .jk {
+  color: var(--gold);
+}
+.modal pre .js {
+  color: var(--evt-skill);
+}
+.modal pre .jb {
+  color: var(--live);
+}
+.iconbtn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px solid var(--line-bright);
+  color: var(--ink-dim);
+  font-size: 16px;
+  transition: all 0.15s;
+}
+.iconbtn:hover {
+  color: var(--gold-bright);
+  border-color: var(--gold);
+}

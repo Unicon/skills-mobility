@@ -46,6 +46,42 @@ ISSUER_BODY: dict[str, Any] = {
 }
 
 
+COURSE_WALLET_BODY: dict[str, Any] = {
+    "execution_id": "exec_2",
+    "event_id": "evt_2",
+    "transformation_type": "wallet_payload",
+    "source_system": "mock_lms",
+    "fetch_profile_id": "course_completed.v1",
+    "delivery_target": "learncard_wallet",
+    "synthesis_allowed": False,
+    "source_payloads": {
+        "profile_resolution": {"recipient_profile_id": "smi-demo-learner"},
+        "issued_badge": {"proof": {"type": "DataIntegrityProof"}},
+    },
+}
+
+COURSE_ISSUER_BODY: dict[str, Any] = {
+    "execution_id": "exec_2",
+    "event_id": "evt_2",
+    "transformation_type": "issuer_payload",
+    "source_system": "mock_lms",
+    "fetch_profile_id": "course_completed.v1",
+    "delivery_target": "learncard_issuer",
+    "synthesis_allowed": True,
+    "source_payloads": {
+        "course": {
+            "id": "ACCY-111",
+            "name": "Introduction to Accounting",
+            "institution": "Wasatch University",
+        },
+        "profile_resolution": {
+            "issuer_id": "did:web:issuer.example.com",
+            "recipient_did": "did:web:network.learncard.com:users:learner",
+        },
+    },
+}
+
+
 @pytest.fixture
 def wallet_request() -> MappingRequest:
     return MappingRequest(**WALLET_BODY)
@@ -54,6 +90,16 @@ def wallet_request() -> MappingRequest:
 @pytest.fixture
 def issuer_request() -> MappingRequest:
     return MappingRequest(**ISSUER_BODY)
+
+
+@pytest.fixture
+def course_wallet_request() -> MappingRequest:
+    return MappingRequest(**COURSE_WALLET_BODY)
+
+
+@pytest.fixture
+def course_issuer_request() -> MappingRequest:
+    return MappingRequest(**COURSE_ISSUER_BODY)
 
 
 @pytest.fixture

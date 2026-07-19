@@ -59,6 +59,8 @@ def _check_jsonata_parses(expr: str, errors: list[str]) -> None:
 def _check_source_paths(
     expr: str, source_payloads: dict[str, Any], errors: list[str]
 ) -> None:
+    # Confirms every `source_payloads.*` reference the model emitted actually resolves
+    # against the payloads we supplied — catches hallucinated source fields.
     for path in sorted({m.group(1) for m in _SOURCE_REF.finditer(expr)}):
         segments = path.split(".")
         alias = segments[0]

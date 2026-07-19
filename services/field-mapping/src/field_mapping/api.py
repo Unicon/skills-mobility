@@ -5,7 +5,8 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 from .artifact_store import ArtifactStore
 from .bedrock_adapter import BedrockAdapter
@@ -13,7 +14,7 @@ from .catalog_store import CatalogStore
 from .config import Settings, get_settings
 from .contracts import MappingRequest, MappingResponse
 from .llm_adapter import LLMAdapter
-from .replay_adapter import ReplayAdapter
+from .replay_adapter import ReplayAdapter, ReplayFixtureNotFoundError
 from .service import MappingService
 
 
@@ -41,6 +42,14 @@ def build_service(settings: Settings, *, adapter: LLMAdapter | None = None) -> M
 def create_app(service: MappingService | None = None) -> FastAPI:
     svc = service or build_service(get_settings())
     app = FastAPI(title="Field Mapping LLM Decision Service")
+
+    @app.exception_handler(ReplayFixtureNotFoundError)
+    async def _replay_not_found(
+        _req: Request, _exc: ReplayFixtureNotFoundError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=404, content={"detail": "no replay fixture for this request"}
+        )
 
     @app.get("/healthz")
     def healthz() -> dict[str, str]:
