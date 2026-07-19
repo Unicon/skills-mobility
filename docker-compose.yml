@@ -68,6 +68,16 @@ services:
       timeout: 3s
       retries: 5
 
+  transformation-executor:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('transformation_executor.app:create_app', factory=True, host='0.0.0.0', port=8160)"]
+    ports: ["8160:8160"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8160/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   orchestrator:
     <<: *python
     command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('orchestrator.app:create_app', factory=True, host='0.0.0.0', port=8400)"]
@@ -75,6 +85,7 @@ services:
       ORCHESTRATOR_CONTEXT_BUILDER_URL: http://context-builder:8100
       ORCHESTRATOR_PROFILE_RESOLVER_URL: http://profile-resolver:8700
       ORCHESTRATOR_DELIVERY_ROUTER_URL: http://delivery-router:8800
+      ORCHESTRATOR_TRANSFORMATION_EXECUTOR_URL: http://transformation-executor:8160
       # The signed OBv3's issuer must be the real (resolvable) demo issuer DID, not
       # the placeholder default — else the issuer adapter's SDK sign fails resolving it.
       ORCHESTRATOR_ISSUER_ID: ${LEARNCARD_ISSUER_DID:-did:web:poc.skills-mobility.example}
@@ -88,6 +99,8 @@ services:
       profile-resolver:
         condition: service_healthy
       delivery-router:
+        condition: service_healthy
+      transformation-executor:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8400/healthz')"]

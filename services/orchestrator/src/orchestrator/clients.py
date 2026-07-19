@@ -222,6 +222,60 @@ class HttpDeliveryRouterClient:
         return body
 
 
+class TransformationExecutorClient(Protocol):
+    def execute(
+        self,
+        transformation_type: str,
+        delivery_target: str | None,
+        mapping: str,
+        source_payloads: dict[str, Any],
+        synthesized: dict[str, Any],
+        ctx: EnvelopeContext,
+    ) -> dict[str, Any]: ...
+
+
+class HttpTransformationExecutorClient:
+    """Real Transformation Executor client — POSTs to /execute and returns the
+    executor's ``result`` dict on success. Raises ``RuntimeError`` on a
+    non-succeeded response so the action's best-effort wrapper can fall through."""
+
+    def __init__(self, base_url: str, client: httpx.Client | None = None) -> None:
+        self._client = client or httpx.Client(base_url=base_url, timeout=30.0)
+
+    def execute(
+        self,
+        transformation_type: str,
+        delivery_target: str | None,
+        mapping: str,
+        source_payloads: dict[str, Any],
+        synthesized: dict[str, Any],
+        ctx: EnvelopeContext,
+    ) -> dict[str, Any]:
+        resp = self._client.post(
+            "/execute",
+            json={
+                "execution_id": ctx.execution_id,
+                "event_id": ctx.correlation_id,
+                "correlation_id": ctx.correlation_id,
+                "transformation_type": transformation_type,
+                "delivery_target": delivery_target,
+                "mapping": mapping,
+                "source_payloads": source_payloads,
+                "synthesized": synthesized,
+            },
+        )
+        resp.raise_for_status()
+        body: dict[str, Any] = resp.json()
+        if body.get("status") != "succeeded":
+            error = body.get("error") or {}
+            raise RuntimeError(
+                f"transformation-executor returned {body.get('status')}: "
+                f"{error.get('message', '')}"
+            )
+        result: dict[str, Any] = body["result"]
+        return result
+
+
 class HttpFieldMappingClient:
     """Real Field Mapping client (#27) — POSTs a MappingRequest to /map and returns
     the §10 response envelope. The caller (actions._generate_payload_mapping) treats

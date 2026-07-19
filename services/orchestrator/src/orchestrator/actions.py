@@ -23,6 +23,7 @@ from orchestrator.clients import (
     EnvelopeContext,
     FieldMappingClient,
     ProfileResolverClient,
+    TransformationExecutorClient,
 )
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ class ActionDeps:
     field_mapping: FieldMappingClient
     issuer_id: str
     envelope: EnvelopeContext
+    transformation_executor: TransformationExecutorClient | None = None
 
 
 def _resolve_learncard_profile(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
@@ -115,11 +117,32 @@ def _generate_field_synthesis(inputs: dict[str, Any], deps: ActionDeps) -> dict[
 
 
 def _execute_issuer_payload_translation(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
-    """Issuer-side Translation Executor (FR-OR-16). The real executor dereferences
-    the mapping's ``mapping_artifact_ref`` → JSONata and runs it over the merged
-    ``source_payloads.*`` + ``synthesized.*`` context (#27 §2). The Phase-1 stub's
-    mapping carries null refs, so it builds the minimum unsigned OBv3 directly,
-    embedding the resolved DID in credentialSubject.id."""
+    """Issuer-side Translation Executor (FR-OR-16). When the Transformation Executor
+    is configured and the mapping step produced inline JSONata, delegates to it and
+    returns its result. Best-effort: on exception or when unconfigured/no JSONata,
+    falls back to the deterministic obv3 stand-in."""
+    mapping_env = inputs.get("mapping") or {}
+    jsonata = mapping_env.get("mapping") if isinstance(mapping_env, dict) else None
+    if deps.transformation_executor is not None and jsonata:
+        synthesized = (inputs.get("synthesis") or {}).get("synthesized", {})
+        source_payloads = _mapping_source_payloads(inputs)
+        try:
+            result = deps.transformation_executor.execute(
+                transformation_type=inputs.get("transformation_type", "issuer_payload"),
+                delivery_target=inputs.get("delivery_target"),
+                mapping=jsonata,
+                source_payloads=source_payloads,
+                synthesized=synthesized,
+                ctx=deps.envelope,
+            )
+            return {"unsigned_vc": result}
+        except Exception as err:  # noqa: BLE001 — best-effort seam
+            logger.warning(
+                "transformation-executor failed for issuer payload (non-fatal; obv3 stand-in): %s",
+                err,
+            )
+    # Deterministic obv3 stand-in: builds the minimum unsigned OBv3 directly,
+    # embedding the resolved DID in credentialSubject.id.
     recipient_did = inputs["resolved_profile"]["did"]
     unsigned_vc = obv3.build_unsigned_obv3(inputs["bundle"], recipient_did, inputs["issuer_id"])
     return {"unsigned_vc": unsigned_vc}
@@ -136,10 +159,31 @@ def _issue_learncard_badge(inputs: dict[str, Any], deps: ActionDeps) -> dict[str
 
 
 def _execute_wallet_payload_translation(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
-    """Wallet-side Translation Executor (FR-OR-17). Same deref/merge contract as
-    the issuer side, minus synthesis (the wallet schema accepts OBv3 directly —
-    #27 FR-OR-15). Phase-1 stub builds the wallet payload from the issued badge +
-    resolved profileId."""
+    """Wallet-side Translation Executor (FR-OR-17). When the Transformation Executor
+    is configured and the mapping step produced inline JSONata, delegates to it and
+    returns its result directly (the executor already produces the correct wallet
+    payload shape). Best-effort: on exception or when unconfigured/no JSONata, falls
+    back to the deterministic prepare_wallet_input stand-in."""
+    mapping_env = inputs.get("mapping") or {}
+    jsonata = mapping_env.get("mapping") if isinstance(mapping_env, dict) else None
+    if deps.transformation_executor is not None and jsonata:
+        source_payloads = _mapping_source_payloads(inputs)
+        try:
+            result = deps.transformation_executor.execute(
+                transformation_type=inputs.get("transformation_type", "wallet_payload"),
+                delivery_target=inputs.get("delivery_target"),
+                mapping=jsonata,
+                source_payloads=source_payloads,
+                synthesized={},
+                ctx=deps.envelope,
+            )
+            return result
+        except Exception as err:  # noqa: BLE001 — best-effort seam
+            logger.warning(
+                "transformation-executor failed for wallet payload (non-fatal; obv3 stand-in): %s",
+                err,
+            )
+    # Deterministic stand-in: build the wallet payload from the issued badge + profileId.
     signed_credential = inputs["issued"]["result"]["issued_credential"]
     profile_id = inputs["resolved_profile"]["profile_id"]
     return obv3.prepare_wallet_input(signed_credential, profile_id)

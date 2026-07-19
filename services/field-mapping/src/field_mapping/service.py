@@ -110,6 +110,7 @@ class MappingService:
             llm_invocation_log_ref=log_ref,
             synthesis_allowed=request.synthesis_allowed,
             placeholder_ids=generation.placeholder_ids,
+            mapping=generation.jsonata,
         )
 
     def _required_aliases(self, request: MappingRequest) -> list[str]:

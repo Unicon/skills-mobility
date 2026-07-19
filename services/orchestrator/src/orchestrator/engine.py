@@ -21,6 +21,7 @@ from orchestrator.clients import (
     EnvelopeContext,
     FieldMappingClient,
     ProfileResolverClient,
+    TransformationExecutorClient,
     WorkflowActionsClient,
 )
 from orchestrator.executor import execute_plan
@@ -48,6 +49,7 @@ def run_workflow(
     recipient_profile_id: str,
     delivery_targets: DeliveryTargetsClient | None = None,
     workflow_actions: WorkflowActionsClient | None = None,
+    transformation_executor: TransformationExecutorClient | None = None,
     reusable_plan_lookup: bool = False,
 ) -> ExecutionMetadata:
     metadata = request.event.get("metadata", {})
@@ -143,6 +145,7 @@ def run_workflow(
         field_mapping=field_mapping,
         issuer_id=issuer_id,
         envelope=envelope,
+        transformation_executor=transformation_executor,
     )
     store.set_status(execution_id, "running")
     status, result = execute_plan(plan, workflow_ctx, deps, store, execution_id)

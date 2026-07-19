@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     # (best-effort — the deterministic obv3 stand-in still produces the payload);
     # else the Phase-1 stub returns null refs.
     field_mapping_url: str | None = None
+    # #98 Transformation Executor. When set, the translation actions call it for real
+    # (best-effort — the deterministic obv3 stand-in still produces the payload on
+    # failure or when the mapping step returned no JSONata); else None → stub only.
+    transformation_executor_url: str | None = None
     # #27/ADR-0007 LLM Decision Service planner seams. When set, the planner path
     # calls these for real (best-effort — a failure falls back to the deterministic
     # gate/targets/plan stubs); else the stubs are used.

@@ -83,7 +83,9 @@ class MappingRequest(BaseModel):
 
 
 class MappingResponse(BaseModel):
-    """§10 response envelope — exactly the five keys the Orchestrator seam reads.
+    """§10 response envelope — the Orchestrator seam reads the five core keys;
+    ``mapping`` carries the generated JSONata inline so the Transformation Executor
+    can run it without a second artifact-store fetch.
     ``requires_synthesis`` is derived, never set independently; build via
     ``succeeded`` / ``failed`` so the §6 permission gate stays self-enforcing."""
 
@@ -94,6 +96,7 @@ class MappingResponse(BaseModel):
     synthesis_request_ref: str | None
     requires_synthesis: bool
     llm_invocation_log_ref: str | None
+    mapping: str | None = None
 
     @classmethod
     def succeeded(
@@ -104,6 +107,7 @@ class MappingResponse(BaseModel):
         llm_invocation_log_ref: str,
         synthesis_allowed: bool,
         placeholder_ids: list[str],
+        mapping: str | None = None,
     ) -> Self:
         # §10 derivation — can never be true when the request forbade synthesis,
         # regardless of the placeholders/ref present.
@@ -116,6 +120,7 @@ class MappingResponse(BaseModel):
             synthesis_request_ref=synthesis_request_ref,
             requires_synthesis=requires_synthesis,
             llm_invocation_log_ref=llm_invocation_log_ref,
+            mapping=mapping,
         )
 
     @classmethod
