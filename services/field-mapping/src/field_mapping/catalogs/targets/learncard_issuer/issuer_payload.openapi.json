@@ -46,7 +46,14 @@
                   "id": { "type": "string", "description": "Achievement id (URN; derived from the achievement name).", "x-no-mapping-behavior": "disallowed", "examples": ["urn:poc:achievement:demonstrate-the-sample-competency"] },
                   "type": { "type": "array", "items": { "type": "string" }, "description": "Achievement type.", "x-no-mapping-behavior": "disallowed", "examples": [["Achievement"]] },
                   "name": { "type": "string", "description": "Achievement name (from the outcome display name/title).", "x-no-mapping-behavior": "blank", "examples": ["Demonstrate the sample competency"] },
-                  "description": { "type": "string", "description": "Achievement description (synthesis-backed when synthesis is allowed).", "x-no-mapping-behavior": "blank", "examples": ["Awarded for demonstrating the achievement."] }
+                  "description": { "type": "string", "description": "Achievement description (synthesis-backed when synthesis is allowed).", "x-no-mapping-behavior": "blank", "examples": ["Awarded for demonstrating the achievement."] },
+                  "criteria": {
+                    "type": "object",
+                    "description": "How the achievement is earned. Carried forward from the credential_template phase (the DCC Credential Co-writer produces a narrative); synthesis-backed when synthesis is allowed.",
+                    "properties": {
+                      "narrative": { "type": "string", "description": "Narrative describing the criteria for earning the achievement.", "x-no-mapping-behavior": "blank", "examples": ["Complete the module assessment demonstrating mastery of the listed transactions."] }
+                    }
+                  }
                 }
               }
             }

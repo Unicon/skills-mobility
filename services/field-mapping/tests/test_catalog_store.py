@@ -37,12 +37,20 @@ def test_resolve_target_catalog_by_target_and_transformation_type() -> None:
     assert wallet["x-transformation-type"] == "wallet_payload"
 
 
+def test_resolve_credential_template_target() -> None:
+    # credential_template is keyed by transformation_type alone (no delivery_target, ADR-0017).
+    ct = store.resolve_target(
+        transformation_type=TransformationType.CREDENTIAL_TEMPLATE, delivery_target=None
+    )
+    assert ct["x-transformation-type"] == "credential_template"
+
+
 def test_unknown_fetch_profile_or_target_is_a_typed_error() -> None:
     with pytest.raises(CatalogNotFoundError):
         store.resolve_fetch_profile(source_system="mock_lms", fetch_profile_id="nope.v9")
 
-    # credential_template catalog is deferred (not authored) -> typed error, not a crash.
+    # A genuinely absent target catalog still raises a typed error, not a crash.
     with pytest.raises(CatalogNotFoundError):
         store.resolve_target(
-            transformation_type=TransformationType.CREDENTIAL_TEMPLATE, delivery_target=None
+            transformation_type=TransformationType.WALLET_PAYLOAD, delivery_target=None
         )
