@@ -35,7 +35,31 @@ class MappingRequest(BaseModel):
     literals from the Workflow Actions plan — this service derives neither from the
     other. ``delivery_target`` is absent (not null) for ``credential_template``."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "execution_id": "exec_1",
+                "event_id": "evt_1",
+                "transformation_type": "issuer_payload",
+                "source_system": "mock_lms",
+                "fetch_profile_id": "skill_mastered.v1",
+                "delivery_target": "learncard_issuer",
+                "synthesis_allowed": True,
+                "source_payloads": {
+                    "outcome": {
+                        "code": "1.0.0",
+                        "display_name": "Demonstrate the sample competency",
+                        "description": "Demonstrates mastery of the sample competency.",
+                    },
+                    "profile_resolution": {
+                        "issuer_id": "did:web:issuer.example.com",
+                        "recipient_did": "did:web:network.learncard.com:users:learner",
+                    },
+                },
+            }
+        },
+    )
 
     execution_id: str
     event_id: str

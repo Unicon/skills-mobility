@@ -1,0 +1,20 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS Modules (Canvas-style)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "ModuleList": {
+        "type": "object",
+        "description": "Array of Canvas course modules with their items; the course_completed fetch profile returns this as a list.",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "modules",
+        "properties": {
+          "id": { "type": "string", "description": "Module id.", "examples": ["ACCY-111-MOD-1"] },
+          "course_id": { "type": "string", "description": "Course id.", "examples": ["ACCY-111"] },
+          "name": { "type": "string", "description": "Module title.", "examples": ["Module 1: Foundations of Accounting"] },
+          "position": { "type": "integer", "description": "Display order.", "examples": [1] }
+        }
+      }
+    }
+  }
+}

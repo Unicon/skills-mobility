@@ -1,0 +1,24 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS Course (Canvas-style)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "Course": {
+        "type": "object",
+        "description": "A Canvas course; the course the learner completed.",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "course",
+        "required": ["id", "name", "course_code"],
+        "properties": {
+          "id": { "type": "string", "description": "Course id.", "examples": ["ACCY-111"] },
+          "name": { "type": "string", "description": "Course title.", "examples": ["Introduction to Accounting"] },
+          "course_code": { "type": "string", "description": "Short course code.", "examples": ["ACCY-111"] },
+          "kind": { "type": "string", "description": "Course kind (standard or digital_credential).", "examples": ["standard"] },
+          "institution": { "type": "string", "description": "Offering institution.", "examples": ["Wasatch University"] },
+          "term": { "type": "string", "description": "Academic term.", "examples": ["Fall2017"] },
+          "workflow_state": { "type": "string", "description": "Canvas workflow state.", "examples": ["available"] }
+        }
+      }
+    }
+  }
+}

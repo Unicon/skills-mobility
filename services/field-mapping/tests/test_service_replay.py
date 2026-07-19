@@ -108,3 +108,34 @@ def test_reuse_disabled_by_default_generates_fresh(
     service.map(wallet_request)
     service.map(wallet_request)
     assert adapter.calls == 2
+
+
+def test_course_completed_wallet_replay_end_to_end(
+    make_service: Any,
+    artifact_store: ArtifactStore,
+    course_wallet_request: MappingRequest,
+) -> None:
+    resp = make_service().map(course_wallet_request)
+
+    assert resp.status == "succeeded"
+    assert resp.requires_synthesis is False
+    assert resp.synthesis_request_ref is None
+    artifact = artifact_store.load_mapping(resp.mapping_artifact_ref or "")
+    assert artifact.transformation_type.value == "wallet_payload"
+    assert artifact.placeholder_ids == []
+
+
+def test_course_completed_issuer_replay_produces_synthesis_request(
+    make_service: Any,
+    artifact_store: ArtifactStore,
+    course_issuer_request: MappingRequest,
+) -> None:
+    resp = make_service().map(course_issuer_request)
+
+    assert resp.status == "succeeded"
+    assert resp.requires_synthesis is True
+    assert resp.synthesis_request_ref is not None
+    synth = artifact_store.load_synthesis_request(resp.synthesis_request_ref)
+    assert synth.requests[0].placeholder_id == "course_achievement_description"
+    artifact = artifact_store.load_mapping(resp.mapping_artifact_ref or "")
+    assert artifact.placeholder_ids == ["course_achievement_description"]
