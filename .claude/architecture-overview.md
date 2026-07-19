@@ -116,18 +116,13 @@ current, most-detailed version rather than treating this summary as complete.
 addressing). Don't treat its Bedrock/structured-output requirements as fully settled
 without checking the live file.
 
-## ADR governance: amend-in-place is the operative convention
+## ADR governance: amend-in-place (ADR-0019)
 
-`docs/decisions/README.md` states ADRs are "maintained in place." `AGENTS.md`'s Git & PR
-conventions section may still say "ADRs are immutable history — supersede, don't
-rewrite" — that line is stale relative to actual practice and is being reconciled (as of
-this writing, two open PRs, `docs/adr-governance` and `docs/adr-js-workspace-tooling`,
-both propose the same fix: amend ADRs in place; add a `Supersedes:` header and keep the
-prior option under "Options Considered" only when *reversing* an already-accepted
-decision). Check whether one has merged before citing `AGENTS.md`'s older wording as
-current. Until reconciled, prefer the amend-in-place convention — it already matches
-practice (ADR-0009 was rewritten, ADR-0011 edited, several ADRs amended by an earlier
-docs PR) — over a strict "never touch an existing ADR" reading.
+ADRs are living documents during the POC: edit in place for clarifications, and for a
+reversal of an accepted decision, keep it visible — update `Status`, add a `Supersedes:`
+header, and keep the prior option under "Options Considered." See ADR-0019
+(`docs/decisions/0019-adr-governance-and-lifecycle.md`) and `AGENTS.md`'s Git & PR
+conventions section, both of which now state this convention directly.
 
 ## Requirements & design doc conventions
 

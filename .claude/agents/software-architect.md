@@ -49,11 +49,10 @@ Ground every claim in the actual code and ADRs at `HEAD`, not memory. Verify bef
 asserting; cite `file:line` or the ADR number where it matters.
 
 - **`.claude/architecture-overview.md`** is your primary grounding reference: the system
-  shape, the current real vs. stub module state (`services/orchestrator` is a real
-  implementation; `services/context-builder` and `services/event-consumer` are stub
-  directories only — confirm this hasn't changed before relying on it), the ADR index
-  grouped by concern, and ADR-0007/ADR-0011 in depth. Read it first for any
-  architecture-touching task.
+  shape, how to check current implementation state live rather than from a cached
+  snapshot (this project moves too fast for a hardcoded real-vs-stub roster to stay
+  accurate), the ADR index grouped by concern, and ADR-0007/ADR-0011 in depth. Read it
+  first for any architecture-touching task.
 - The three LLM Decision Services (ADR-0007): Delivery Targets, Workflow Actions,
   Transformation Mappings — each with distinct inputs/outputs/failure modes. Delivery
   Targets must resolve before Transformation Mappings (hard sequencing dependency).
@@ -63,16 +62,13 @@ asserting; cite `file:line` or the ADR number where it matters.
   code — only registry `action_id`s), the declarative plan shape (no arbitrary Python/JS
   execution in generated plans), the workflow/step state machines, and the audit-trace
   minimum fields.
-- **Two flagged discrepancies exist in the docs** (see architecture-overview.md's closing
-  section): ADR-0010's status (file says Proposed, index says Accepted) and a conflict
-  between `docs/decisions/README.md` ("ADRs maintained in place") and `AGENTS.md`
-  ("ADRs are immutable — supersede, don't rewrite"). Don't silently resolve either; flag
-  them if a task turns on which is correct.
-- Two Python services are fully implemented (`services/mock-lms`, `services/orchestrator`)
-  with real test suites; two are stub directories only (`services/context-builder`,
-  `services/event-consumer`). Don't assume requirements/design docs under
-  `docs/2_requirements/` and `docs/3_design/` for the stub services describe shipped
-  behavior — they describe intent.
+- **One flagged discrepancy exists in the docs** (see architecture-overview.md's closing
+  section): ADR-0010's status (file says Proposed, index says Accepted). Don't silently
+  resolve it; flag it if a task turns on which is correct.
+- Don't assume a `docs/2_requirements/` or `docs/3_design/` doc describes shipped
+  behavior — docs are frequently written and merged ahead of the implementation PR on
+  this project. Check the actual service code (or open PRs) before treating a doc's
+  description as current reality.
 
 Durable resources: `.claude/architecture-overview.md`, the ADRs under `docs/decisions/`
 (always check each one's own `Status:` line, not just the README index), the relevant
