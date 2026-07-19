@@ -49,3 +49,43 @@ def test_failed_artifact_stored_with_validation_errors_and_not_loadable_as_succe
     with pytest.raises(FailedArtifactError) as exc:
         store.load_mapping(ref)
     assert exc.value.validation_errors == errors
+
+
+def test_invocation_log_is_append_only_sequential_records(tmp_path: Path) -> None:
+    store = ArtifactStore(tmp_path)
+    key = "mock_lms_skill_mastered.v1_issuer_payload_learncard_issuer"
+    record_a = {"status": "succeeded", "call": 1}
+    record_b = {"status": "succeeded", "call": 2}
+
+    ref_a = store.store_invocation_log(record_a, key=key)
+    ref_b = store.store_invocation_log(record_b, key=key)
+
+    # Each call returns a distinct ref with an incrementing record index.
+    assert ref_a == f"llmcall:{key}/0000"
+    assert ref_b == f"llmcall:{key}/0001"
+
+    # Both records are independently readable.
+    assert store._read(ref_a)["call"] == 1
+    assert store._read(ref_b)["call"] == 2
+
+
+def test_invocation_log_second_call_does_not_overwrite_first(tmp_path: Path) -> None:
+    store = ArtifactStore(tmp_path)
+    key = "mock_lms_skill_mastered.v1_wallet_payload_learncard_wallet"
+
+    store.store_invocation_log({"data": "first"}, key=key)
+    store.store_invocation_log({"data": "second"}, key=key)
+
+    key_dir = tmp_path / "llmcall" / key
+    records = sorted(key_dir.glob("*.json"))
+    assert len(records) == 2, "both records must survive; second must not overwrite first"
+
+
+def test_invocation_log_third_call_gets_index_0002(tmp_path: Path) -> None:
+    store = ArtifactStore(tmp_path)
+    key = "mock_lms_course_completed.v1_issuer_payload_learncard_issuer"
+
+    for i in range(3):
+        ref = store.store_invocation_log({"i": i}, key=key)
+
+    assert ref == f"llmcall:{key}/0002"

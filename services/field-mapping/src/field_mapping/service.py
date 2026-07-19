@@ -10,12 +10,13 @@ silently rescued.
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any
 
 from .artifact_loader import load_source_payloads
 from .artifact_store import ArtifactStore, FailedArtifactError, stable_key
-from .catalog_store import CatalogStore
+from .catalog_store import CatalogNotFoundError, CatalogStore
 from .contracts import (
     LlmCallMeta,
     MappingArtifact,
@@ -28,6 +29,8 @@ from .contracts import (
 )
 from .llm_adapter import LLMAdapter
 from .validators import validate_generation
+
+logger = logging.getLogger(__name__)
 
 
 class MappingService:
@@ -47,6 +50,14 @@ class MappingService:
         self._repair_retry = repair_retry
 
     def map(self, request: MappingRequest) -> MappingResponse:
+        logger.info(
+            "mapping request received: execution_id=%s event_id=%s "
+            "transformation_type=%s delivery_target=%s",
+            request.execution_id,
+            request.event_id,
+            request.transformation_type,
+            request.delivery_target,
+        )
         target_schema = self._catalogs.resolve_target(
             transformation_type=request.transformation_type,
             delivery_target=request.delivery_target,
@@ -56,6 +67,17 @@ class MappingService:
         # source_payloads keys are the open orchestrator seam item, PR #33).
         required = self._required_aliases(request)
         load_source_payloads(request, required_aliases=required)
+
+        # Design §7: resolve source-field catalog for each top-level key present in
+        # source_payloads; skip keys with no catalog (best-effort, never fail the request).
+        source_catalogs: dict[str, dict[str, Any]] = {}
+        for alias in request.source_payloads:
+            try:
+                source_catalogs[alias] = self._catalogs.resolve_source_catalog(
+                    source_system=request.source_system, resource_schema_id=alias
+                )
+            except CatalogNotFoundError:
+                pass
 
         key = stable_key(
             source_system=request.source_system,
@@ -71,13 +93,20 @@ class MappingService:
                 return reused
 
         # Exactly one attempt (FR-FM-18); repair-retry is not implemented.
-        generation, meta = self._adapter.generate(request, target_schema=target_schema)
+        generation, meta = self._adapter.generate(
+            request, target_schema=target_schema, source_catalogs=source_catalogs or None
+        )
         errors = validate_generation(generation, request=request, target_schema=target_schema)
         log_ref = self._artifacts.store_invocation_log(
             _invocation_log(request, generation, meta, errors), key=key
         )
 
         if errors:
+            logger.info(
+                "mapping failed: execution_id=%s validation_error_count=%d",
+                request.execution_id,
+                len(errors),
+            )
             self._artifacts.store_failed_mapping(
                 source_system=request.source_system,
                 fetch_profile_id=request.fetch_profile_id,
@@ -108,6 +137,11 @@ class MappingService:
                 ),
             )
             synthesis_ref = self._artifacts.store_synthesis_request(synthesis_artifact, key=key)
+        logger.info(
+            "mapping succeeded: execution_id=%s requires_synthesis=%s",
+            request.execution_id,
+            bool(generation.placeholder_ids),
+        )
         return MappingResponse.succeeded(
             mapping_artifact_ref=mapping_ref,
             synthesis_request_ref=synthesis_ref,
@@ -212,6 +246,7 @@ def _invocation_log(
         "latency_ms": meta.latency_ms,
         "system_prompt": meta.system_prompt,
         "user_prompt": meta.user_prompt,
+        "injection_findings": meta.injection_findings,
         "jsonata": generation.jsonata,
         "placeholder_ids": generation.placeholder_ids,
         "confidence": generation.confidence,

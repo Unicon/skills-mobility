@@ -339,15 +339,18 @@ The model response should be constrained to a schema that includes at minimum:
 - `confidence`
 - `rationale`
 
+#### Confidence and rationale format
+
+`confidence` is a single overall float in [0.0, 1.0] representing the model's confidence that the mapping is correct and complete across all fields. It is not a per-field score.
+
+`rationale` is 1–3 sentences summarizing the overall mapping decision, **plus a one-line note for each field that was not a straightforward direct mapping** — every synthesis field and every omit/null/blank field gets a brief reason (e.g. `"achievement.description → synthesis: requires narrative composition from course description and learning outcomes"`). Direct fields need no individual note because their mapping is self-evident from the JSONata. For a target schema with many fields this keeps the rationale readable without becoming exhaustive (typically < 200 words for a ~100-field target).
+
 ### Prompt content
 
 The system prompt and request message together should tell the model all of the following:
 
 - it is mapping the supplied source payloads to the supplied target schema
-- every target field should be considered for one of three outcomes:
-  - direct mapping from one or more source fields
-  - synthesis from one or more source fields
-  - omission / null / blank when allowed by the target catalog and no credible mapping exists
+- it should work through target schema fields **one by one**: for each, consult the target catalog entry (description + `x-no-mapping-behavior`) and the relevant source-field catalog(s) + source payloads, decide direct / synthesis / omit, and emit the corresponding JSONata or placeholder before moving to the next field
 - direct mappings must reference only source fields that actually exist in the supplied payloads
 - synthesis requests must identify the relevant source material for the synthesis task
 - final human-facing synthesis text must not be generated in this service

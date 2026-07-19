@@ -17,12 +17,18 @@ class _CountingAdapter:
         self.calls = 0
 
     def generate(
-        self, request: MappingRequest, *, target_schema: dict[str, Any]
+        self,
+        request: MappingRequest,
+        *,
+        target_schema: dict[str, Any],
+        source_catalogs: dict[str, Any] | None = None,
     ) -> tuple[MappingGeneration, LlmCallMeta]:
         self.calls += 1
         if self.fixed is not None:
             return self.fixed, _REPLAY_META
-        return self.inner.generate(request, target_schema=target_schema)
+        return self.inner.generate(
+            request, target_schema=target_schema, source_catalogs=source_catalogs
+        )
 
 
 def test_invocation_log_captures_adr0010_metadata(
@@ -123,6 +129,79 @@ def test_course_completed_wallet_replay_end_to_end(
     artifact = artifact_store.load_mapping(resp.mapping_artifact_ref or "")
     assert artifact.transformation_type.value == "wallet_payload"
     assert artifact.placeholder_ids == []
+
+
+def test_source_catalogs_wired_into_adapter(
+    make_service: Any, wallet_request: MappingRequest
+) -> None:
+    """service.map() resolves source catalogs and passes them to the adapter (item 2)."""
+    received_catalogs: dict[str, Any] | None = None
+
+    class _CatalogCapturingAdapter:
+        def generate(
+            self,
+            request: MappingRequest,
+            *,
+            target_schema: dict[str, Any],
+            source_catalogs: dict[str, Any] | None = None,
+        ) -> tuple[MappingGeneration, LlmCallMeta]:
+            nonlocal received_catalogs
+            received_catalogs = source_catalogs
+            return ReplayAdapter().generate(
+                request, target_schema=target_schema, source_catalogs=source_catalogs
+            )
+
+    make_service(adapter=_CatalogCapturingAdapter()).map(wallet_request)
+
+    # wallet_request has "profile_resolution" and "issued_badge" payloads;
+    # both have authored source catalogs so at least one should resolve.
+    assert received_catalogs is not None
+    assert len(received_catalogs) >= 1
+
+
+def test_injection_findings_in_invocation_log_when_bedrock(
+    make_service: Any, artifact_store: ArtifactStore
+) -> None:
+    """Injection-screen findings propagate from LlmCallMeta into the invocation log (item 4)."""
+    from field_mapping.contracts import LlmCallMeta
+
+    # Adapter that returns a meta with non-empty injection_findings.
+    class _FindingsAdapter:
+        def generate(
+            self,
+            request: MappingRequest,
+            *,
+            target_schema: dict[str, Any],
+            source_catalogs: dict[str, Any] | None = None,
+        ) -> tuple[MappingGeneration, LlmCallMeta]:
+            gen, _ = ReplayAdapter().generate(
+                request, target_schema=target_schema, source_catalogs=source_catalogs
+            )
+            meta = LlmCallMeta(
+                provider="bedrock",
+                model_id="us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                temperature=0.0,
+                injection_findings=[{"path": "source_payloads.x", "snippet": "ignore it"}],
+            )
+            return gen, meta
+
+    request = MappingRequest(
+        execution_id="exec_inj",
+        event_id="evt_inj",
+        transformation_type="wallet_payload",
+        source_system="mock_lms",
+        fetch_profile_id="skill_mastered.v1",
+        delivery_target="learncard_wallet",
+        synthesis_allowed=False,
+        source_payloads={
+            "profile_resolution": {"recipient_profile_id": "smi-demo-learner"},
+            "issued_badge": {"proof": {"type": "DataIntegrityProof"}},
+        },
+    )
+    resp = make_service(adapter=_FindingsAdapter()).map(request)
+    log = artifact_store._read(resp.llm_invocation_log_ref or "")
+    assert "injection_findings" in log
+    assert log["injection_findings"][0]["path"] == "source_payloads.x"
 
 
 def test_course_completed_issuer_replay_produces_synthesis_request(

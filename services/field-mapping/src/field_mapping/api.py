@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from .artifact_store import ArtifactStore
-from .bedrock_adapter import BedrockAdapter
+from .bedrock_adapter import BedrockAdapter, BedrockResponseError
 from .catalog_store import CatalogStore
 from .config import Settings, get_settings
 from .contracts import MappingRequest, MappingResponse
@@ -49,6 +49,14 @@ def create_app(service: MappingService | None = None) -> FastAPI:
     ) -> JSONResponse:
         return JSONResponse(
             status_code=404, content={"detail": "no replay fixture for this request"}
+        )
+
+    @app.exception_handler(BedrockResponseError)
+    async def _bedrock_response_error(
+        _req: Request, exc: BedrockResponseError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=502, content={"detail": f"upstream model error: {exc}"}
         )
 
     @app.get("/healthz")

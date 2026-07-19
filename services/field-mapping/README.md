@@ -47,6 +47,62 @@ uv run pytest services/field-mapping      # unit + API tests (no AWS needed)
 
 Configuration is env-driven (`FIELD_MAPPING_` prefix); see `.env.example`.
 
+## Live Bedrock testing
+
+The service defaults to replay mode. To invoke a real Bedrock model, set `FIELD_MAPPING_MODE=bedrock` in `.env` (or as a process env var) and authenticate with AWS.
+
+### One-time AWS SSO setup
+
+```bash
+aws configure sso
+# SSO start URL: https://<your-org>.awsapps.com/start
+# SSO region:    us-east-1  (or the region your SSO portal runs in)
+# Scopes:        sso:account:access
+# Default output: json
+```
+
+Follow the prompts to name the profile (e.g. `skills`).
+
+### Re-authenticate when your session expires
+
+```bash
+aws sso login --profile skills
+```
+
+### Set the profile before launching the service
+
+`AWS_PROFILE` is **not** `FIELD_MAPPING_`-prefixed, so pydantic-settings does not
+read it from `.env`. Set it as a real process environment variable:
+
+```bash
+export AWS_PROFILE=skills
+```
+
+Then start (or restart) the service. The service must be restarted after changing
+`FIELD_MAPPING_MODE`, `AWS_PROFILE`, or any other `.env` variable — pydantic-settings
+caches the config at startup.
+
+### Supplying source_payloads from the Context Builder
+
+The Context Builder (port 8100) produces the `source_payloads` object the Field
+Mapping service expects. Run the Context Builder with a skill-mastered or
+course-completed request to capture its output, then pass that output as
+`source_payloads` in your `/map` request. Alternatively, the orchestrator's
+execution trace stores the `source_payloads` it passes to Field Mapping in each
+step's output — check `artifact-output/orchestrator/` for captured runs.
+
+### Confirming a live call was made
+
+After a successful `/map` request in bedrock mode, the invocation log is written
+to `artifact-output/field-mapping/llmcall/<key>/<NNNN>.json`. Open the file and
+verify:
+
+- `"provider": "bedrock"` (not `"replay"`)
+- `input_tokens` and `output_tokens` are non-null integers
+- `latency_ms` is a non-null float
+
+A replay call shows `"provider": "replay"` and `null` for all three fields.
+
 ## Build-order status (design §16)
 
 Done: contracts, artifacts + store, catalogs, catalog/payload loading, validation,

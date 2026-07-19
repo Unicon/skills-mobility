@@ -231,3 +231,7 @@ class LlmCallMeta(BaseModel):
     latency_ms: float | None = None
     system_prompt: str | None = None
     user_prompt: str | None = None
+    # ADR-0021 / FR-FM-27b: injection-screen findings recorded for audit visibility;
+    # each entry is {path, snippet}. Present only when findings were seen (bedrock mode);
+    # replay adapter leaves this empty.
+    injection_findings: list[dict[str, str]] = Field(default_factory=list)

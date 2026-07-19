@@ -14,8 +14,15 @@ from .contracts import LlmCallMeta, MappingGeneration, MappingRequest
 
 class LLMAdapter(Protocol):
     def generate(
-        self, request: MappingRequest, *, target_schema: dict[str, Any]
+        self,
+        request: MappingRequest,
+        *,
+        target_schema: dict[str, Any],
+        source_catalogs: dict[str, dict[str, Any]] | None = None,
     ) -> tuple[MappingGeneration, LlmCallMeta]:
         """Produce one mapping generation for the request (exactly one attempt),
-        with the model-call metadata captured for the invocation log (ADR-0010 §60)."""
+        with the model-call metadata captured for the invocation log (ADR-0010 §60).
+        ``source_catalogs`` contains the resolved source-field catalog schemas keyed
+        by source-payload alias (design §7); adapters that do not use them accept and
+        ignore this parameter."""
         ...

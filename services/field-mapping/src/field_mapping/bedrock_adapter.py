@@ -51,7 +51,11 @@ class BedrockAdapter:
         return self._client
 
     def generate(
-        self, request: MappingRequest, *, target_schema: dict[str, Any]
+        self,
+        request: MappingRequest,
+        *,
+        target_schema: dict[str, Any],
+        source_catalogs: dict[str, dict[str, Any]] | None = None,
     ) -> tuple[MappingGeneration, LlmCallMeta]:
         # FR-FM-27b: screen free-text before it reaches the prompt.
         findings = screen_for_injection(request.source_payloads)
@@ -63,7 +67,7 @@ class BedrockAdapter:
 
         tool_schema = MappingGeneration.model_json_schema()
         sys_text = system_prompt()
-        user_text = build_user_message(request, target_schema)
+        user_text = build_user_message(request, target_schema, source_catalogs)
         started = time.perf_counter()
         response = self._bedrock().converse(
             modelId=self._model_id,
@@ -94,8 +98,15 @@ class BedrockAdapter:
             latency_ms=latency_ms,
             system_prompt=sys_text,
             user_prompt=user_text,
+            injection_findings=[{"path": f.path, "snippet": f.snippet} for f in findings],
         )
-        return MappingGeneration(**_extract_tool_input(response)), meta
+        try:
+            generation = MappingGeneration(**_extract_tool_input(response))
+        except Exception as exc:
+            raise BedrockResponseError(
+                f"Bedrock tool output did not match the expected schema: {exc}"
+            ) from exc
+        return generation, meta
 
 
 def _extract_tool_input(response: dict[str, Any]) -> dict[str, Any]:

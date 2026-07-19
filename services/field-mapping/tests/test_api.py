@@ -1,9 +1,12 @@
 from pathlib import Path
+from typing import Any
 
 from fastapi.testclient import TestClient
 from field_mapping.api import create_app
 from field_mapping.artifact_store import ArtifactStore
+from field_mapping.bedrock_adapter import BedrockResponseError
 from field_mapping.catalog_store import CatalogStore
+from field_mapping.contracts import LlmCallMeta, MappingGeneration, MappingRequest
 from field_mapping.replay_adapter import ReplayAdapter
 from field_mapping.service import MappingService
 
@@ -59,3 +62,31 @@ def test_swagger_example_body_returns_200(tmp_path: Path) -> None:
     resp = _client(tmp_path).post("/map", json=ISSUER_BODY)
     assert resp.status_code == 200
     assert resp.json()["status"] == "succeeded"
+
+
+class _BedrockErrorAdapter:
+    """Stub adapter that always raises BedrockResponseError (item 7)."""
+
+    def generate(
+        self,
+        request: MappingRequest,
+        *,
+        target_schema: dict[str, Any],
+        source_catalogs: dict[str, dict[str, Any]] | None = None,
+    ) -> tuple[MappingGeneration, LlmCallMeta]:
+        raise BedrockResponseError(
+            "tool output did not match schema: missing required field 'jsonata'"
+        )
+
+
+def test_bedrock_response_error_returns_502(tmp_path: Path) -> None:
+    # A BedrockResponseError from the adapter must surface as 502, not an unhandled 500.
+    service = MappingService(
+        catalog_store=CatalogStore(),
+        artifact_store=ArtifactStore(tmp_path / "artifacts"),
+        adapter=_BedrockErrorAdapter(),
+    )
+    client = TestClient(create_app(service), raise_server_exceptions=False)
+    resp = client.post("/map", json=WALLET_BODY)
+    assert resp.status_code == 502
+    assert "detail" in resp.json()

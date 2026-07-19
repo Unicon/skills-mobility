@@ -29,7 +29,11 @@ class ReplayAdapter:
         self._dir = fixtures_dir or _DEFAULT_FIXTURES_DIR
 
     def generate(
-        self, request: MappingRequest, *, target_schema: dict[str, Any]
+        self,
+        request: MappingRequest,
+        *,
+        target_schema: dict[str, Any],
+        source_catalogs: dict[str, dict[str, Any]] | None = None,
     ) -> tuple[MappingGeneration, LlmCallMeta]:
         key = stable_key(
             source_system=request.source_system,
@@ -42,11 +46,12 @@ class ReplayAdapter:
             raise ReplayFixtureNotFoundError(f"no replay fixture for {key}")
         # Replay makes no live call, but the prompt is deterministic — capture it so
         # the invocation log still shows exactly what a live model would receive.
+        # source_catalogs accepted but not used by replay (no live model call).
         meta = LlmCallMeta(
             provider="replay",
             model_id="replay",
             temperature=0.0,
             system_prompt=system_prompt(),
-            user_prompt=build_user_message(request, target_schema),
+            user_prompt=build_user_message(request, target_schema, source_catalogs),
         )
         return MappingGeneration(**json.loads(path.read_text())), meta

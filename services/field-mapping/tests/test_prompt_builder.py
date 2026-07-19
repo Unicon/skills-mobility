@@ -35,3 +35,23 @@ def test_user_message_includes_task_target_and_payloads() -> None:
     assert "Target schema" in message
     assert "Source payloads" in message
     assert "display_name" in message  # the actual payload data is included
+
+
+def test_user_message_includes_source_catalogs_when_provided() -> None:
+    target: dict[str, Any] = {"x-transformation-type": "issuer_payload", "required": ["@context"]}
+    catalogs: dict[str, Any] = {
+        "outcome": {
+            "type": "object",
+            "description": "Canvas outcome",
+            "properties": {"display_name": {"description": "Human-readable name"}},
+        }
+    }
+    message = build_user_message(_request(), target, source_catalogs=catalogs)
+    assert "Source field catalogs" in message
+    assert "display_name" in message
+
+
+def test_user_message_omits_source_catalogs_section_when_none() -> None:
+    target: dict[str, Any] = {"required": ["@context"]}
+    message = build_user_message(_request(), target, source_catalogs=None)
+    assert "Source field catalogs" not in message
