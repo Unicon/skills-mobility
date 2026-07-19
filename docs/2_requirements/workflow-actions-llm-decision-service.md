@@ -42,7 +42,7 @@ Per [ADR-0009](../decisions/0009-workflow-actions-orchestration-model.md) "Resul
 
 | Stage | When it runs | Input focus | Output artifact |
 | --- | --- | --- | --- |
-| Pre-target gate | Before Delivery Targets, on every execution | Event context, learner context, policy context, workflow state | Execution-scoped gate decision (`terminate` or `continue`) with confidence and rationale |
+| Pre-target gate | Before Delivery Targets, on every execution | Event context, learner context, workflow state | Execution-scoped gate decision (`terminate` or `continue`) with confidence and rationale |
 | Delivery-phase plan | After Delivery Targets, on the continue path only | Everything above plus the selected delivery targets and the available action vocabulary | Ordered delivery-phase plan artifact |
 
 The two stages are distinct requests with distinct contracts (ADR-0009 "Two Workflow Actions contracts"). Only the delivery-phase plan is eligible for reuse; the pre-target gate decision is execution-scoped and re-run per event (ADR-0009 "Artifact reuse").
@@ -58,9 +58,8 @@ The gate must be able to terminate for cases visible from event or context alone
 | `execution_id` and correlated identifiers | Tie the request to one workflow execution and its logs |
 | `event_type` and raw event envelope | Identifies the triggering event to be gated |
 | Context bundle | The assembled learner/learning context from the Context Builder, treated as opaque JSON ([Orchestrator Design](../3_design/orchestrator.md) §4) |
-| Policy context | Any deterministic policy signals relevant to early termination (ADR-0007 Workflow Actions inputs) |
 
-Context bundle and policy context are accepted by the gate for completeness and possible future use, but the gate's primary reasoning is over the event and context alone. Their inclusion does not change the gate's scope (see §3).
+The gate reasons over the event and context alone. Its scope is limited to deciding terminate vs. continue based on event type and learner state (see §3).
 
 The service reads its gating policy prose directly from its own action registry / pipeline config — the Orchestrator does **not** pass the registry in as an input (see FR-WA-9a).
 
@@ -83,7 +82,7 @@ The gate response mirrors the small decision artifact the Orchestrator already r
 
 | Output | Purpose |
 | --- | --- |
-| `decision` | `continue_to_delivery_targets` or a named `terminate` outcome |
+| `decision` | `continue` or `terminate` |
 | `confidence` | Model-reported confidence in the gate decision |
 | `rationale` | Human-readable explanation for audit |
 | `llm_invocation_log_ref` | Correlates to detailed invocation metadata in execution logs |
@@ -106,16 +105,16 @@ The plan artifact carries the full `plan_schema_version`, `generator`, `applicab
 ## 5. Functional Requirements
 
 - **FR-WA-1** The service SHALL expose two distinct decision contracts: a pre-target gate contract and a delivery-phase plan contract, consistent with the two-stage hierarchical model of [ADR-0009](../decisions/0009-workflow-actions-orchestration-model.md).
-- **FR-WA-2** The pre-target gate invocation SHALL run before Delivery Targets and SHALL return exactly one decision: `continue_to_delivery_targets`, or a named early-termination outcome.
+- **FR-WA-2** The pre-target gate invocation SHALL run before Delivery Targets and SHALL return exactly one decision: `continue` or `terminate`. The reason for a terminate outcome SHALL be captured in the `rationale` field, not encoded in the decision string.
 - **FR-WA-3** The pre-target gate SHALL be able to terminate the workflow for disqualifiers visible from the event or context alone, including at least: sub-competency `skill_mastered` events not warranting a credential, failing-grade `course_completed` events, and badge-awarded events where the badge is not yet retrievable because acceptance has not occurred (ADR-0009 Context). The gate SHALL reason over administrator-authored **gating policy prose** stored in the action registry / pipeline config (see FR-WA-3a).
 - **FR-WA-3a** The action registry / pipeline config SHALL store administrator-authored prose describing when the pre-target gate should terminate early. The gate prompt SHALL include this prose as context so the LLM can apply it. This gating prose is analogous to the admin-authored target descriptions used by the Delivery Targets service. It is stored in the action registry / pipeline config and is NOT delegated to a separate Policy Rules service (which is out of POC scope).
-- **FR-WA-4** The pre-target gate decision SHALL be execution-scoped and SHALL NOT be treated as a reusable artifact (ADR-0009 "Artifact reuse"). The corresponding Orchestrator-side constraint — that it SHALL NOT perform reusable-plan lookup for the gate decision — is stated in [FR-OR-20](./orchestrator.md) and is an Orchestrator requirement, not a requirement on this service.
+- **FR-WA-4** The pre-target gate decision SHALL be execution-scoped and SHALL NOT be treated as a reusable artifact (ADR-0009 "Artifact reuse").
 - **FR-WA-5** The delivery-phase planning invocation SHALL run only on the continue path, after Delivery Targets, and SHALL receive the selected delivery targets as an input (ADR-0009 Stage 2).
 - **FR-WA-6** The delivery-phase planning invocation SHALL produce an ordered, executor-neutral plan artifact matching the plan schema in [Orchestrator Design](../3_design/orchestrator.md) §5 and [ADR-0011](../decisions/0011-orchestration-runtime-technology.md) §4, including at minimum `plan_schema_version`, `plan_id`, `generated_at`, `generator` (service version, model identifier, prompt-template version), `applicability` (event type, source system, selected targets), `confidence`, `rationale`, and ordered `steps`.
 - **FR-WA-7** Each generated step SHALL include at minimum `step_id`, `type`, `action_id` for `call` steps, `inputs`, and `produces`, and MAY include `condition`, `timeout`, `retry_policy`, `on_failure`, and `metadata`, per [ADR-0011](../decisions/0011-orchestration-runtime-technology.md) §4.
 - **FR-WA-8** The generated plan SHALL reference the Delivery Targets and the Field Mapping / Field Synthesis / Translation Executor services only as named actions in the plan, not as embedded logic (ADR-0007 hierarchical model). Delivery-target selection SHALL remain outside the delivery-phase plan because that decision is already resolved when this stage runs ([Orchestrator Design](../3_design/orchestrator.md) §5).
 - **FR-WA-9** The service SHALL generate steps whose `action_id` values and `type` values are drawn only from its own action registry (ADR-0011 §3). The service SHALL NOT invent actions, raw URLs, Lambda names, queue names, credentials, or arbitrary code.
-- **FR-WA-9a** The service SHALL own its action registry directly and SHALL resolve its prompt-time action-registry view internally. The Orchestrator SHALL NOT fetch the action registry and pass it as an input to the service. The same principle applies to the Delivery Targets LLM Decision Service and its own registry.
+- **FR-WA-9a** The service SHALL own its action registry directly and SHALL resolve its prompt-time action-registry view internally. The Orchestrator SHALL NOT fetch the action registry and pass it as an input to the service.
 - **FR-WA-9b** Each entry in the action registry SHALL include an **engineer-authored description** of what that action does. The delivery-phase plan prompt SHALL supply these descriptions to the LLM as context (alongside a generic plan-generation prompt), rather than embedding the full output shape in a single monolithic prompt. These descriptions are authored by engineers and may be revised to improve LLM plan quality. They are distinct from the administrator-authored gating prose (FR-WA-3a) and from admin-authored target descriptions used by the Delivery Targets service.
 - **FR-WA-10** Step input bindings SHALL use the declarative source-reference form the Orchestrator resolves (`literal`, `workflow`, `step`), not an arbitrary code or expression language ([Orchestrator Design](../3_design/orchestrator.md) §4; ADR-0011 §5).
 - **FR-WA-11** The service SHALL attach a `confidence` and a `rationale` to the gate decision and to the delivery-phase plan, and MAY attach per-step rationale, to satisfy the explainability contract ([POC Requirements](./poc-requirements.md) rationale/confidence; ADR-0007).
@@ -173,7 +172,6 @@ The Workflow Actions LLM Decision Service does not need to provide:
 
 ## 11. Open Questions
 
-- **Gate decision schema — named terminate outcomes.** The gate decision fields (`decision` / `confidence` / `rationale`) are defined in [Design §2 / §4](../3_design/workflow-actions-llm-decision-service.md). The exact set of named `terminate_*` outcome strings is not yet fixed; new outcomes can be added without a contract change.
 - **Applicability key dimensions (ADR-0009 / ADR-0011 Open Questions).** Which dimensions beyond event type, source system, and selected targets belong in the delivery-phase plan applicability key is still open.
 - **Confidence semantics.** ADR-0007 leaves per-service confidence thresholds unresolved; acceptable gate and plan confidence thresholds for this service are deferred to the evaluation harness (ADR-0013), not fixed here.
 - **Policy Rules rule set.** ADR-0011 §2 places Policy Rules validation between plan generation and execution, but no Policy Rules service design exists yet in this repo, so the exact rule set that validates a plan is stated intent, not a verified contract. The Policy Rules Service itself is out of POC scope (§10).

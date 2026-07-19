@@ -38,7 +38,7 @@ The gate response mirrors the shape the Orchestrator already records ([Orchestra
 
 ```json
 {
-  "decision": "continue_to_delivery_targets",
+  "decision": "continue",
   "confidence": 0.98,
   "rationale": "skill_mastered at a parent-competency level; no disqualifier present."
 }
@@ -48,11 +48,13 @@ The gate response mirrors the shape the Orchestrator already records ([Orchestra
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `decision` | string (enum) | `"continue_to_delivery_targets"` or a named early-termination string (e.g. `"terminate_sub_competency"`, `"terminate_failing_grade"`, `"terminate_badge_not_accepted"`) |
+| `decision` | string (enum) | `continue` or `terminate`; the reason for a terminate goes in the `rationale` field |
 | `confidence` | float [0,1] | Model-reported confidence in the gate decision |
 | `rationale` | string | Human-readable explanation for audit |
 
-`decision` is a discriminated string so new terminate outcomes can be added without a contract change. The exact set of named `terminate_*` strings is not yet exhaustively fixed ([Requirements §11](../2_requirements/workflow-actions-llm-decision-service.md)). This decision is execution-scoped: it is recorded in workflow execution metadata but not stored in the reusable-plan store and not looked up for reuse ([FR-OR-20](../2_requirements/orchestrator.md); ADR-0009).
+Using two values means adding new terminate reasons requires no enum or code change — the reason lives in `rationale`. This decision is execution-scoped: it is recorded in workflow execution metadata but not stored in the reusable-plan store and not looked up for reuse ([FR-OR-20](../2_requirements/orchestrator.md); ADR-0009).
+
+If the pre-target gate invocation errors or fails (network error, model error, validation failure), the Orchestrator treats it as a `terminate` decision — the workflow does not proceed to delivery on an errored gate (fail-safe).
 
 ### Delivery-phase plan artifact
 
@@ -79,9 +81,55 @@ The stored plan is the delivery-phase plan defined in [Orchestrator Design](./or
 }
 ```
 
-The full 8-step plan body is the sequence in [Orchestrator Design](./orchestrator.md) §5 (`resolve_learncard_profile` → `generate_payload_mapping` → `generate_field_synthesis` → `execute_translation` → `issue_learncard_badge` → `generate_payload_mapping` → `execute_translation` → `deliver_to_learncard_wallet`). That sequence is the service's output contract: the named steps are how the plan references the Delivery Targets-selected work, the Field Mapping / Field Synthesis / Translation Executor seams, and the delivery actions (ADR-0007 hierarchical model). Delivery-target selection is deliberately **not** a step in this plan — it is already resolved before Stage 2 runs ([Orchestrator Design](./orchestrator.md) §5).
+The expected plan bodies for Phase 1 target combinations are in "Expected Phase-1 plans (evaluation reference)" below. The named steps are how the plan references the Delivery Targets-selected work, the Field Mapping / Field Synthesis / Translation Executor seams, and the delivery actions (ADR-0007 hierarchical model). Delivery-target selection is deliberately **not** a step in this plan — it is already resolved before Stage 2 runs ([Orchestrator Design](./orchestrator.md) §5).
 
 The service returns the full plan artifact inline in the synchronous response and also stores it; see the response contract in §4 ([FR-WA-13](../2_requirements/workflow-actions-llm-decision-service.md)).
+
+### Expected Phase-1 plans (evaluation reference)
+
+These are the plans the LLM is expected to produce for each target combination in Phase 1. They serve as the evaluation reference (Layer B, ADR-0013) — what we want the LLM to produce, not a guaranteed output.
+
+**LearnCard wallet only** (`selected_targets: [learncard_issuer, learncard_wallet]`):
+
+```
+resolve_learncard_profile
+→ generate_issuer_payload_mapping
+→ generate_field_synthesis
+→ execute_issuer_payload_translation
+→ issue_learncard_badge
+→ generate_wallet_payload_mapping
+→ execute_wallet_payload_translation
+→ deliver_to_learncard_wallet
+```
+
+**SmartResume only** (`selected_targets: [smart_resume]`):
+
+```
+resolve_learncard_profile
+→ generate_issuer_payload_mapping
+→ generate_field_synthesis
+→ execute_issuer_payload_translation
+→ issue_learncard_badge
+→ generate_smartresume_payload_mapping
+→ execute_smartresume_payload_translation
+→ deliver_to_smart_resume
+```
+
+**Both LearnCard wallet + SmartResume** (`selected_targets: [learncard_issuer, learncard_wallet, smart_resume]`):
+
+Shared prefix (through issuance), then two parallel branches — one per target:
+
+```
+resolve_learncard_profile
+→ generate_issuer_payload_mapping
+→ generate_field_synthesis
+→ execute_issuer_payload_translation
+→ issue_learncard_badge
+→ [LearnCard wallet branch] generate_wallet_payload_mapping → execute_wallet_payload_translation → deliver_to_learncard_wallet
+→ [SmartResume branch]      generate_smartresume_payload_mapping → execute_smartresume_payload_translation → deliver_to_smart_resume
+```
+
+These action names follow the phase-specific naming style used in this doc. Delivery-target selection is not a step — it is already resolved before Stage 2 runs.
 
 ## 3. Runtime Shape
 
@@ -124,7 +172,7 @@ Pre-target gate response:
 ```json
 {
   "status": "succeeded",
-  "decision": "continue_to_delivery_targets",
+  "decision": "continue",
   "confidence": 0.98,
   "rationale": "...",
   "llm_invocation_log_ref": "llmcall:g-123"
@@ -156,8 +204,7 @@ The gate decision is small enough to return inline; the Orchestrator records it 
   "event_id": "evt_123",
   "event_type": "skill_mastered",
   "event": { "...": "raw event envelope" },
-  "context_bundle": { "...": "opaque context JSON" },
-  "policy_context": { "...": "optional deterministic policy signals" }
+  "context_bundle": { "...": "opaque context JSON" }
 }
 ```
 
@@ -192,10 +239,10 @@ The system prompt should tell the model:
 - it is deciding only whether the workflow proceeds to delivery-target selection or terminates with a named business outcome — it is not planning steps,
 - the administrator-authored **gating policy prose** loaded from the action registry / pipeline config, explaining when early termination should occur ([FR-WA-3a](../2_requirements/workflow-actions-llm-decision-service.md)),
 - the disqualifiers it must recognize from event/context alone: sub-competency outcomes not warranting a credential, failing grades, and unaccepted badges (ADR-0009 Context),
-- that a `continue_to_delivery_targets` decision is the default when no disqualifier is present,
+- that a `continue` decision is the default when no disqualifier is present,
 - and that it must emit `decision`, `confidence`, and `rationale`.
 
-The gate output schema constrains `decision` to the known enumerated set plus a mechanism for the model to name the terminate reason.
+The gate output schema constrains `decision` to `continue` or `terminate`; the terminate reason goes in `rationale`.
 
 ### Delivery-phase plan prompt
 
@@ -205,10 +252,39 @@ Rather than a single monolithic prompt that prescribes the full output shape, th
 - it may reference only the `action_id` and step `type` values present in the action registry, described by their engineer-authored entries ([FR-WA-9a/9b](../2_requirements/workflow-actions-llm-decision-service.md)),
 - how to express step input bindings using the declarative `literal` / `workflow` / `step` source-reference form ([Orchestrator Design](./orchestrator.md) §4), and that it must not emit code, URLs, or credentials,
 - that delivery-target selection is not a step (targets are already selected),
-- that profile resolution is a prerequisite for LearnCard-specific steps, and the Field Mapping / Field Synthesis / Translation Executor seams appear where the payload phase requires them (§5; [FR-OR-14/15](../2_requirements/orchestrator.md)),
 - and that it must emit plan-level `confidence` and `rationale`, and MAY emit per-step rationale.
 
 The plan output schema constrains the response to the plan artifact shape in §2 (`applicability`, ordered `steps[]` with `step_id`/`type`/`action_id`/`inputs`/`produces`, `confidence`, `rationale`).
+
+### Action registry schema
+
+Each entry in the action registry has the following fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `action_id` | string | Unique identifier for the action (matches `action_id` in generated plan steps) |
+| `type` | string | Step type, e.g. `call` |
+| `description` | string | Engineer-authored description of what the action does and when to use it; supplied to the LLM as context in the delivery-phase plan prompt |
+| `inputs` | list | Input parameters, each with `name`, `required` (bool), and a brief `description` |
+| `outputs` | list | Values the action produces, each with `name` and a brief `description` |
+
+Example entry:
+
+```json
+{
+  "action_id": "resolve_learncard_profile",
+  "type": "call",
+  "description": "Resolves the learner's LearnCard profile using the learner ID from the context bundle. Required before any LearnCard-specific issuance or wallet delivery steps.",
+  "inputs": [
+    { "name": "learner_id", "required": true, "description": "Learner identifier from the context bundle" }
+  ],
+  "outputs": [
+    { "name": "resolved_profile", "description": "The resolved LearnCard profile, used as input to subsequent steps" }
+  ]
+}
+```
+
+The delivery-phase plan prompt supplies these descriptions to the LLM as context ([FR-WA-9b](../2_requirements/workflow-actions-llm-decision-service.md)), alongside the generic plan-generation instruction. Engineers author and revise these descriptions to improve plan quality.
 
 ### Prompt tuning emphasis
 
@@ -258,12 +334,14 @@ Pre-target gate validation:
 1. parse the structured model response
 2. verify `decision` is one of the allowed values and `confidence`/`rationale` are present
 
+If the gate invocation itself errors (e.g. Bedrock unavailable, response fails schema validation), the service returns a failure response and the Orchestrator treats this as a `terminate` outcome — it does not proceed to delivery on an errored gate.
+
 Delivery-phase plan validation (hard Layer-A gates, ADR-0013):
 
 1. parse the structured model response
 2. verify plan-schema validity and that `confidence`/`rationale` are present
 3. verify every step's `action_id` and `type` exist in the service's action registry (registry conformance, ADR-0011 §3)
-4. verify every step input binding is resolvable: `workflow` paths exist in the workflow context contract, and every `{ "source": "step", "step_id": N }` reference points to a step that runs and `produces` a value before this step (dependency resolution)
+4. verify every step input binding is **statically** resolvable without executing the steps: `workflow` paths exist in the workflow context contract, and every `{ "source": "step", "step_id": N }` reference points to a step that appears earlier in the plan and declares a matching `produces` value — this is a static binding check, not a runtime execution
 5. store only structurally validated plans as successful results
 
 Whether the plan includes the expected steps for a given applicability (e.g., the LearnCard dual-target sequence) is evaluated in the **test harness** (Layer B, ADR-0013 / ADR-0021), not enforced as a hard gate here ([FR-WA-22](../2_requirements/workflow-actions-llm-decision-service.md)). Requiring specific steps as a hard gate risks the service satisfying the validator rather than producing a genuinely good plan.

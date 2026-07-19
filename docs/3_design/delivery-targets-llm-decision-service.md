@@ -44,7 +44,7 @@ Two sequencing facts anchor this design:
 
 The service produces one stored artifact: a **selection artifact** naming the selected targets, each with a confidence score and a rationale. Unlike Field Mapping, it produces no executable artifact and no secondary synthesis-request artifact.
 
-The immediate service response to the Orchestrator normally contains the validated `selected_targets` list plus a reference to the stored selection artifact, not necessarily every per-target rationale inline.
+The service returns the full selection output — selected targets, per-target confidence, and rationale — inline in the synchronous response. The service also stores the selection artifact; a `selection_artifact_ref` may be included in the response for storage correlation. The Orchestrator does not need a second round-trip to retrieve the selection.
 
 ### Stored selection artifact
 
@@ -74,25 +74,31 @@ The `selected_targets` values are drawn only from the available-delivery-targets
 
 ## 3. Response Contract
 
-The synchronous response should be small:
+The synchronous response returns the selection inline:
 
 ```json
 {
   "status": "succeeded",
+  "selected_targets": [
+    {
+      "delivery_target": "learncard_issuer",
+      "confidence": 0.98,
+      "rationale": "Accounting course (ACCY-*); routes to LearnCard via the Pretend Association of Accountants partnership."
+    },
+    {
+      "delivery_target": "learncard_wallet",
+      "confidence": 0.95,
+      "rationale": "Paired with learncard_issuer to deliver the issued badge to the learner's wallet."
+    }
+  ],
   "selection_artifact_ref": "selection:123",
-  "selected_targets": ["learncard_issuer", "learncard_wallet"],
   "llm_invocation_log_ref": "llmcall:789"
 }
 ```
 
-This keeps the Orchestrator contract stable and lightweight. `selected_targets` is included as a flat list of identifiers because the very next step — the delivery-phase Workflow Actions call — needs exactly that list to build its plan; the per-target confidence and rationale live in the stored artifact, retrievable through `selection_artifact_ref`.
+The inline `selected_targets` is the primary contract: the Orchestrator can read the selected targets, confidence, and rationale directly without a second round-trip. The `selection_artifact_ref` is optional — it is included for storage correlation so auditors can navigate to the stored artifact. `llm_invocation_log_ref` points to the technical invocation record (model ID, prompt-template version, token counts, latency, raw model output) for prompt engineers and operators.
 
-The two refs serve distinct purposes:
-
-- `selection_artifact_ref` points to the **business decision artifact** — which targets were selected, each with confidence and rationale. This is what downstream steps and auditors navigate to understand or replay the routing decision.
-- `llm_invocation_log_ref` points to the **technical invocation record** — model ID, prompt-template version, token counts, latency, raw model output. This is what operators and prompt engineers navigate to diagnose model behavior and compare across prompt or model changes.
-
-Both refs are returned even for failed invocations; the records are retained as evidence for prompt tuning. For local debugging only, the boundary may optionally support an inline-expansion mode that returns the stored artifact directly. That should not be the default production-like path.
+Both refs are returned even for failed invocations; the records are retained as evidence for prompt tuning.
 
 ## 4. Runtime Shape
 
@@ -109,7 +115,7 @@ Orchestrator
       -> parse structured output
       -> validate selection against the available/eligible target set (hard gate)
       -> store selection artifact + invocation log
-      -> return selected_targets + refs to Orchestrator
+      -> return inline selected_targets (with confidence + rationale) + optional refs to Orchestrator
 ```
 
 The initial implementation should use **one Bedrock call per Delivery Targets invocation**. This is a single, simple decision; there is no reason to split it. If routing quality is poor, prompt tuning and catalog quality are the first levers (§7), not additional calls.
@@ -129,22 +135,37 @@ Recommended POC approach:
 
 Recommended catalog contents, per target:
 
-- `delivery_target` identifier (`learncard_issuer`, `learncard_wallet`, `smart_resume`)
-- `delivery_action` (ADR-0016 action, e.g. `issue_learncard_badge`)
-- human-readable description of what the target is and what kind of credential/data it accepts — written in the voice of an institution administrator filling out a configuration form, not a polished doc-site summary (see FR-DT-5a)
-- eligibility notes the model should weigh (for example, which event types or learner-profile states typically route to this target)
+- `target_id` — the delivery-target identifier (`learncard_issuer`, `learncard_wallet`, `smart_resume`), matching the `DeliveryTarget` ids in §1
+- `description` — a human-readable description written in the voice of an institution administrator filling out a configuration form, not a polished doc-site summary (see FR-DT-5a)
 
 The admin-voice framing matters for evaluation: the LLM's routing performance is being assessed against natural admin-authored descriptions. Over-editing catalog entries for literary quality would skew that evaluation. Write descriptions as a realistic admin would; don't clean them up.
 
+**Catalog schema:** each entry is an object with a `target_id` (matching the `DeliveryTarget` ids in §1) and an administrator-authored `description` (the routing rationale, written in the institution-admin voice). Example:
+
+```json
+[
+  {
+    "target_id": "learncard_issuer",
+    "description": "LearnCard badge issuer — used for Accounting courses (ACCY-*). The Pretend Association of Accountants partners with LearnCard; issued badges reach their employer members."
+  },
+  {
+    "target_id": "learncard_wallet",
+    "description": "LearnCard learner wallet — used alongside learncard_issuer to deliver the issued badge directly to the learner's wallet."
+  },
+  {
+    "target_id": "smart_resume",
+    "description": "SmartResume — used for Finance courses (FINC-*). The Pretend Association of Finance partners with SmartResume for credential delivery to their members."
+  }
+]
+```
+
 > Open question: ADR-0016 defines the delivery-action-to-adapter topology but does not define per-target *eligibility attributes*. For the POC, eligibility is expressed through the catalog's human-readable descriptions and resolved by LLM judgment; the deterministic hard gate (§9) is limited to catalog membership. Deterministic policy enforcement against richer eligibility rules (a future Policy Rules Service) is out of scope for the POC.
 
-> Future work: Requirements and design docs for the **SmartResume Adapter** and the **Mock SmartResume** are still needed, matching the existing LearnCard documentation, so the real SmartResume can drop in. Those are separate deliverables not in scope for this service.
-
-The intended routing bifurcation for evaluation is: `learncard_issuer` + `learncard_wallet` for digital-credential-enabled courses; `smart_resume` for non-credential-enabled courses or learners where SmartResume is the appropriate record. The sample data for the non-credential path was on hold when this design was written — catalog and prompt authors should document any assumptions they make about SmartResume eligibility so they can be revisited when that data is finalized.
+The routing bifurcation for evaluation follows the institution's configured partnership associations: credentials from Accounting (`ACCY-*`) courses route to `learncard_issuer` + `learncard_wallet` (via the Pretend Association of Accountants / LearnCard partnership); credentials from Finance (`FINC-*`) courses route to `smart_resume` (via the Pretend Association of Finance / SmartResume partnership). Catalog entries for each target should be authored in the admin voice describing these partnership associations. No sample-data change is required — the existing ACCY/FINC subjects provide the bifurcation.
 
 The important constraint, as with the Field Mapping catalogs, is that catalog edits are reviewable and versioned. The store should not begin as a manually curated runtime-only database with no committed source of truth.
 
-For POC storage, this catalog corresponds to the **Delivery Targets Store** logical store identified in [ADR-0014](../decisions/0014-poc-storage-strategy.md). Local development can back it with file-based JSON (see §12); the AWS-shaped target mirrors ADR-0014's storage direction.
+For POC storage, this catalog corresponds to the **Delivery Targets Store** logical store identified in [ADR-0014](../decisions/0014-poc-storage-strategy.md). Local development can back it with file-based JSON (see §13); the AWS-shaped target mirrors ADR-0014's storage direction.
 
 ## 6. Request Contract
 
@@ -187,7 +208,7 @@ The request message should include, in structured or clearly delimited form:
 - `event_type`
 - `source_system`
 - the learner context relevant to routing eligibility
-- the resolved available-delivery-targets catalog (identifiers, descriptions, eligibility notes)
+- the resolved available-delivery-targets catalog (target ids and administrator-authored descriptions)
 
 ### Bedrock response output
 
@@ -203,13 +224,13 @@ The system prompt and request message together should tell the model all of the 
 
 - it is selecting which downstream targets should receive transformed data for this event,
 - it may select only from the supplied available-delivery-targets catalog,
-- it should weigh event type and learner context against each target's eligibility notes,
+- it should weigh event type and learner context against each target's administrator-authored description,
 - it must assign each selected target a confidence and a rationale,
 - it must not invent targets or delivery mechanics, and must not decide transformation or workflow steps.
 
 ### Prompt tuning emphasis
 
-Prompt tuning for this service will likely focus on the **eligibility boundary**: when an event/learner combination warrants a given target versus not. Expected tuning levers include clarifying each target's eligibility notes in the catalog, adding representative examples of correct routing decisions, and calibrating how confidently the model should select a target given partial context. Prompt templates should live in version-controlled files so changes can be reviewed and compared against the evaluation corpus.
+Prompt tuning for this service will likely focus on the **routing boundary**: when an event/learner combination warrants a given target versus not. Expected tuning levers include clarifying each target's administrator-authored description in the catalog, adding representative examples of correct routing decisions, and calibrating how confidently the model should select a target given partial context. Prompt templates should live in version-controlled files so changes can be reviewed and compared against the evaluation corpus.
 
 ## 8. Bedrock Invocation Design
 
@@ -251,15 +272,15 @@ The service should validate before reporting success. This is the deterministic 
 2. verify the response shape matches the selection schema
 3. verify every selected `delivery_target` is present in the available-delivery-targets catalog
 4. verify there are no duplicate targets in the selection
-5. verify `confidence` and `rationale` are present for each selected target
-6. apply the non-empty-selection rule (subject to the empty-selection open question below)
+5. verify `selected_targets` is non-empty — an empty selection is a validation failure (this step runs only after the pre-target gate decided to continue to delivery, so a valid selection has at least one target)
+6. verify `confidence` and `rationale` are present for each selected target
 7. store only validated selections as successful results
 
 These checks are hard gates ([ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md) Layer A). The service must not let an unvalidated selection flow to the delivery-phase plan or the delivery layer, and it should not silently fall back to a hardcoded target set when the model output is bad — that would defeat the POC's purpose of measuring the LLM's routing capability. (The deterministic Phase 1 selection remains available as an explicit replay/stub mode per FR-DT-35, not as a hidden fallback inside the live path.)
 
 Invalid selections should still be stored as **failed artifacts** or failed invocation records with their validation errors attached. They are valuable evidence for prompt tuning and model comparison, but they are not reusable as successful selections.
 
-> Open question: whether an **empty selection** is a valid successful outcome or a failure is unresolved (see requirements §6). Until settled, the design treats a non-empty selection as the expected success case and flags an empty selection for review rather than passing it downstream.
+An empty selection is a validation failure: the pre-target gate already decided to continue to delivery, so a non-empty target set is expected.
 
 ### Capability Evaluation (Layer B)
 
@@ -276,7 +297,11 @@ Recommended rule:
 
 If repair retries are later explored, the service should log whether a retry was used, how many, the validation error that triggered each, and whether the final successful selection required repair.
 
-## 11. Observability and Evaluation Data
+## 11. Selection Reuse
+
+For the POC, delivery-target selections are **execution-scoped and not stored for reuse**. Each event gets a fresh selection invocation — the selection is not looked up from a reuse store. Applicability-keyed reuse (mirroring the Workflow Actions delivery-phase plan reuse store) could be added later but is out of scope for the POC.
+
+## 12. Observability and Evaluation Data
 
 The service should store enough data for the team to evaluate routing quality, cost, and tuning opportunities over time. At minimum, each invocation record or stored artifact linkage should make it possible to recover:
 
@@ -290,7 +315,7 @@ The service should store enough data for the team to evaluate routing quality, c
 - input token count when available
 - output token count when available
 - latency
-- the raw structured model output itself or a stable reference to where it is stored
+- the raw structured model output (selected targets with per-target confidence and rationale) returned inline in the response
 - the selected targets with per-target model-reported `confidence` and `rationale`
 - validation outcome
 - whether repair retry mode was enabled and whether it was used
@@ -298,7 +323,7 @@ The service should store enough data for the team to evaluate routing quality, c
 
 This data supports comparing prompt versions, model choices, routing-accuracy behavior, retry behavior, and cost/latency tradeoffs. This is the same per-invocation metadata contract ADR-0010 §60 requires of every LLM Decision Service.
 
-## 12. Suggested Module Layout
+## 13. Suggested Module Layout
 
 The implementation can stay small — smaller than Field Mapping, since there is no JSONata, no placeholders, and no synthesis-request artifact:
 
@@ -334,11 +359,11 @@ Responsibilities:
 - `service.py`: orchestration of resolve -> prompt -> model -> validation -> store -> response
 - `api.py`: FastAPI and Lambda entrypoint boundary
 
-## 13. Build Order
+## 14. Build Order
 
 Recommended implementation order:
 
-1. Define the transient-context-first request contract and the ref-returning response contract (with the flat `selected_targets` list the delivery-phase plan needs).
+1. Define the transient-context-first request contract and the inline-returning response contract (selected targets with per-target confidence and rationale, plus optional storage ref).
 2. Define the stored selection-artifact schema.
 3. Build the committed available-delivery-targets catalog from ADR-0016.
 4. Implement catalog loading.
@@ -350,7 +375,7 @@ Recommended implementation order:
 
 That order keeps the service measurable and honest from the start, and keeps the stub-to-service swap at the existing Orchestrator seam a step-implementation change.
 
-## 14. Implementation Decisions
+## 15. Implementation Decisions
 
 Decisions made during pre-development design review that are not already captured in ADRs.
 
