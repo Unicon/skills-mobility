@@ -1,0 +1,7 @@
+{
+  "jsonata": "{ \"recipient_profile_id\": source_payloads.profile_resolution.recipient_profile_id, \"signed_credential\": source_payloads.issued_badge }",
+  "placeholder_ids": [],
+  "synthesis_requests": [],
+  "confidence": 0.99,
+  "rationale": "Both target fields map directly: the resolved recipient profile id and the already-signed credential pass through verbatim. No synthesis (synthesis_allowed is false for the wallet phase)."
+}

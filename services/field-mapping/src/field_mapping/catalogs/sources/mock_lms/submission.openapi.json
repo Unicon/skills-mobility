@@ -1,0 +1,26 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS Submission (Canvas-style)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "Submission": {
+        "type": "object",
+        "description": "The learner's graded submission for the assignment.",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "submission",
+        "required": ["id", "course_id", "assignment_id", "user_id"],
+        "properties": {
+          "id": { "type": "string", "description": "Submission id.", "examples": ["SUB1"] },
+          "course_id": { "type": "string", "description": "Course containing the submission.", "examples": ["ACCY-111"] },
+          "assignment_id": { "type": "string", "description": "Associated assignment.", "examples": ["ASG1"] },
+          "user_id": { "type": "string", "description": "Learner Canvas user id.", "examples": ["USER123"] },
+          "score": { "type": ["number", "null"], "description": "Numeric score.", "examples": [95.5] },
+          "grade": { "type": ["string", "null"], "description": "Letter grade.", "examples": ["A"] },
+          "workflow_state": { "type": "string", "description": "Submission state.", "examples": ["graded"] },
+          "submitted_at": { "type": ["string", "null"], "format": "date-time", "description": "Submission timestamp.", "examples": ["2026-07-14T10:00:00Z"] },
+          "graded_at": { "type": ["string", "null"], "format": "date-time", "description": "Grading timestamp.", "examples": ["2026-07-15T14:30:00Z"] }
+        }
+      }
+    }
+  }
+}
