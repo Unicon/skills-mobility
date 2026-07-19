@@ -18,6 +18,13 @@ Read the diff and the code it directly calls at the diff's ref. When a finding n
 know how changed code is used elsewhere, delegate that exploration to a Sonnet `Explore`
 sub-agent and work from its summary. If the diff is empty, say so and stop.
 
+If you need to actually run tests/lint/types against the PR's branch (not just read the
+diff) and the branch predates a recent merge to `main` — common on this fast-moving
+project, and it breaks the `uv` workspace when a member package is missing files that
+landed later — don't modify the developer's checkout to fix it. Instead: `git worktree
+add <tmp-path> <pr-head-sha> --detach`, `git merge origin/main --no-edit` inside that
+worktree, run the checks there, then `git worktree remove <tmp-path> --force` when done.
+
 ## 2. Review
 
 Check the dimensions the diff actually touches; skip the rest and say which you skipped.
@@ -51,10 +58,9 @@ Check the dimensions the diff actually touches; skip the rest and say which you 
 - **No AI attribution**: no `Co-Authored-By: Claude` or similar in commits, no
   `🤖 Generated with Claude Code` footers in PR text.
 - **Docs/ADRs**: if the change affects structure or a decision already recorded in an
-  ADR, check whether the ADR needs a corresponding update — see
-  `.claude/architecture-overview.md` for the current state of the ADR governance
-  convention (amend in place is the team's actual practice, pending a doc reconciliation
-  PR that formalizes it).
+  ADR, check whether the ADR needs a corresponding update. ADRs are living documents
+  during the POC — amend in place (ADR-0019, `docs/decisions/0019-adr-governance-and-lifecycle.md`);
+  see `.claude/architecture-overview.md` for the convention in full.
 
 ## 3. Verify before asserting
 
