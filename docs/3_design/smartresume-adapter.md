@@ -48,7 +48,7 @@ Recommended request shape:
   "execution_id": "exec_123",
   "step_id": "step_smartresume",
   "correlation_id": "corr_123",
-  "delivery_config_ref": "smartresume-staging",
+  "delivery_config_ref": "smartresume-mock",
   "payload": {
     "recipient": {
       "id": "mailto:learner@example.com",
@@ -74,6 +74,11 @@ Recommended request shape:
         "issuer": {
           "id": "https://example.com/issuers/wasatch",
           "name": "Wasatch University"
+        },
+        "proof": {
+          "type": "DataIntegrityProof",
+          "cryptosuite": "eddsa-rdfc-2022",
+          "proofValue": "<base58btc-encoded signature>"
         }
       }
     ]
@@ -81,7 +86,7 @@ Recommended request shape:
 }
 ```
 
-The `proof` field on each credential is omitted above because this is the primary unverified-achievement case. When the incoming credential is already issued and signed, `proof` is present in `credentials[n]` and is passed through to SmartResume verbatim.
+The `proof` field is present in this example because Finance-routed credentials are issued and signed by `issue_learncard_badge` before reaching SmartResume. The adapter passes `proof` through verbatim. When the incoming credential has no proof (e.g. a non-credential-enabled course event), `proof` is omitted and SmartResume accepts the result as an unverified achievement record.
 
 Recommended response shape:
 
@@ -153,6 +158,8 @@ Error responses use HTTP status codes 400 / 401 / 403 / 405 / 500 with an `appli
 
 The adapter does not contain routing logic or business-policy evaluation. The `delivery/` module is the only place where SmartResume-specific body construction lives.
 
+> **Implementation scope note — `catalogs/targets/smart_resume/`:** The Field Mapping service currently has target catalogs only for `learncard_issuer/` and `learncard_wallet/`. Authoring `catalogs/targets/smart_resume/` is part of implementing this adapter — it is not an assumed prerequisite that already exists. This new catalog should be built after (or alongside) [#104](https://github.com/Unicon/skills-mobility/issues/104), which makes the `issuer_payload` OBv3 achievement shape conformant and adds the `achievementType`/`alignment` fields SmartResume requires. Building the catalog on top of a complete `issuer_payload` shape avoids re-deriving achievement fields that #104 already standardizes.
+
 ## 4. Execution Flow
 
 1. Receive the delivery request from the Delivery Router.
@@ -189,11 +196,16 @@ The expected initial shape is a Python internal service or Lambda-sized componen
 |---|---|---|
 | Runtime | Lambda or container | `uvicorn` serving the FastAPI endpoint |
 | Secrets | Secrets Manager / SSM Parameter Store | `.env` file (gitignored; `.env.example` committed) |
-| SmartResume API | Staging (`https://mystage.smartresume.com`) with real creds | Mock SmartResume at `http://localhost:8930` (no real creds needed) |
+| SmartResume API | Mock SmartResume (AWS-deployed; see [Mock SmartResume Design](./mock-smartresume.md)) | Mock SmartResume at `http://localhost:8930` (no real creds needed) |
+
+Accessing the real SmartResume staging environment requires a vendor partnership the project does not have; it is out of scope for this POC. Both local and AWS deployments therefore point at Mock SmartResume.
 
 **Port:** `8920` — outside Consul's reserved range (8300–8302, 8500, 8600) and clear of the other POC services (mock-lms 8000, orchestrator 8400, delivery-router 8800, learncard-wallet-adapter 8900, learncard-issuer-adapter 8910).
 
-In local dev, `SMARTRESUME_ADAPTER_API_URL` points to the Mock SmartResume. To run against staging, set it to `https://mystage.smartresume.com` and supply real credentials.
+`SMARTRESUME_ADAPTER_API_URL` must be set explicitly in all environments — there is no single universally correct default:
+
+- **Local:** `http://localhost:8930` (Mock SmartResume running locally)
+- **AWS:** the URL of the AWS-deployed Mock SmartResume (set in the Lambda/container environment via Secrets Manager or SSM)
 
 ### Configuration Inputs
 
@@ -203,9 +215,9 @@ All resolved from environment (`.env` locally; Secrets Manager in AWS):
 |---|---|
 | `SMARTRESUME_ADAPTER_PORT` | HTTP port (default: `8920`) |
 | `SMARTRESUME_ADAPTER_LOG_LEVEL` | Root log level (default: `INFO`) |
-| `SMARTRESUME_ADAPTER_API_URL` | SmartResume base URL (staging, prod, or mock) |
-| `SMARTRESUME_ADAPTER_CLIENT_ID` | OAuth2 `ClientID` (vendor secret) |
-| `SMARTRESUME_ADAPTER_ACCESS_KEY` | OAuth2 `AccessKey` (vendor secret) |
+| `SMARTRESUME_ADAPTER_API_URL` | SmartResume base URL — **no default**; must be set explicitly. Local: `http://localhost:8930` (Mock SmartResume). AWS: URL of the AWS-deployed Mock SmartResume. |
+| `SMARTRESUME_ADAPTER_CLIENT_ID` | OAuth2 `ClientID` — any non-empty string works against Mock SmartResume; real creds required only if a live SmartResume environment is ever reachable |
+| `SMARTRESUME_ADAPTER_ACCESS_KEY` | OAuth2 `AccessKey` — same note as `CLIENT_ID` above |
 
 `.env.example` is committed; `.env` is gitignored.
 
@@ -217,7 +229,7 @@ All resolved from environment (`.env` locally; Secrets Manager in AWS):
 
 **Test approach for the SmartResume HTTP boundary:** inject a fake `httpx` transport (via `httpx.MockTransport` or `respx`) that records requests and returns canned SmartResume responses. Tests assert on the assembled request body (correct `proof` presence/absence, `targetName` length enforcement, `@context` format) and on the normalized response shape. Canned responses should cover: 200 success, 400 bad request, 401 unauthorized, 500 server error.
 
-**Optional live integration tests:** supply `SMARTRESUME_ADAPTER_API_URL` and valid credentials to run against staging. These are opt-in and excluded from the standard `pytest` run via a marker.
+**Optional end-to-end tests:** supply `SMARTRESUME_ADAPTER_API_URL` pointing at a running Mock SmartResume instance to run the full adapter-to-mock round-trip. These are opt-in and excluded from the standard `pytest` run via a marker. Running against a real SmartResume environment is out of scope for this POC (requires vendor partnership).
 
 ## 8. Build Order
 

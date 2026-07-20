@@ -6,7 +6,7 @@ Related: [Requirements](../2_requirements/mock-smartresume.md) · [SmartResume A
 
 ## 1. Overview
 
-The Mock SmartResume is a small, stateless FastAPI service that stands in for the real SmartResume CredentialConnect API during local development and automated testing. It is the demo's offline stand-in — the SmartResume equivalent of what the Mock LMS is for Canvas.
+The Mock SmartResume is a small, stateless FastAPI service that stands in for the real SmartResume CredentialConnect API during local development, automated testing, and AWS deployment (staging access requires a vendor partnership the project does not have). It is the demo's offline stand-in — the SmartResume equivalent of what the Mock LMS is for Canvas.
 
 | Part | Expected path | Tech | Role |
 |---|---|---|---|
@@ -126,17 +126,22 @@ Always returns `200`. No dependency checks.
 
 ## 4. Local vs AWS
 
-The Mock SmartResume is **local-only**. It is not deployed to AWS; there is nothing to mock in production because the real SmartResume staging environment is used there.
+The Mock SmartResume is deployed in **both local and AWS** environments. Accessing the real SmartResume staging environment requires a vendor partnership the project does not have; the AWS environment therefore also points at Mock SmartResume rather than the real service. The mock deploys like the other POC services.
 
 | Concern | AWS | Local |
 |---|---|---|
-| Runtime | Not deployed | `uvicorn` serving the FastAPI app |
-| Credentials | N/A | None required — any non-empty `ClientID`/`AccessKey` pair works |
-| Persistence | N/A | None — stateless |
+| Runtime | Lambda or container (same Python service) | `uvicorn` serving the FastAPI app |
+| Credentials | None required — any non-empty `ClientID`/`AccessKey` pair works | None required — any non-empty `ClientID`/`AccessKey` pair works |
+| Persistence | None — stateless | None — stateless |
 
 **Port:** `8930` — outside Consul's reserved range (8300–8302, 8500, 8600) and clear of the other POC services (mock-lms 8000, orchestrator 8400, delivery-router 8800, learncard-wallet-adapter 8900, learncard-issuer-adapter 8910, smartresume-adapter 8920).
 
-**Adapter integration:** point `SMARTRESUME_ADAPTER_API_URL=http://localhost:8930` in the SmartResume Adapter's `.env`. No other config changes are needed; the adapter's token acquisition and delivery calls are identical against mock vs real.
+**Adapter integration:**
+
+- **Local:** set `SMARTRESUME_ADAPTER_API_URL=http://localhost:8930` in the SmartResume Adapter's `.env`.
+- **AWS:** set `SMARTRESUME_ADAPTER_API_URL` to the deployed Mock SmartResume URL (via Secrets Manager or SSM, matching the pattern used by other adapter URLs).
+
+No other config changes are needed; the adapter's token acquisition and delivery calls are identical in both environments.
 
 ---
 

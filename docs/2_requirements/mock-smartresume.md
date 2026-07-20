@@ -20,7 +20,7 @@ Request and response shapes conform to the real SmartResume CredentialConnect AP
 
 ## 2. Scope
 
-The Mock SmartResume serves the SmartResume Adapter in local development and automated testing. It is not deployed to AWS; it runs locally alongside the other POC services.
+The Mock SmartResume serves the SmartResume Adapter in local development, automated testing, and AWS deployment. Because accessing the real SmartResume staging environment requires a vendor partnership the project does not have, the AWS environment points at Mock SmartResume rather than the real service. The mock is deployed to AWS alongside the other POC services; `SMARTRESUME_ADAPTER_API_URL` points at it in both local and AWS.
 
 It covers only the two endpoints the adapter calls. All other SmartResume CredentialConnect endpoints (`/clr`, `/verifiablepresentation`, `/exchanges/{token}`, and any non-CredentialConnect routes) are out of scope and SHALL return `404` if requested.
 

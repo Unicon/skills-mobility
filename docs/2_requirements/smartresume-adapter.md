@@ -8,9 +8,9 @@ Related: [Requirements overview](./README.md) · [Delivery Router Service](./del
 
 The **SmartResume Adapter** is the vendor-specific adapter that delivers an achievement or credential payload into the learner's SmartResume professional record via the SmartResume CredentialConnect API.
 
-Its primary use case in this POC is the `smart_resume` delivery target, which fires for **non-credential-enabled courses** (standard courses that produce `skill_mastered` or `course_completed` events but do not issue a verifiable credential). Those events produce an OB3-shaped achievement without a `proof` array — an unverified skill record — which SmartResume accepts as-is under its CredentialConnect contract.
+Its reason to exist is architectural: the Delivery Router dispatches to registered adapters by key (`smart_resume`), so adding SmartResume as a delivery target required no changes to the router — only this adapter. The same pattern governs all current and future delivery targets.
 
-When a credential-enabled course also targets SmartResume, the adapter delivers the already-issued, proof-carrying credential in the same request shape. The `/credentials` endpoint is the same either way; only the presence or absence of a `proof` array distinguishes verified from unverified submissions.
+The in-scope POC credential is a Finance course credential that travels the full issuance pipeline (`issue_learncard_badge` runs for every delivery in this POC) before reaching SmartResume. By the time it arrives here it already carries a signed `proof`. **Verified, signed delivery is the primary case.** The adapter also supports the no-proof path — SmartResume's API accepts achievements without proof as unverified skill records, and that path may be needed for non-credential-enabled course events. The `/credentials` endpoint is the same either way; only the presence or absence of a `proof` array distinguishes verified from unverified submissions.
 
 This document assumes the SmartResume CredentialConnect API is callable from Python using standard HTTP client tooling. SmartResume publishes no SDK; the API contract is prose-documented at the URL above and is stable enough to build against.
 
@@ -22,7 +22,7 @@ The SmartResume Adapter serves the delivery action:
 
 Its AdapterKey is `smart_resume`. This action and key are registered in the Delivery Router alongside the existing LearnCard actions (`deliver_to_learncard_wallet` / `learncard_wallet`, `issue_learncard_badge` / `learncard_issuer`).
 
-The adapter is invoked for any workflow step where the Workflow Actions planner has approved a `deliver_to_smartresume` action. For the full POC, that step fires when the Delivery Targets Decision Service selects the `smart_resume` target — currently the primary target for non-credential-enabled course achievements.
+The adapter is invoked for any workflow step where the Workflow Actions planner has approved a `deliver_to_smartresume` action. For the full POC, that step fires when the Delivery Targets Decision Service selects the `smart_resume` target.
 
 ## 3. Input and Output Expectations
 
@@ -88,9 +88,9 @@ The SmartResume `POST /api/v1/credentials` endpoint expects a JSON body conformi
 }
 ```
 
-**Unverified achievements (primary POC case):** when the upstream payload represents a non-credential-enabled course event, the `proof` array is omitted entirely. SmartResume accepts achievements without proof as unverified skill records. The adapter SHALL omit `proof` when the incoming payload does not include one.
+**Verified credentials (primary POC case):** the in-scope Finance course credential travels the full issuance pipeline and arrives at this adapter already signed. The `proof` field is present and the adapter SHALL pass it through verbatim.
 
-**Verified credentials:** when the upstream payload is an already-issued, signed VC (from the LearnCard Issuer Adapter or another issuer), the `proof` field is present and the adapter SHALL pass it through verbatim.
+**Unverified achievements:** when the upstream payload represents a non-credential-enabled course event, the `proof` array is omitted entirely. SmartResume accepts achievements without proof as unverified skill records. The adapter SHALL omit `proof` when the incoming payload does not include one.
 
 **SkillSync (skills):** when `achievementType` is `"SkillsAndAbilities"`, skills are listed under `credentialSubject.achievement.alignment[]` with `targetName` (max 40 characters), `targetDescription`, and `targetType: "Competency"`. The adapter SHALL enforce the 40-character limit on `targetName` by truncating if necessary and logging a warning.
 
@@ -124,7 +124,7 @@ The adapter SHALL obtain a token before calling `/credentials`. For the POC, opt
 - **FR-SR-10** The SmartResume Adapter SHALL return errors in a structured form that preserves the HTTP status code and any SmartResume error body, allowing the Delivery Router and Orchestrator to distinguish failure from success.
 - **FR-SR-11** The SmartResume Adapter SHALL keep `ClientID` and `AccessKey` out of source control and other committed artifacts, resolving them from environment configuration at runtime.
 - **FR-SR-12** The SmartResume Adapter SHALL attach or preserve workflow, execution, step, and correlation identifiers in its logs and result records.
-- **FR-SR-13** The SmartResume Adapter SHALL target the staging base URL (`https://mystage.smartresume.com`) by default and accept a configurable base URL so prod (`https://my.smartresume.com`) and the Mock SmartResume (`http://localhost:8930`) can be substituted without code changes.
+- **FR-SR-13** The SmartResume Adapter SHALL resolve its target base URL entirely from configuration (`SMARTRESUME_ADAPTER_API_URL`) with no hard-coded default. The expected value is the Mock SmartResume URL in all current environments (local: `http://localhost:8930`; AWS: the deployed mock's URL). Accessing a real SmartResume environment requires a vendor partnership that is out of scope for this POC.
 - **FR-SR-14** The SmartResume Adapter SHALL NOT own delivery target selection, business-policy enforcement, workflow planning, or substantive field mapping.
 - **FR-SR-15** The SmartResume Adapter SHALL NOT own LearnCard credential issuance or LearnCard wallet delivery.
 - **FR-SR-16** The SmartResume Adapter SHALL NOT attempt CLR 2.0, Verifiable Presentation, or VCALM exchange delivery; those endpoints are out of scope for the POC.
