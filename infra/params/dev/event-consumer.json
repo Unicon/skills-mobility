@@ -1,0 +1,14 @@
+[
+  {"ParameterKey": "ProjectName",        "ParameterValue": "skills-mobility"},
+  {"ParameterKey": "EnvName",            "ParameterValue": "dev"},
+  {"ParameterKey": "ServiceName",        "ParameterValue": "event-consumer"},
+  {"ParameterKey": "ImageUri",           "ParameterValue": "ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/skills-mobility/event-consumer:latest"},
+  {"ParameterKey": "MemorySize",         "ParameterValue": "512"},
+  {"ParameterKey": "TimeoutSeconds",     "ParameterValue": "30"},
+  {"ParameterKey": "EventSourceType",    "ParameterValue": "eventbridge"},
+  {"ParameterKey": "EventBridgePattern", "ParameterValue": "{\"source\":[\"skills-mobility.lms\"],\"detail-type\":[\"skill_mastered\"]}"},
+  {"ParameterKey": "NeedsBedrock",       "ParameterValue": "false"},
+  {"ParameterKey": "NeedsDynamoDB",      "ParameterValue": "true"},
+  {"ParameterKey": "NeedsSqsSend",       "ParameterValue": "true"},
+  {"ParameterKey": "ExtraEnvJson",       "ParameterValue": "{}"}
+]

@@ -1,0 +1,14 @@
+[
+  {"ParameterKey": "ProjectName",        "ParameterValue": "skills-mobility"},
+  {"ParameterKey": "EnvName",            "ParameterValue": "dev"},
+  {"ParameterKey": "ServiceName",        "ParameterValue": "orchestrator"},
+  {"ParameterKey": "ImageUri",           "ParameterValue": "ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/skills-mobility/orchestrator:latest"},
+  {"ParameterKey": "MemorySize",         "ParameterValue": "1024"},
+  {"ParameterKey": "TimeoutSeconds",     "ParameterValue": "120"},
+  {"ParameterKey": "EventSourceType",    "ParameterValue": "url"},
+  {"ParameterKey": "EventBridgePattern", "ParameterValue": "{}"},
+  {"ParameterKey": "NeedsBedrock",       "ParameterValue": "true"},
+  {"ParameterKey": "NeedsDynamoDB",      "ParameterValue": "true"},
+  {"ParameterKey": "NeedsSqsSend",       "ParameterValue": "true"},
+  {"ParameterKey": "ExtraEnvJson",       "ParameterValue": "{}"}
+]

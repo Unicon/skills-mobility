@@ -1,0 +1,301 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Skills Mobility — reusable Lambda service template (container image).
+  Deploy once per service; adapt the event-source shape via EventSourceType.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: skills-mobility
+
+  EnvName:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+
+  ServiceName:
+    Type: String
+    Description: >
+      Short service identifier, e.g. "orchestrator" or "event-consumer".
+      Used as the Lambda function name suffix and in IAM resource names.
+
+  ImageUri:
+    Type: String
+    Description: >
+      Fully-qualified ECR image URI including tag, e.g.
+      123456789012.dkr.ecr.us-east-1.amazonaws.com/skills-mobility/orchestrator:abc1234
+
+  MemorySize:
+    Type: Number
+    Default: 512
+    MinValue: 128
+    MaxValue: 10240
+
+  TimeoutSeconds:
+    Type: Number
+    Default: 30
+    MinValue: 1
+    MaxValue: 900
+
+  # ---------------------------------------------------------------------------
+  # Event-source shape
+  # ---------------------------------------------------------------------------
+  EventSourceType:
+    Type: String
+    Default: url
+    AllowedValues: [url, eventbridge, sqs]
+    Description: >
+      url        — Lambda Function URL (HTTP, AuthType NONE). For FastAPI
+                   services reached over HTTP by the Orchestrator.
+      eventbridge — EventBridge rule triggers this Lambda.
+      sqs        — SQS EventSourceMapping (used by the Orchestrator workers).
+
+  EventBridgePattern:
+    Type: String
+    Default: "{}"
+    Description: >
+      JSON event pattern string, used only when EventSourceType=eventbridge.
+      Example: {"source":["skills-mobility.lms"],"detail-type":["skill_mastered"]}
+
+  # ---------------------------------------------------------------------------
+  # IAM capability toggles
+  # ---------------------------------------------------------------------------
+  NeedsBedrock:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    Description: Grant bedrock:InvokeModel* permissions to the execution role.
+
+  NeedsDynamoDB:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    Description: Grant DynamoDB CRUD on the shared execution-state table.
+
+  NeedsSqsSend:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    Description: Grant sqs:SendMessage on the shared orchestrator queue.
+
+  # ---------------------------------------------------------------------------
+  # Extra environment variables
+  # ---------------------------------------------------------------------------
+  # NOTE: CloudFormation does not support deserializing a JSON-string parameter
+  # into a key-value map natively. The three well-known vars (table name, queue
+  # URL, bus name) are injected explicitly below. Pass additional service-
+  # specific variables by including them in the ImageUri image itself (via ARG /
+  # ENV in the Dockerfile) or by layering a custom CFN macro/transform here in
+  # a future iteration. The ExtraEnvJson parameter is kept as a reminder/hook
+  # for that future work but is NOT consumed in this template.
+  ExtraEnvJson:
+    Type: String
+    Default: "{}"
+    Description: >
+      (Advisory — not currently consumed by this template; see NOTE above.)
+      JSON object of additional environment variables, e.g.
+      {"LOG_LEVEL":"DEBUG","SOME_URL":"https://..."}
+
+Conditions:
+  IsUrl: !Equals [!Ref EventSourceType, "url"]
+  IsEventBridge: !Equals [!Ref EventSourceType, "eventbridge"]
+  IsSqs: !Equals [!Ref EventSourceType, "sqs"]
+  WithBedrock: !Equals [!Ref NeedsBedrock, "true"]
+  WithDynamoDB: !Equals [!Ref NeedsDynamoDB, "true"]
+  WithSqsSend: !Equals [!Ref NeedsSqsSend, "true"]
+
+Resources:
+
+  # ---------------------------------------------------------------------------
+  # IAM execution role
+  # ---------------------------------------------------------------------------
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-${EnvName}-${ServiceName}-lambda"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - !If
+          - WithBedrock
+          - PolicyName: bedrock-invoke
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - bedrock:InvokeModel
+                    - bedrock:InvokeModelWithResponseStream
+                  # Scope to the us. inference profile prefix for cross-region
+                  # inference profiles (e.g. us.anthropic.claude-haiku-4-5-...).
+                  Resource: "arn:aws:bedrock:*::foundation-model/*"
+          - !Ref AWS::NoValue
+        - !If
+          - WithDynamoDB
+          - PolicyName: dynamodb-crud
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - dynamodb:GetItem
+                    - dynamodb:PutItem
+                    - dynamodb:UpdateItem
+                    - dynamodb:DeleteItem
+                    - dynamodb:Query
+                    - dynamodb:Scan
+                  Resource:
+                    - !ImportValue
+                      "Fn::Sub": "${ProjectName}-${EnvName}-table-arn"
+                    - !Sub
+                      - "${TableArn}/index/*"
+                      - TableArn:
+                          !ImportValue
+                          "Fn::Sub": "${ProjectName}-${EnvName}-table-arn"
+          - !Ref AWS::NoValue
+        - !If
+          - WithSqsSend
+          - PolicyName: sqs-send
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action: sqs:SendMessage
+                  Resource:
+                    !ImportValue
+                    "Fn::Sub": "${ProjectName}-${EnvName}-orchestrator-queue-arn"
+          - !Ref AWS::NoValue
+        - !If
+          - IsSqs
+          - PolicyName: sqs-consume
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - sqs:ReceiveMessage
+                    - sqs:DeleteMessage
+                    - sqs:GetQueueAttributes
+                  Resource:
+                    !ImportValue
+                    "Fn::Sub": "${ProjectName}-${EnvName}-orchestrator-queue-arn"
+          - !Ref AWS::NoValue
+
+  # ---------------------------------------------------------------------------
+  # Lambda function (container image)
+  # ---------------------------------------------------------------------------
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${EnvName}-${ServiceName}"
+      PackageType: Image
+      Code:
+        ImageUri: !Ref ImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      MemorySize: !Ref MemorySize
+      Timeout: !Ref TimeoutSeconds
+      Environment:
+        Variables:
+          PROJECT_NAME: !Ref ProjectName
+          ENV_NAME: !Ref EnvName
+          SERVICE_NAME: !Ref ServiceName
+          DYNAMODB_TABLE_NAME:
+            !ImportValue
+            "Fn::Sub": "${ProjectName}-${EnvName}-table-name"
+          ORCHESTRATOR_QUEUE_URL:
+            !ImportValue
+            "Fn::Sub": "${ProjectName}-${EnvName}-orchestrator-queue-url"
+          EVENT_BUS_NAME:
+            !ImportValue
+            "Fn::Sub": "${ProjectName}-${EnvName}-event-bus-name"
+          # ExtraEnvJson is passed through as a raw string so the service can
+          # parse it at startup for any additional vars (e.g. LOG_LEVEL, external
+          # endpoint URLs). This keeps the parameter used and avoids cfn-lint W2001.
+          EXTRA_ENV_JSON: !Ref ExtraEnvJson
+
+  # ---------------------------------------------------------------------------
+  # Function URL (EventSourceType=url)
+  # ---------------------------------------------------------------------------
+  FunctionUrl:
+    Type: AWS::Lambda::Url
+    Condition: IsUrl
+    Properties:
+      TargetFunctionArn: !GetAtt LambdaFunction.Arn
+      AuthType: NONE
+      # CORS is intentionally open for the POC; restrict in production.
+      Cors:
+        AllowOrigins: ["*"]
+        AllowMethods: ["*"]
+        AllowHeaders: ["*"]
+
+  FunctionUrlPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsUrl
+    Properties:
+      FunctionName: !GetAtt LambdaFunction.Arn
+      Action: lambda:InvokeFunctionUrl
+      Principal: "*"
+      FunctionUrlAuthType: NONE
+
+  # ---------------------------------------------------------------------------
+  # EventBridge rule + permission (EventSourceType=eventbridge)
+  # ---------------------------------------------------------------------------
+  EventBridgeRule:
+    Type: AWS::Events::Rule
+    Condition: IsEventBridge
+    Properties:
+      Name: !Sub "${ProjectName}-${EnvName}-${ServiceName}-trigger"
+      EventBusName:
+        !ImportValue
+        "Fn::Sub": "${ProjectName}-${EnvName}-event-bus-name"
+      EventPattern: !Ref EventBridgePattern
+      State: ENABLED
+      Targets:
+        - Id: !Sub "${ServiceName}-lambda"
+          Arn: !GetAtt LambdaFunction.Arn
+
+  EventBridgePermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsEventBridge
+    Properties:
+      FunctionName: !GetAtt LambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt EventBridgeRule.Arn
+
+  # ---------------------------------------------------------------------------
+  # SQS event-source mapping (EventSourceType=sqs)
+  # ---------------------------------------------------------------------------
+  SqsEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Condition: IsSqs
+    Properties:
+      FunctionName: !GetAtt LambdaFunction.Arn
+      EventSourceArn:
+        !ImportValue
+        "Fn::Sub": "${ProjectName}-${EnvName}-orchestrator-queue-arn"
+      BatchSize: 1
+      # Start at the beginning of the queue; irrelevant for SQS but required
+      # syntax for the resource type is omitted (SQS doesn't use it).
+      Enabled: true
+
+Outputs:
+  FunctionArn:
+    Value: !GetAtt LambdaFunction.Arn
+    Description: ARN of the Lambda function.
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-${ServiceName}-function-arn"
+
+  FunctionUrl:
+    Condition: IsUrl
+    Value: !GetAtt FunctionUrl.FunctionUrl
+    Description: HTTPS Function URL (only present when EventSourceType=url).
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-${ServiceName}-url"
