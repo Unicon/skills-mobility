@@ -161,7 +161,7 @@ The admin-voice framing matters for evaluation: the LLM's routing performance is
 
 > Open question: ADR-0016 defines the delivery-action-to-adapter topology but does not define per-target *eligibility attributes*. For the POC, eligibility is expressed through the catalog's human-readable descriptions and resolved by LLM judgment; the deterministic hard gate (§9) is limited to catalog membership. Deterministic policy enforcement against richer eligibility rules (a future Policy Rules Service) is out of scope for the POC.
 
-The routing bifurcation for evaluation follows the institution's configured partnership associations: credentials from Accounting (`ACCY-*`) courses route to `learncard_issuer` + `learncard_wallet` (via the Pretend Association of Accountants / LearnCard partnership); credentials from Finance (`FINC-*`) courses route to `smart_resume` (via the Pretend Association of Finance / SmartResume partnership). Catalog entries for each target should be authored in the admin voice describing these partnership associations. No sample-data change is required — the existing ACCY/FINC subjects provide the bifurcation.
+The routing bifurcation for evaluation follows the institution's configured partnership associations: credentials from Accounting (`ACCY-*`) courses route to `learncard_issuer` + `learncard_wallet` (via the Pretend Association of Accountants / LearnCard partnership); credentials from Finance (`FINC-*`) courses route to `smart_resume` (via the Pretend Association of Finance / SmartResume partnership). Catalog entries for each target should be authored in the admin voice describing these partnership associations. No sample-data change is required — the existing ACCY/FINC subjects provide the bifurcation. In every case the LearnCard issuer (`issue_learncard_badge`) runs first — it is the only issuer this POC supports — so the selected target distinguishes only the final delivery step (`learncard_wallet` vs `smart_resume`), not the whole pipeline.
 
 The important constraint, as with the Field Mapping catalogs, is that catalog edits are reviewable and versioned. The store should not begin as a manually curated runtime-only database with no committed source of truth.
 
@@ -276,11 +276,9 @@ The service should validate before reporting success. This is the deterministic 
 6. verify `confidence` and `rationale` are present for each selected target
 7. store only validated selections as successful results
 
-These checks are hard gates ([ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md) Layer A). The service must not let an unvalidated selection flow to the delivery-phase plan or the delivery layer, and it should not silently fall back to a hardcoded target set when the model output is bad — that would defeat the POC's purpose of measuring the LLM's routing capability. (The deterministic Phase 1 selection remains available as an explicit replay/stub mode per FR-DT-35, not as a hidden fallback inside the live path.)
+These checks are hard gates ([ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md) Layer A). The service must not let an unvalidated selection flow to the delivery-phase plan or the delivery layer, and it should not silently fall back to a hardcoded target set when the model output is bad — that would defeat the POC's purpose of measuring the LLM's routing capability. (The deterministic Phase 1 selection remains available as an explicit replay/stub mode per FR-DT-33, not as a hidden fallback inside the live path.)
 
 Invalid selections should still be stored as **failed artifacts** or failed invocation records with their validation errors attached. They are valuable evidence for prompt tuning and model comparison, but they are not reusable as successful selections.
-
-An empty selection is a validation failure: the pre-target gate already decided to continue to delivery, so a non-empty target set is expected.
 
 ### Capability Evaluation (Layer B)
 
@@ -353,7 +351,7 @@ Responsibilities:
 - `prompt_builder.py`: render the system prompt and request message from event, context, and catalog
 - `llm_adapter.py`: define the provider-adapter protocol and shared result shape
 - `bedrock_adapter.py`: implement the provider adapter using Bedrock `Converse` plus invocation-log capture
-- `replay_adapter.py`: deterministic local replay/stub without live Bedrock access (including the Phase 1 default selection, FR-DT-35)
+- `replay_adapter.py`: deterministic local replay/stub without live Bedrock access (including the Phase 1 default selection, FR-DT-33)
 - `validators.py`: selection-against-catalog validation (the hard gate)
 - `artifact_store.py`: persist selection artifacts and failed-attempt records
 - `service.py`: orchestration of resolve -> prompt -> model -> validation -> store -> response

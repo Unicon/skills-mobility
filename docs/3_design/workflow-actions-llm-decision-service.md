@@ -112,7 +112,7 @@ resolve_learncard_profile
 → issue_learncard_badge
 → generate_smartresume_payload_mapping
 → execute_smartresume_payload_translation
-→ deliver_to_smart_resume
+→ deliver_to_smartresume
 ```
 
 **Both LearnCard wallet + SmartResume** (`selected_targets: [learncard_issuer, learncard_wallet, smart_resume]`):
@@ -126,7 +126,7 @@ resolve_learncard_profile
 → execute_issuer_payload_translation
 → issue_learncard_badge
 → [LearnCard wallet branch] generate_wallet_payload_mapping → execute_wallet_payload_translation → deliver_to_learncard_wallet
-→ [SmartResume branch]      generate_smartresume_payload_mapping → execute_smartresume_payload_translation → deliver_to_smart_resume
+→ [SmartResume branch]      generate_smartresume_payload_mapping → execute_smartresume_payload_translation → deliver_to_smartresume
 ```
 
 These action names follow the phase-specific naming style used in this doc. Delivery-target selection is not a step — it is already resolved before Stage 2 runs.

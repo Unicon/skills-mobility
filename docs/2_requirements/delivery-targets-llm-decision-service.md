@@ -51,6 +51,8 @@ The POC sample data spans two subjects — Accounting (`ACCY-*` courses) and Fin
 - The **Pretend Association of Accountants** partners with **LearnCard** — badges sent there reach their employer members. Credentials from Accounting courses therefore route to `learncard_issuer` + `learncard_wallet`.
 - The **Pretend Association of Finance** partners with **SmartResume**. Credentials from Finance courses therefore route to `smart_resume`.
 
+In every case the LearnCard issuer (`issue_learncard_badge`) still runs first — it is the only issuer this POC supports — so a Finance-routed credential is issued through LearnCard and then delivered to SmartResume. The selected target (`learncard_wallet` vs `smart_resume`) distinguishes only the **final delivery step**, not the whole pipeline.
+
 This gives the evaluation corpus a natural subject-driven bifurcation using the existing sample data (no data change required). The catalog entries for these targets (FR-DT-5a) should be authored in the voice of an institution administrator who has set up these partnership associations — describing what each target is and which learners or courses belong there.
 
 ## 4. Inputs and Outputs
@@ -96,51 +98,51 @@ The inline selection output is the primary contract: the Orchestrator can read c
 - **FR-DT-6** Each selected target in the output SHALL carry a `confidence` score and a `rationale`, consistent with [ADR-0010](../decisions/0010-llm-model-access-strategy.md) §165 (confidence and rationale as structured output).
 - **FR-DT-7** The service SHALL express the LLM decision as a **schema-constrained structured response**. It SHALL NOT rely on free-form text parsing to recover the selected targets.
 - **FR-DT-8** The service SHALL return the raw structured selection output (selected targets, per-target confidence, and rationale) inline in the synchronous response. The service SHALL also store the selection artifact and MAY include a `selection_artifact_ref` in the response for storage correlation. The Orchestrator does not need a second round-trip to retrieve the selection.
-- **FR-DT-11** The service SHALL use a managed model-access adapter consistent with [ADR-0010](../decisions/0010-llm-model-access-strategy.md). For the POC, the primary provider SHALL be Amazon Bedrock, invoked through the Converse API.
-- **FR-DT-12** The service SHALL support configurable model ID, prompt-template version, and generation parameters without requiring a contract change.
-- **FR-DT-13** The service SHALL default to low-temperature generation appropriate for a stable, reproducible routing decision.
-- **FR-DT-14** The service SHALL support an authoritative evaluation mode in which one request maps to one model attempt and no hidden repair retry occurs, so the POC can measure actual LLM routing capability honestly.
-- **FR-DT-15** If a developer-only repair retry mode is ever added, it SHALL be explicit, opt-in, and separately logged from authoritative evaluation runs.
-- **FR-DT-16** The service SHALL record model metadata, prompt-template version, latency, token counts when available, and the per-target confidence and rationale in execution logs or stored artifacts. The immediate response to the Orchestrator NEED NOT carry all of those fields if a stable log reference is returned.
-- **FR-DT-17** The service SHALL produce artifacts with explicit schema/version identifiers so stored selections can be replayed, tested, and compared across prompt or model revisions.
+- **FR-DT-9** The service SHALL use a managed model-access adapter consistent with [ADR-0010](../decisions/0010-llm-model-access-strategy.md). For the POC, the primary provider SHALL be Amazon Bedrock, invoked through the Converse API.
+- **FR-DT-10** The service SHALL support configurable model ID, prompt-template version, and generation parameters without requiring a contract change.
+- **FR-DT-11** The service SHALL default to low-temperature generation appropriate for a stable, reproducible routing decision.
+- **FR-DT-12** The service SHALL support an authoritative evaluation mode in which one request maps to one model attempt and no hidden repair retry occurs, so the POC can measure actual LLM routing capability honestly.
+- **FR-DT-13** If a developer-only repair retry mode is ever added, it SHALL be explicit, opt-in, and separately logged from authoritative evaluation runs.
+- **FR-DT-14** The service SHALL record model metadata, prompt-template version, latency, token counts when available, and the per-target confidence and rationale in execution logs or stored artifacts. The immediate response to the Orchestrator NEED NOT carry all of those fields if a stable log reference is returned.
+- **FR-DT-15** The service SHALL produce artifacts with explicit schema/version identifiers so stored selections can be replayed, tested, and compared across prompt or model revisions.
 
 ## 6. Validation and Audit Requirements
 
 The repo-wide architectural contract is that **LLM reasoning is always paired with deterministic policy validation and complete audit logging** ([Target POC Requirements](./target-poc-requirements.md) §5: "LLM output MUST NOT flow directly to downstream delivery without deterministic validation"). This service must honor that contract for its own output.
 
-- **FR-DT-18** The service SHALL deterministically validate the LLM's selection **before reporting success**. Successful output SHALL require:
+- **FR-DT-16** The service SHALL deterministically validate the LLM's selection **before reporting success**. Successful output SHALL require:
   - response-schema validity,
   - every selected target present in the available-delivery-targets catalog,
   - no duplicate targets in the selection,
   - a non-empty `selected_targets` set (an empty selection is invalid — this step runs only after the pre-target gate decided to continue to delivery, so a valid selection has at least one target),
   - and presence of `confidence` and `rationale` for each selected target.
-- **FR-DT-19** This deterministic validation of the selection against the available/eligible target set is a **hard gate** (ADR-0013 Layer A). The service SHALL NOT let an unvalidated LLM selection flow downstream to the delivery-phase plan or delivery layer.
-- **FR-DT-20** The service SHALL NOT claim success based only on syntactically valid JSON. Membership in the available/eligible target set is a hard gate, not a preference.
-- **FR-DT-21** Invalid selections SHALL still be stored as **failed artifacts** or failed invocation records with their validation errors attached, as evidence for prompt tuning and model comparison. They SHALL NOT be reusable as successful selection artifacts.
-- **FR-DT-22** The service SHALL record which prompt template and model produced each selection so prompt or model changes can be compared later against the frozen evaluation corpus from [ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md).
-- **FR-DT-23** The service's Layer B capability evaluation against the frozen ADR-0013 corpus SHALL be implemented using the shared DeepEval test harness ([ADR-0021](../decisions/0021-llm-testing-tooling-extensions.md)). Because target selection compares a produced set against a canonical expected set, this is expected to be a deterministic custom metric (set correctness), not an LLM-as-judge metric.
-- **FR-DT-24** The service SHALL screen free-text values in the supplied learner context for prompt-injection attempts before they are included in a Bedrock prompt ([ADR-0021](../decisions/0021-llm-testing-tooling-extensions.md)).
-- **FR-DT-25** The service SHALL support uncached evaluation runs and SHALL default to uncached generation for POC evaluation and test-oriented development.
-- **FR-DT-26** The service MAY support a configuration switch that enables stored-selection reuse for production-like behavior once the team wants to exercise that path; reuse SHALL be opt-in, not the default evaluation path.
+- **FR-DT-17** This deterministic validation of the selection against the available/eligible target set is a **hard gate** (ADR-0013 Layer A). The service SHALL NOT let an unvalidated LLM selection flow downstream to the delivery-phase plan or delivery layer.
+- **FR-DT-18** The service SHALL NOT claim success based only on syntactically valid JSON. Membership in the available/eligible target set is a hard gate, not a preference.
+- **FR-DT-19** Invalid selections SHALL still be stored as **failed artifacts** or failed invocation records with their validation errors attached, as evidence for prompt tuning and model comparison. They SHALL NOT be reusable as successful selection artifacts.
+- **FR-DT-20** The service SHALL record which prompt template and model produced each selection so prompt or model changes can be compared later against the frozen evaluation corpus from [ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md).
+- **FR-DT-21** The service's Layer B capability evaluation against the frozen ADR-0013 corpus SHALL be implemented using the shared DeepEval test harness ([ADR-0021](../decisions/0021-llm-testing-tooling-extensions.md)). Because target selection compares a produced set against a canonical expected set, this is expected to be a deterministic custom metric (set correctness), not an LLM-as-judge metric.
+- **FR-DT-22** The service SHALL screen free-text values in the supplied learner context for prompt-injection attempts before they are included in a Bedrock prompt ([ADR-0021](../decisions/0021-llm-testing-tooling-extensions.md)).
+- **FR-DT-23** The service SHALL support uncached evaluation runs and SHALL default to uncached generation for POC evaluation and test-oriented development.
+- **FR-DT-24** The service MAY support a configuration switch that enables stored-selection reuse for production-like behavior once the team wants to exercise that path; reuse SHALL be opt-in, not the default evaluation path.
 
 > Open question: ADR-0007's Open Questions also ask "How should inter-service failures be handled? If Delivery Targets fails or returns low-confidence results, should Transformation Mappings be blocked or should it proceed with a fallback set of targets?" This is not resolved here; a low-confidence or failed selection's downstream effect is deferred to the orchestration/policy design.
 
 ## 7. Local vs AWS Requirements
 
-- **FR-DT-27** For local development, the service SHALL support a live Bedrock-backed mode so prompt and model iteration can happen against the same provider used in AWS.
-- **FR-DT-28** Local live mode SHALL rely on the normal AWS SDK credential chain rather than hard-coded credentials. Developer configuration MAY come from environment variables, shared AWS config files, or an explicitly selected AWS profile.
-- **FR-DT-29** Local live mode SHALL require that the developer's AWS identity has the Bedrock inference permission needed for the chosen model and that the model has been enabled for the relevant account and region.
-- **FR-DT-30** For local automated tests and offline development, the service SHALL support a deterministic replay or stub mode that does not require live Bedrock access.
-- **FR-DT-31** Replay or stub mode SHALL preserve the same logical request and response contracts used by live mode so the Orchestrator and downstream steps do not need separate integration code paths.
-- **FR-DT-32** For the AWS-shaped deployment target, the service SHALL be callable through the same logical boundary from the Orchestrator whether it is hosted as a standalone Lambda-sized service or as a dedicated handler inside a shared LLM-decision runtime.
-- **FR-DT-33** For the AWS-shaped deployment target, the live service SHALL use AWS IAM-based access to Bedrock rather than application-managed third-party API keys.
+- **FR-DT-25** For local development, the service SHALL support a live Bedrock-backed mode so prompt and model iteration can happen against the same provider used in AWS.
+- **FR-DT-26** Local live mode SHALL rely on the normal AWS SDK credential chain rather than hard-coded credentials. Developer configuration MAY come from environment variables, shared AWS config files, or an explicitly selected AWS profile.
+- **FR-DT-27** Local live mode SHALL require that the developer's AWS identity has the Bedrock inference permission needed for the chosen model and that the model has been enabled for the relevant account and region.
+- **FR-DT-28** For local automated tests and offline development, the service SHALL support a deterministic replay or stub mode that does not require live Bedrock access.
+- **FR-DT-29** Replay or stub mode SHALL preserve the same logical request and response contracts used by live mode so the Orchestrator and downstream steps do not need separate integration code paths.
+- **FR-DT-30** For the AWS-shaped deployment target, the service SHALL be callable through the same logical boundary from the Orchestrator whether it is hosted as a standalone Lambda-sized service or as a dedicated handler inside a shared LLM-decision runtime.
+- **FR-DT-31** For the AWS-shaped deployment target, the live service SHALL use AWS IAM-based access to Bedrock rather than application-managed third-party API keys.
 
 ## 8. POC Phasing
 
 Per [Orchestrator Design](../3_design/orchestrator.md) §2 and §6, delivery-target selection today is a **deterministic stub** at the `select_delivery_targets` seam that always selects `[learncard_issuer, learncard_wallet]`. This service is the target-POC implementation that replaces that stub at the same seam.
 
-- **FR-DT-34** The service SHALL replace the deterministic `select_delivery_targets` stub at the existing Orchestrator seam without requiring the executor to change its step-dispatch contract; the change from stub to LLM service SHALL be a step-implementation change, not an executor rewrite.
-- **FR-DT-35** The Phase 1 behavior (always select `[learncard_issuer, learncard_wallet]`) SHALL remain available as the deterministic replay/stub mode (FR-DT-30) so the end-to-end slice can run without live Bedrock access.
+- **FR-DT-32** The service SHALL replace the deterministic `select_delivery_targets` stub at the existing Orchestrator seam without requiring the executor to change its step-dispatch contract; the change from stub to LLM service SHALL be a step-implementation change, not an executor rewrite.
+- **FR-DT-33** The Phase 1 behavior (always select `[learncard_issuer, learncard_wallet]`) SHALL remain available as the deterministic replay/stub mode (FR-DT-28) so the end-to-end slice can run without live Bedrock access.
 
 ## 9. Out of Scope
 
