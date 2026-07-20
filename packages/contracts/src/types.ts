@@ -150,7 +150,7 @@ export interface StepResult {
 
 export interface GateDecision {
   decision: "continue_to_delivery_targets" | "terminate";
-  confidence: number;
+  confidence: number | null;
   rationale: string;
 }
 
