@@ -235,3 +235,7 @@ class LlmCallMeta(BaseModel):
     # each entry is {path, snippet}. Present only when findings were seen (bedrock mode);
     # replay adapter leaves this empty.
     injection_findings: list[dict[str, str]] = Field(default_factory=list)
+    # §14: prompt-template version so invocation logs show which template the model
+    # received.  Populated from prompt_builder.PROMPT_TEMPLATE_VERSION at call time;
+    # replay adapter uses its own sentinel ("replay").
+    prompt_template_version: str | None = None

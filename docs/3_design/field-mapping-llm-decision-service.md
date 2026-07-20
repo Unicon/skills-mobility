@@ -435,7 +435,7 @@ That is the Bedrock best practice. No separate API-key layer should be introduce
 
 ## 10. Response Contract
 
-The synchronous response should be small:
+The synchronous response shape:
 
 ```json
 {
@@ -443,15 +443,16 @@ The synchronous response should be small:
   "mapping_artifact_ref": "mapping:123",
   "synthesis_request_ref": "synthesis:456",
   "requires_synthesis": true,
-  "llm_invocation_log_ref": "llmcall:789"
+  "llm_invocation_log_ref": "llmcall:789",
+  "synthesis_request": { "...": "inline synthesis-request artifact" }
 }
 ```
 
-This keeps the Orchestrator contract stable and lightweight. The Orchestrator should not need all model metadata inline if it can retrieve that detail through the logged reference.
+`synthesis_request` carries the synthesis-request artifact inline when `requires_synthesis` is `true`; it is `null` otherwise. This inline handoff is the established design: the Field Mapping and Field Synthesis services maintain separate artifact stores, so a bare `synthesis_request_ref` does not resolve across that boundary. The Orchestrator passes the inline artifact directly to the Field Synthesis service without a cross-store lookup.
+
+This keeps the Orchestrator contract stable and lightweight for all other fields. The Orchestrator should not need all model metadata inline if it can retrieve that detail through the logged reference.
 
 `requires_synthesis` is a derived convenience field, not an independent source of truth: `requires_synthesis == synthesis_allowed && (placeholder_ids non-empty) && (synthesis_request_ref != null)`. Including `synthesis_allowed` in the derivation makes the §6 constraint self-enforcing at the field level: `requires_synthesis` can never be `true` when the request forbade synthesis, regardless of what `placeholder_ids` or `synthesis_request_ref` happen to contain.
-
-For local debugging only, the boundary may optionally support an inline-expansion mode that returns the stored artifacts directly. That should not be the default production-like path.
 
 The Orchestrator passes `mapping_artifact_ref` through opaquely as the step's output binding; it does not resolve the reference into the underlying JSONata itself. The **Transformation Executor** is the component responsible for dereferencing `mapping_artifact_ref` (and the corresponding synthesized values once Field Synthesis has resolved `synthesis_request_ref`) against the artifact store before it runs the JSONata against the source payloads.
 

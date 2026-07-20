@@ -18,7 +18,7 @@ from typing import Any
 import boto3  # type: ignore[import-untyped]
 
 from .contracts import LlmCallMeta, MappingGeneration, MappingRequest
-from .prompt_builder import build_user_message, system_prompt
+from .prompt_builder import PROMPT_TEMPLATE_VERSION, build_user_message, system_prompt
 from .screen import screen_for_injection
 
 logger = logging.getLogger(__name__)
@@ -99,6 +99,7 @@ class BedrockAdapter:
             system_prompt=sys_text,
             user_prompt=user_text,
             injection_findings=[{"path": f.path, "snippet": f.snippet} for f in findings],
+            prompt_template_version=PROMPT_TEMPLATE_VERSION,
         )
         try:
             generation = MappingGeneration(**_extract_tool_input(response))

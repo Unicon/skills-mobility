@@ -53,5 +53,6 @@ class ReplayAdapter:
             temperature=0.0,
             system_prompt=system_prompt(),
             user_prompt=build_user_message(request, target_schema, source_catalogs),
+            prompt_template_version="replay",
         )
         return MappingGeneration(**json.loads(path.read_text())), meta

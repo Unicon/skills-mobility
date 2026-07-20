@@ -240,6 +240,7 @@ def _invocation_log(
         "fetch_profile_id": request.fetch_profile_id,
         "provider": meta.provider,
         "model_id": meta.model_id,
+        "prompt_template_version": meta.prompt_template_version,
         "temperature": meta.temperature,
         "input_tokens": meta.input_tokens,
         "output_tokens": meta.output_tokens,

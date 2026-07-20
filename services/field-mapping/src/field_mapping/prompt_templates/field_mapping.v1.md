@@ -52,7 +52,7 @@ After processing all fields, populate:
 - `confidence`: a single overall float in [0.0, 1.0] representing your confidence
   that the mapping is correct and complete across all fields. Use 1.0 only when
   every field has a clear, unambiguous source mapping; lower values when fields
-  required inference, were omitted, or have uncertain provenance.
+  required inference or have uncertain provenance.
 - `rationale`: 1–3 sentences summarizing the overall mapping decision, **plus a
   one-line note for each field that was not a straightforward direct mapping** —
   that is, every synthesis field and every omit/null/blank field gets a brief
