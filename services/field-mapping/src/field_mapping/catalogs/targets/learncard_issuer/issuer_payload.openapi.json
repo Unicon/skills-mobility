@@ -41,7 +41,7 @@
               "achievement": {
                 "type": "object",
                 "description": "The achievement being credentialed.",
-                "required": ["id", "type", "name"],
+                "required": ["id", "type", "name", "description", "criteria"],
                 "properties": {
                   "id": { "type": "string", "description": "Achievement id (URN; derived from the achievement name).", "x-no-mapping-behavior": "disallowed", "examples": ["urn:poc:achievement:demonstrate-the-sample-competency"] },
                   "type": { "type": "array", "items": { "type": "string" }, "description": "Achievement type.", "x-no-mapping-behavior": "disallowed", "examples": [["Achievement"]] },
