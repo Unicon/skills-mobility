@@ -34,10 +34,10 @@ Recommended shape:
   "execution_id": "exec_123",
   "values": {
     "achievement_description": "Learners who complete this course demonstrate proficiency in applying computational thinking to data analysis problems, including algorithm design and structured problem decomposition.",
-    "alignment_rationale": "This achievement aligns to O*NET 15-1252.00 (Software Developers) skill cluster 2.A.1.e: Mathematical Reasoning."
+    "skills_alignment_summary": "This achievement aligns to O*NET 15-1252.00 (Software Developers) skill cluster 2.A.1.e: Mathematical Reasoning."
   },
   "confidence": 0.84,
-  "rationale": "Source material contained clear course objectives and rubric descriptions; alignment rationale required inferential grounding from course learning outcomes."
+  "rationale": "Source material contained clear course objectives and rubric descriptions; skills alignment required inferential grounding from course learning outcomes."
 }
 ```
 
@@ -53,7 +53,7 @@ The Transformation Executor merges the synthesis result under the `synthesized` 
   },
   "synthesized": {
     "achievement_description": "...",
-    "alignment_rationale": "..."
+    "skills_alignment_summary": "..."
   }
 }
 ```
@@ -62,19 +62,23 @@ This is the same merge convention defined in the Field Mapping design (§2). Fie
 
 ### Immediate service response
 
-The synchronous response to the Orchestrator is compact:
+The synchronous response to the Orchestrator returns `values`, `confidence`, and `rationale` inline always:
 
 ```json
 {
   "status": "succeeded",
+  "values": {
+    "achievement_description": "...",
+    "skills_alignment_summary": "..."
+  },
+  "confidence": 0.84,
+  "rationale": "Source material contained clear course objectives and rubric descriptions; skills alignment required inferential grounding from course learning outcomes.",
   "synthesis_result_ref": "synthesis_result:456",
   "llm_invocation_log_ref": "llmcall:789"
 }
 ```
 
-The Orchestrator passes `synthesis_result_ref` through opaquely to the Transformation Executor. The Transformation Executor resolves the reference, extracts the `values` map, and merges it under `synthesized` before running the stored JSONata.
-
-For local debugging only, the boundary may optionally support an inline-expansion mode that returns the stored artifact directly. That should not be the default.
+`values` is a handful of text fields — small enough that withholding it behind a ref adds round-trip latency with no benefit. `synthesis_result_ref` is an optional storage-correlation pointer; the Orchestrator or Transformation Executor may pass it downstream to locate the persisted artifact, but the Transformation Executor does not need to resolve the ref to get the `values` map — it is already in the response. `llm_invocation_log_ref` points to the detailed per-invocation metadata in execution logs.
 
 ## 3. Runtime Shape
 
@@ -91,7 +95,7 @@ Orchestrator
       -> parse structured output
       -> validate coverage (every placeholder_id answered, no extras)
       -> store synthesis result artifact
-      -> return ref to Orchestrator
+      -> return values/confidence/rationale inline + synthesis_result_ref to Orchestrator
 ```
 
 Two boundaries matter:
@@ -254,36 +258,25 @@ No separate API-key layer should be introduced for a Bedrock-backed service.
 
 ## 9. Response Contract
 
-The synchronous response should be small:
+The synchronous response returns generated content inline always:
 
 ```json
 {
   "status": "succeeded",
+  "values": {
+    "achievement_description": "...",
+    "skills_alignment_summary": "..."
+  },
+  "confidence": 0.84,
+  "rationale": "...",
   "synthesis_result_ref": "synthesis_result:456",
   "llm_invocation_log_ref": "llmcall:789"
 }
 ```
 
-This keeps the Orchestrator contract stable and lightweight. The Orchestrator should not need all model metadata inline if it can retrieve that detail through the logged reference.
+`values`, `confidence`, and `rationale` are always present. `synthesis_result_ref` is an optional storage-correlation pointer the Orchestrator may pass downstream; the Transformation Executor extracts the `values` map from this response directly rather than resolving a ref. `llm_invocation_log_ref` points to detailed per-invocation metadata (token counts, latency, model ID) in execution logs — those fields do not belong in the synchronous response.
 
-For local debugging only, the boundary may optionally support an inline-expansion mode:
-
-```json
-{
-  "status": "succeeded",
-  "synthesis_result_ref": "synthesis_result:456",
-  "llm_invocation_log_ref": "llmcall:789",
-  "_debug_inline": {
-    "values": {
-      "achievement_description": "..."
-    },
-    "confidence": 0.84,
-    "rationale": "..."
-  }
-}
-```
-
-The `_debug_inline` key signals it is not part of the normal contract and should not be consumed by the Orchestrator.
+There is no `_debug_inline` mode: inline delivery is the default contract, not a debugging path.
 
 ## 10. Validation
 
@@ -426,7 +419,7 @@ The exact invocable Bedrock model ID string should be verified against the curre
 
 ### Artifact storage for local development
 
-**File-based JSON storage** is the local development approach, mirroring Field Mapping. Synthesis-result artifacts are written to and read from local JSON files keyed by a stable identifier (for example, derived from `execution_id`, `transformation_type`, and `placeholder_id` set). The same logical `artifact_store.py` interface backs both local and cloud storage.
+**File-based JSON storage** is the local development approach, mirroring Field Mapping. Synthesis-result artifacts are written to and read from local JSON files keyed by Field Mapping's **`stable_key`** — the same identifier that already governs the mapping and synthesis-request artifacts. The incoming `synthesis_request_ref` is formatted as `synthesis:<stable_key>`, so the service can extract `<stable_key>` directly from the ref it receives without recomputing it. Synthesis-result artifacts are stored under that same key (for example, as `synthesis_result:<stable_key>`), co-locating all three artifact kinds (mapping, synthesis-request, synthesis-result) under one shared key. Keying off `execution_id` would make result reuse (FR-FS-21) structurally impossible, since `execution_id` is unique per run. The same logical `artifact_store.py` interface backs both local and cloud storage.
 
 ### One Bedrock call per invocation (all placeholders together)
 

@@ -19,8 +19,8 @@ The Field Synthesis LLM Decision Service is responsible for:
 - accepting one synthesis request per transformation-loop invocation, containing one or more synthesis briefs produced by the Field Mapping service,
 - generating a human-facing text value for each requested placeholder,
 - ensuring that every generated value is grounded in and derived from the source material supplied in the brief for that placeholder,
-- returning a flat map of generated values keyed by `placeholder_id`,
-- storing the synthesis result artifact and returning a reference to it,
+- returning a flat map of generated values keyed by `placeholder_id` inline in the synchronous response,
+- storing the synthesis result artifact and returning a storage-correlation reference alongside the inline values,
 - and recording invocation metadata per ADR-0010 §60.
 
 The service is not responsible for:
@@ -57,19 +57,36 @@ The primary input is the synthesis-request artifact produced by the Field Mappin
 | Each brief's `instruction` | Field-specific guidance on length, tone, or framing for the generated value |
 | Each brief's `source_payloads` and/or `source_payload_paths` | The targeted source-data snapshot for that specific placeholder |
 
+The synthesis request is an **array of per-placeholder brief objects** (intentional deviation from the flat-table style of sibling docs — a table cannot convey the repeated-object structure). Abbreviated structural sketch:
+
+```json
+{
+  "synthesis_request_ref": "synthesis:<stable_key>",
+  "requests": [
+    { "placeholder_id": "...", "instruction": "...", "source_payloads": { "...": "..." } },
+    { "placeholder_id": "...", "instruction": "...", "source_payloads": { "...": "..." } }
+  ]
+}
+```
+
+The full brief shape (including `target_path` and `source_payload_paths`) is defined in the design (§5). The point here is that `requests` is an array: one element per placeholder, each self-contained.
+
 Prompt templates, model IDs, temperatures, and other LLM runtime settings are service configuration. They are not business inputs on the request.
 
 ### Outputs
 
-The synchronous service response should be compact, mirroring the Field Mapping compact-response pattern:
+The synchronous service response is compact and returns generated content inline:
 
-| Output | Purpose |
+| Output | Delivery |
 | --- | --- |
-| `synthesis_result_ref` | Points to the stored synthesis result artifact containing all generated values |
-| `llm_invocation_log_ref` | Lets the Orchestrator correlate to detailed invocation metadata in execution logs |
+| `values` | **Inline always** — flat `{ "<placeholder_id>": "<text>" }` map of every generated value |
+| `confidence` | **Inline always** — model-reported confidence score |
+| `rationale` | **Inline always** — model-reported explanation of the synthesis decision |
+| `synthesis_result_ref` | Optional storage-correlation pointer; lets the Orchestrator or Transformation Executor locate the persisted artifact when needed |
+| `llm_invocation_log_ref` | Log-only — lets the Orchestrator correlate to detailed invocation metadata in execution logs |
 | Terminal status / failure details | Tells the Orchestrator whether synthesis succeeded |
 
-The stored synthesis result artifact contains the generated text values. Detailed model metadata (token counts, latency, confidence, rationale) belongs in stored logs, not the immediate runtime response.
+`values`, `confidence`, and `rationale` are always present in the synchronous response; they are not withheld behind a ref. Detailed model metadata (token counts, latency, model ID) belongs in stored logs, not the immediate runtime response.
 
 ## 5. Functional Requirements
 
@@ -81,7 +98,7 @@ The stored synthesis result artifact contains the generated text values. Detaile
 - **FR-FS-6** Each generated value SHALL be grounded only in the source material supplied in the brief for that placeholder. The model SHALL NOT introduce facts, entities, or claims that are not present in or inferable from the supplied source content.
 - **FR-FS-7** The service SHALL respect the `instruction` field in each brief. The `instruction` may specify constraints on length, tone, target audience, or field-specific framing for the generated text.
 - **FR-FS-8** The service SHALL NOT generate JSONata, synthesis placeholders, or any machine-executable artifact. Text generation is its only output.
-- **FR-FS-9** The service SHALL store the synthesis result artifact immediately and SHALL return a reference to it in the synchronous response. Returning the generated values inline MAY be supported for local debugging but SHALL NOT be the normal downstream contract.
+- **FR-FS-9** The service SHALL store the synthesis result artifact immediately, SHALL return `values`, `confidence`, and `rationale` inline in the synchronous response always, and SHALL include `synthesis_result_ref` as a storage-correlation pointer. Inline delivery is the normal downstream contract — not a debug-only path.
 - **FR-FS-10** The service SHALL validate the generated result before reporting success. Successful output SHALL require:
   - response-schema validity,
   - a generated value present for every requested `placeholder_id`,
@@ -100,7 +117,7 @@ The stored synthesis result artifact contains the generated text values. Detaile
 - **FR-FS-18** The service SHALL verify that the result contains exactly the requested `placeholder_id` set — no missing values, no extra values. This is a hard gate before reporting success.
 - **FR-FS-19** The service SHALL record which prompt template and model produced each synthesis artifact so prompt or model changes can be compared later against the frozen evaluation corpus from ADR-0013.
 - **FR-FS-20** The service SHALL support uncached evaluation runs and SHALL default to uncached generation for POC evaluation and test-oriented development.
-- **FR-FS-21** The service SHALL support a configuration switch that enables stored synthesis result reuse for production-like behavior once the team wants to exercise that path.
+- **FR-FS-21** The service SHALL support a configuration switch that enables stored synthesis result reuse for production-like behavior once the team wants to exercise that path. The storage key for reuse SHALL be derived from Field Mapping's `stable_key` — specifically the `<stable_key>` component already present in the incoming `synthesis_request_ref` (which is formatted as `synthesis:<stable_key>`). Synthesis-result artifacts SHALL be keyed off that same `<stable_key>`, co-locating mapping, synthesis-request, and synthesis-result artifacts under one shared key. Deriving the key from `execution_id` would make reuse structurally impossible, since `execution_id` is unique per run.
 - **FR-FS-22** The service SHALL screen free-text values in `source_payloads` within each synthesis brief for prompt-injection attempts before they are included in a Bedrock prompt (ADR-0021). Source briefs contain learner and course text and represent the primary injection surface for this service.
 - **FR-FS-23** The service's Layer B capability evaluation against the frozen ADR-0013 corpus SHALL be implemented using the shared DeepEval test harness (ADR-0021). Unlike Field Mapping's deterministic comparator metric, Field Synthesis SHALL use a G-Eval metric, as it is the one service in the four-service decomposition whose primary output is genuinely open-ended natural language. The evaluation criteria SHALL include groundedness in the supplied source material, usefulness and appropriateness for the target field, and absence of fabricated claims.
 
