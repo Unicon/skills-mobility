@@ -16,6 +16,7 @@ class ExecutionRequest(BaseModel):
     mapping: str
     source_payloads: dict[str, Any] = {}
     synthesized: dict[str, Any] = {}
+    target_schema: dict[str, Any] = {}
 
 
 class ExecutionError(BaseModel):

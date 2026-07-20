@@ -126,6 +126,7 @@ def _execute_issuer_payload_translation(inputs: dict[str, Any], deps: ActionDeps
     if deps.transformation_executor is not None and jsonata:
         synthesized = (inputs.get("synthesis") or {}).get("synthesized", {})
         source_payloads = _mapping_source_payloads(inputs)
+        target_schema: dict[str, Any] = mapping_env.get("target_schema") or {}
         try:
             result = deps.transformation_executor.execute(
                 transformation_type=inputs.get("transformation_type", "issuer_payload"),
@@ -134,6 +135,7 @@ def _execute_issuer_payload_translation(inputs: dict[str, Any], deps: ActionDeps
                 source_payloads=source_payloads,
                 synthesized=synthesized,
                 ctx=deps.envelope,
+                target_schema=target_schema,
             )
             return {"unsigned_vc": result}
         except Exception as err:  # noqa: BLE001 — best-effort seam
@@ -168,6 +170,7 @@ def _execute_wallet_payload_translation(inputs: dict[str, Any], deps: ActionDeps
     jsonata = mapping_env.get("mapping") if isinstance(mapping_env, dict) else None
     if deps.transformation_executor is not None and jsonata:
         source_payloads = _mapping_source_payloads(inputs)
+        target_schema: dict[str, Any] = mapping_env.get("target_schema") or {}
         try:
             result = deps.transformation_executor.execute(
                 transformation_type=inputs.get("transformation_type", "wallet_payload"),
@@ -176,6 +179,7 @@ def _execute_wallet_payload_translation(inputs: dict[str, Any], deps: ActionDeps
                 source_payloads=source_payloads,
                 synthesized={},
                 ctx=deps.envelope,
+                target_schema=target_schema,
             )
             return result
         except Exception as err:  # noqa: BLE001 — best-effort seam

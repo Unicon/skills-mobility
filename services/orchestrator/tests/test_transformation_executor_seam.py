@@ -36,6 +36,12 @@ _MAPPING_WITH_JSONATA = {
     "mapping": '{"unsigned_vc": {"type": "VerifiableCredential"}}',
 }
 
+# A mapping envelope that also carries an inline target_schema (ADR-#101).
+_MAPPING_WITH_TARGET_SCHEMA = {
+    **_MAPPING_WITH_JSONATA,
+    "target_schema": {"type": "object", "required": ["unsigned_vc"]},
+}
+
 # A mapping envelope with no inline JSONata (legacy / stub response).
 _MAPPING_NO_JSONATA = {
     "status": "succeeded",
@@ -99,6 +105,7 @@ class _SpyExecutor:
         source_payloads: dict[str, Any],
         synthesized: dict[str, Any],
         ctx: EnvelopeContext,
+        target_schema: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         self.calls.append(
             {
@@ -107,6 +114,7 @@ class _SpyExecutor:
                 "mapping": mapping,
                 "source_payloads": source_payloads,
                 "synthesized": synthesized,
+                "target_schema": target_schema,
             }
         )
         if self._raise:
@@ -144,6 +152,17 @@ def test_issuer_executor_called_when_configured_with_jsonata() -> None:
     assert call["synthesized"] == {}
     # The executor result is wrapped in unsigned_vc.
     assert out == {"unsigned_vc": executor_result}
+
+
+def test_issuer_target_schema_threaded_to_executor() -> None:
+    executor_result = {"type": "VerifiableCredential", "id": "urn:vc:1"}
+    spy = _SpyExecutor(result=executor_result)
+    inputs = {**_ISSUER_BASE, "mapping": _MAPPING_WITH_TARGET_SCHEMA}
+
+    _execute_issuer_payload_translation(inputs, _deps(spy))
+
+    assert len(spy.calls) == 1
+    assert spy.calls[0]["target_schema"] == _MAPPING_WITH_TARGET_SCHEMA["target_schema"]
 
 
 def test_issuer_executor_not_called_when_none() -> None:

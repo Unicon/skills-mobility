@@ -46,6 +46,16 @@ def run(request: ExecutionRequest) -> ExecutionResponse:
             message=f"expected a JSON object, got {type(result).__name__}",
         )
 
+    required: list[str] = request.target_schema.get("required", [])
+    if required:
+        missing = [k for k in required if k not in result]
+        if missing:
+            return ExecutionResponse.failed(
+                transformation_type=request.transformation_type,
+                error_type="malformed_output",
+                message=f"output missing required target field(s): {missing}",
+            )
+
     return ExecutionResponse.succeeded(
         transformation_type=request.transformation_type,
         result=result,

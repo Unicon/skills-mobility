@@ -10,7 +10,7 @@ from field_mapping.contracts import (
 from pydantic import ValidationError
 
 # The exact envelope the Orchestrator mapping seam reads (actions.py) plus the
-# inline JSONata the Transformation Executor seam uses.
+# inline JSONata and target_schema the Transformation Executor seam uses (ADR-#101).
 _SEAM_KEYS = {
     "status",
     "mapping_artifact_ref",
@@ -18,6 +18,7 @@ _SEAM_KEYS = {
     "requires_synthesis",
     "llm_invocation_log_ref",
     "mapping",
+    "target_schema",
 }
 
 

@@ -55,6 +55,22 @@ def test_missing_mapping_field_returns_422() -> None:
     assert resp.status_code == 422
 
 
+def test_target_schema_missing_required_field_returns_200_failed() -> None:
+    body = _client().post(
+        ENDPOINT,
+        json={
+            "execution_id": "exec-5",
+            "transformation_type": "learncard",
+            "mapping": '{ "name": source_payloads.lms.name }',
+            "source_payloads": {"lms": {"name": "Alice"}},
+            "target_schema": {"required": ["name", "score"]},
+        },
+    ).json()
+    assert body["status"] == "failed"
+    assert body["error"]["error_type"] == "malformed_output"
+    assert "score" in body["error"]["message"]
+
+
 def test_healthz_returns_ok() -> None:
     resp = _client().get("/healthz")
     assert resp.status_code == 200

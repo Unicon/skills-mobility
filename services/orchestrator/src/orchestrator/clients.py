@@ -231,6 +231,7 @@ class TransformationExecutorClient(Protocol):
         source_payloads: dict[str, Any],
         synthesized: dict[str, Any],
         ctx: EnvelopeContext,
+        target_schema: dict[str, Any] | None = None,
     ) -> dict[str, Any]: ...
 
 
@@ -250,6 +251,7 @@ class HttpTransformationExecutorClient:
         source_payloads: dict[str, Any],
         synthesized: dict[str, Any],
         ctx: EnvelopeContext,
+        target_schema: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         resp = self._client.post(
             "/execute",
@@ -262,6 +264,7 @@ class HttpTransformationExecutorClient:
                 "mapping": mapping,
                 "source_payloads": source_payloads,
                 "synthesized": synthesized,
+                "target_schema": target_schema or {},
             },
         )
         resp.raise_for_status()

@@ -111,6 +111,7 @@ class MappingService:
             synthesis_allowed=request.synthesis_allowed,
             placeholder_ids=generation.placeholder_ids,
             mapping=generation.jsonata,
+            target_schema=target_schema,
         )
 
     def _required_aliases(self, request: MappingRequest) -> list[str]:

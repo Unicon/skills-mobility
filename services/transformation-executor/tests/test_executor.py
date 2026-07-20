@@ -76,6 +76,41 @@ def test_missing_source_path_no_exception_escapes() -> None:
         assert resp.error is not None
 
 
+def test_target_schema_with_all_required_keys_present_succeeds() -> None:
+    req = _req(
+        mapping='{ "name": source_payloads.c.name, "score": synthesized.s }',
+        source_payloads={"c": {"name": "Alice"}},
+        synthesized={"s": 100},
+        target_schema={"required": ["name", "score"]},
+    )
+    resp = run(req)
+    assert resp.status == "succeeded"
+    assert resp.result == {"name": "Alice", "score": 100}
+
+
+def test_target_schema_missing_required_key_returns_failed() -> None:
+    req = _req(
+        mapping='{ "name": source_payloads.c.name }',
+        source_payloads={"c": {"name": "Alice"}},
+        target_schema={"required": ["name", "score"]},
+    )
+    resp = run(req)
+    assert resp.status == "failed"
+    assert resp.error is not None
+    assert resp.error.error_type == "malformed_output"
+    assert "score" in resp.error.message
+
+
+def test_empty_target_schema_skips_validation() -> None:
+    req = _req(
+        mapping='{ "name": source_payloads.c.name }',
+        source_payloads={"c": {"name": "Alice"}},
+        target_schema={},
+    )
+    resp = run(req)
+    assert resp.status == "succeeded"
+
+
 def test_transformation_type_preserved_on_all_paths() -> None:
     ttype = "smartresume"
     req = _req(transformation_type=ttype, mapping="{invalid")
