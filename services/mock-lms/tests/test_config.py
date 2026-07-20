@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from mock_lms.config import Settings, _ENV_FILE
+from mock_lms.config import _ENV_FILE, Settings
 
 
 def test_settings_read_from_dotenv_regardless_of_cwd(tmp_path, monkeypatch) -> None:
