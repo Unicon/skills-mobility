@@ -46,6 +46,8 @@ def run(request: ExecutionRequest) -> ExecutionResponse:
             message=f"expected a JSON object, got {type(result).__name__}",
         )
 
+    # Well-formedness check only: required-key *presence*, not JSON-Schema type
+    # or non-null value validation (deliberately light for the POC).
     required: list[str] = request.target_schema.get("required", [])
     if required:
         missing = [k for k in required if k not in result]
