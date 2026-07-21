@@ -9,6 +9,7 @@ one is stored as a failed artifact with its errors, and the response reports ``f
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from .artifact_store import ArtifactStore
@@ -19,7 +20,10 @@ from .contracts import (
     SynthesisResultArtifact,
 )
 from .llm_adapter import LLMAdapter
+from .screen import Finding, screen_briefs_for_injection
 from .validators import validate_generation
+
+logger = logging.getLogger(__name__)
 
 
 class SynthesisService:
@@ -41,12 +45,22 @@ class SynthesisService:
         briefs = synthesis_artifact.requests
         requested_ids = {b.placeholder_id for b in briefs}
 
+        # FR-FS-22 / ADR-0021: screen each brief's source_payloads for prompt
+        # injection before they reach any adapter. Runs adapter-independently so
+        # replay is screened too; POC posture is flag-and-record, not block.
+        findings = screen_briefs_for_injection([b.model_dump() for b in briefs])
+        if findings:
+            logger.warning(
+                "prompt-injection screen flagged source_payload paths: %s",
+                [f.path for f in findings],
+            )
+
         # Exactly one attempt (FR-FS-14); no hidden repair retry.
         generation, meta = self._adapter.generate(request, briefs=briefs)
         errors = validate_generation(generation, requested_ids=requested_ids)
 
         log_ref = self._artifact_store.store_invocation_log(
-            _invocation_log(request, generation, meta, errors),
+            _invocation_log(request, generation, meta, errors, findings),
             key=request.execution_id,
         )
 
@@ -87,6 +101,7 @@ def _invocation_log(
     generation: Any,
     meta: Any,
     errors: list[str],
+    injection_findings: list[Finding],
 ) -> dict[str, Any]:
     # ADR-0010 §60: capture per-invocation model metadata (model/provider/temperature/
     # tokens/latency) plus the prompt sent and the structured output, so the audit
@@ -110,5 +125,8 @@ def _invocation_log(
         "confidence": generation.confidence,
         "rationale": generation.rationale,
         "validation_errors": errors,
+        "injection_findings": [
+            {"path": f.path, "snippet": f.snippet} for f in injection_findings
+        ],
         "corpus_scenario_id": None,
     }
