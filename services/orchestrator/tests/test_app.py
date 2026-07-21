@@ -38,7 +38,44 @@ def test_run_workflow_completes_and_persists(client, sample_event):
     assert body["execution_id"] == "exec_42"
     assert body["status"] == "completed"
     assert body["event_type"] == "skill_mastered"
-    assert body["gate_decision"]["decision"] == "continue_to_delivery_targets"
+    assert [d["kind"] for d in body["decisions"]] == [
+        "gate",
+        "delivery_targets",
+        "workflow_actions_plan",
+    ]
+    gate_decision, targets_decision, plan_decision = body["decisions"]
+    assert gate_decision == {
+        "kind": "gate",
+        "confidence": 1.0,
+        "rationale": "Deterministic Phase 1 happy-path gate decision.",
+        "outcome": "continue_to_delivery_targets",
+        "candidates": [],
+        "artifact_ref": None,
+        "invocation_log_ref": None,
+        "created_at": gate_decision["created_at"],
+    }
+    # Neither Delivery Targets nor Workflow Actions is configured in tests, so both
+    # fall back to the deterministic stubs (best-effort seams, #79).
+    assert targets_decision == {
+        "kind": "delivery_targets",
+        "confidence": None,
+        "rationale": "",
+        "outcome": "learncard_issuer, learncard_wallet",
+        "candidates": [],
+        "artifact_ref": None,
+        "invocation_log_ref": None,
+        "created_at": targets_decision["created_at"],
+    }
+    assert plan_decision == {
+        "kind": "workflow_actions_plan",
+        "confidence": 1.0,
+        "rationale": "Deterministic Phase 1 LearnCard workflow.",
+        "outcome": "phase1-skill_mastered.v1",
+        "candidates": [],
+        "artifact_ref": None,
+        "invocation_log_ref": None,
+        "created_at": plan_decision["created_at"],
+    }
     assert body["plan_id"] == "phase1-skill_mastered.v1"
     assert [s["action_id"] for s in body["steps"]][0] == "resolve_learncard_profile"
     assert len(body["steps"]) == 8
@@ -51,6 +88,28 @@ def test_run_workflow_completes_and_persists(client, sample_event):
     got = client.get("/executions/exec_42")
     assert got.status_code == 200
     assert got.json()["status"] == "completed"
+
+
+def test_run_workflow_terminate_gate_persists_decision(client):
+    # An unsupported event type: the pre-target gate terminates before delivery,
+    # but the `decisions` array still records the gate outcome (#28, ADR-0007).
+    event = {"metadata": {"event_name": "badge_awarded", "user_id": "U1"}, "body": {}}
+    resp = client.post("/run-workflow", json={"execution_id": "exec_term", "event": event})
+    body = resp.json()
+    assert body["status"] == "completed"
+    assert body["decisions"] == [
+        {
+            "kind": "gate",
+            "confidence": 1.0,
+            "rationale": "Unsupported event type for Phase 1: badge_awarded.",
+            "outcome": "terminate",
+            "candidates": [],
+            "artifact_ref": None,
+            "invocation_log_ref": None,
+            "created_at": body["decisions"][0]["created_at"],
+        }
+    ]
+    assert body["plan_id"] is None
 
 
 def test_course_completed_path_completes(client, course_event):
@@ -130,7 +189,9 @@ def test_settings_load_from_service_dotenv_regardless_of_cwd(tmp_path, monkeypat
         monkeypatch.delenv(var, raising=False)
     monkeypatch.chdir(tmp_path)  # a CWD that is NOT the service dir
     original = ENV_FILE.read_text() if ENV_FILE.exists() else None
-    ENV_FILE.write_text("ORCHESTRATOR_DB_PATH=:memory:\nLEARNCARD_DEMO_RECIPIENT_PROFILE_ID=@demo\n")
+    ENV_FILE.write_text(
+        "ORCHESTRATOR_DB_PATH=:memory:\nLEARNCARD_DEMO_RECIPIENT_PROFILE_ID=@demo\n"
+    )
     try:
         s = Settings()
         assert s.db_path == ":memory:"
