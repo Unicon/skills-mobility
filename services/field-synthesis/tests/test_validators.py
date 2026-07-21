@@ -45,6 +45,19 @@ def test_confidence_none_fails() -> None:
     assert any("confidence" in e for e in errors)
 
 
+def test_confidence_out_of_range_fails() -> None:
+    for bad in (5.0, -0.1, 1.5):
+        g = _gen({"field_a": "a", "field_b": "b"}, confidence=bad)
+        errors = validate_generation(g, requested_ids=_REQUESTED_IDS)
+        assert any("0.0-1.0" in e for e in errors), f"confidence={bad} should fail range check"
+
+
+def test_confidence_at_bounds_passes() -> None:
+    for ok in (0.0, 1.0):
+        g = _gen({"field_a": "a", "field_b": "b"}, confidence=ok)
+        assert validate_generation(g, requested_ids=_REQUESTED_IDS) == []
+
+
 def test_rationale_none_fails() -> None:
     g = _gen({"field_a": "a", "field_b": "b"}, rationale=None)
     errors = validate_generation(g, requested_ids=_REQUESTED_IDS)

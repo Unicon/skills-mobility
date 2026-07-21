@@ -58,15 +58,15 @@ class ArtifactStore:
         )
 
     def store_failed(self, execution_id: str, reason: str) -> str:
-        """Persist a failed-synthesis record; returns ``"synthesis_result:failed:<key>"``.
+        """Persist a failed-synthesis record; returns the loadable ``"synthesis_result:<key>"`` ref.
 
         The record is written to the same path as a successful artifact so that
         a subsequent ``load_synthesis_result`` attempt raises ``FailedArtifactError``
-        (audit trail, FR-FS-10). A separate ref distinguishes it from a success ref.
+        (audit trail, FR-FS-10). The returned ref resolves via ``_read`` — loading
+        it raises FailedArtifactError, not a not-found error.
         """
         key = execution_id
-        self._write("synthesis_result", key, {"status": "failed", "reason": reason})
-        return f"synthesis_result:failed:{key}"
+        return self._write("synthesis_result", key, {"status": "failed", "reason": reason})
 
     def load_synthesis_result(self, ref: str) -> SynthesisResultArtifact:
         """Load a successful synthesis result artifact by ref."""

@@ -41,5 +41,7 @@ def _check_coverage(
 def _check_confidence_and_rationale(g: SynthesisGeneration, errors: list[str]) -> None:
     if g.confidence is None:
         errors.append("confidence is absent from model output")
+    elif not 0.0 <= g.confidence <= 1.0:
+        errors.append(f"confidence {g.confidence} is outside the expected 0.0-1.0 range")
     if g.rationale is None:
         errors.append("rationale is absent from model output")

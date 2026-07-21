@@ -38,10 +38,10 @@ class ReplayAdapter:
             path = self._dir / "default.json"
         raw: dict[str, Any] = json.loads(path.read_text())
 
-        raw_values = raw.get("values") or {}
-        fixture_values: dict[str, str] = {
-            k: str(v) for k, v in raw_values.items() if isinstance(raw_values, dict)
-        }
+        raw_values = raw.get("values")
+        if not isinstance(raw_values, dict):
+            raw_values = {}
+        fixture_values: dict[str, str] = {k: str(v) for k, v in raw_values.items()}
         raw_confidence = raw.get("confidence")
         confidence: float | None = float(raw_confidence) if raw_confidence is not None else None
         raw_rationale = raw.get("rationale")
