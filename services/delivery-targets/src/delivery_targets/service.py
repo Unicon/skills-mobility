@@ -9,6 +9,7 @@ reports ``failed`` (FR-DT-21). Invalid output is never silently rescued.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from .artifact_store import ArtifactStore
@@ -19,7 +20,10 @@ from .contracts import (
     SelectionResponse,
 )
 from .llm_adapter import LLMAdapter
+from .screen import Finding, screen_for_injection
 from .validators import validate_selection
+
+logger = logging.getLogger(__name__)
 
 
 class SelectionService:
@@ -40,12 +44,22 @@ class SelectionService:
         catalog = self._catalog_store.load_targets()
         catalog_target_ids = {entry["delivery_target"] for entry in catalog}
 
+        # FR-DT-24 / ADR-0021: screen learner free-text for prompt injection before
+        # it reaches any adapter. Runs adapter-independently so replay is screened
+        # too; POC posture is flag-and-record (in the audit log), not block.
+        findings = screen_for_injection(request.learner_context)
+        if findings:
+            logger.warning(
+                "prompt-injection screen flagged learner_context paths: %s",
+                [f.path for f in findings],
+            )
+
         # Exactly one attempt (FR-DT-14); no hidden repair retry.
         generation, meta = self._adapter.select(request, catalog=catalog)
         errors = validate_selection(generation, catalog_target_ids=catalog_target_ids)
 
         log_ref = self._artifact_store.store_invocation_log(
-            _invocation_log(request, generation, meta, errors),
+            _invocation_log(request, generation, meta, errors, findings),
             key=request.execution_id,
         )
 
@@ -75,6 +89,7 @@ def _invocation_log(
     generation: Any,
     meta: Any,
     errors: list[str],
+    injection_findings: list[Finding],
 ) -> dict[str, Any]:
     # ADR-0010 §60: capture per-invocation model metadata (model/provider/temperature/
     # tokens/latency) plus the prompt sent and the structured output, so the audit
@@ -98,5 +113,8 @@ def _invocation_log(
         "selections": [sel.model_dump() for sel in generation.selections],
         "selected_targets": [sel.delivery_target for sel in generation.selections],
         "validation_errors": errors,
+        "injection_findings": [
+            {"path": f.path, "snippet": f.snippet} for f in injection_findings
+        ],
         "corpus_scenario_id": None,
     }
