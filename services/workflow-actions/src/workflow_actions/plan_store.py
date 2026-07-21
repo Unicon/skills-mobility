@@ -58,16 +58,17 @@ class PlanStore:
         )
 
     def store_failed(self, plan: DeliveryPhasePlan, errors: list[str]) -> str:
-        """Persist a failed plan record; returns ``"plan:failed:<key>"``.
+        """Persist a failed plan record; returns the loadable ``"plan:<key>"`` ref.
 
         The record is written to the same path as a successful plan so a
-        subsequent load_plan raises FailedPlanError (audit trail).
+        subsequent load_plan raises FailedPlanError (audit trail). The returned
+        ref resolves via ``_read`` — loading it raises FailedPlanError, not
+        PlanNotFoundError.
         """
         key = _applicability_key(plan)
-        self._write(
+        return self._write(
             "plan", key, {"status": "failed", "validation_errors": errors}
         )
-        return f"plan:failed:{key}"
 
     def load_plan(self, ref: str) -> DeliveryPhasePlan:
         """Load a successful plan artifact by ref."""
