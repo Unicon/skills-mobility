@@ -35,7 +35,8 @@ Resolution is service-internal — the Orchestrator supplies no target ids in th
 ## Run / test
 
 ```bash
-uv run delivery-targets                      # serve on :8130 (replay mode)
+uv sync --all-packages                       # install workspace members (run once)
+uv run delivery-targets                      # serve on :8130 (replay mode); Swagger at http://127.0.0.1:8130/docs
 uv run pytest services/delivery-targets      # unit + API tests (no AWS needed)
 ```
 

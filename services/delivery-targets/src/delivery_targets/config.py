@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -25,7 +26,7 @@ class Settings(BaseSettings):
     )
 
     # LLM adapter mode: "replay" (deterministic fixtures) or "bedrock" (live).
-    mode: str = "replay"
+    mode: Literal["replay", "bedrock"] = "replay"
     # Directory for stored selection / invocation-log artifacts.
     artifact_dir: str = "artifact-output/delivery-targets"
     # Bedrock model id (inference-profile qualified).
