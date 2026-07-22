@@ -46,7 +46,7 @@ def test_run_workflow_completes_and_persists(client, sample_event):
     gate_decision, targets_decision, plan_decision = body["decisions"]
     assert gate_decision == {
         "kind": "gate",
-        "confidence": 1.0,
+        "confidence": None,
         "rationale": "Deterministic Phase 1 happy-path gate decision.",
         "outcome": "continue_to_delivery_targets",
         "candidates": [],
@@ -68,7 +68,7 @@ def test_run_workflow_completes_and_persists(client, sample_event):
     }
     assert plan_decision == {
         "kind": "workflow_actions_plan",
-        "confidence": 1.0,
+        "confidence": None,
         "rationale": "Deterministic Phase 1 LearnCard workflow.",
         "outcome": "phase1-skill_mastered.v1",
         "candidates": [],
@@ -100,7 +100,7 @@ def test_run_workflow_terminate_gate_persists_decision(client):
     assert body["decisions"] == [
         {
             "kind": "gate",
-            "confidence": 1.0,
+            "confidence": None,
             "rationale": "Unsupported event type for Phase 1: badge_awarded.",
             "outcome": "terminate",
             "candidates": [],
