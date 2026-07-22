@@ -1,0 +1,28 @@
+{
+  "source_system": "mock_lms",
+  "fetch_profile_id": "course_completed.v1",
+  "event_type": "course_completed",
+  "description": "Resources the deterministic Context Builder course_completed.v1 profile fetches. Each resource has a source-resource catalog under ../../sources/mock_lms/. The alias is the key the resource's data appears under in the source_payloads envelope (the Context Builder output_key).",
+  "resources": [
+    "course",
+    "learner_profile",
+    "enrollment",
+    "modules",
+    "pages",
+    "assignments",
+    "rubrics",
+    "submissions"
+  ],
+  "required_aliases": [
+    "course",
+    "learner_profile",
+    "enrollment",
+    "assignments",
+    "submissions"
+  ],
+  "conditional_aliases": [
+    "modules",
+    "pages",
+    "rubrics"
+  ]
+}

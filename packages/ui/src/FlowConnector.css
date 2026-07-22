@@ -1,0 +1,16 @@
+.flow-connector {
+  flex: 1;
+  min-width: 24px;
+  height: 2px;
+  overflow: visible;
+}
+.flow-connector line {
+  stroke-width: 2;
+}
+.flow-connector-populated line {
+  stroke: var(--gold);
+}
+.flow-connector-pending line {
+  stroke: var(--line);
+  stroke-dasharray: 4 3;
+}

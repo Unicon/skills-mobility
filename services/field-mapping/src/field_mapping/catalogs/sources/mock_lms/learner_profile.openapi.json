@@ -1,0 +1,24 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS Learner Profile (Canvas-style)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "LearnerProfile": {
+        "type": "object",
+        "description": "A Canvas account user (the learner); returned by the /users/{user_id}/profile endpoint.",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "learner_profile",
+        "required": ["id", "name", "login_id", "email"],
+        "properties": {
+          "id": { "type": "string", "description": "Canvas user id.", "examples": ["WU1125875"] },
+          "uuid": { "type": "string", "description": "Canvas user UUID.", "examples": ["7c4f820d-d890-536a-849d-b8ff726fdaa7"] },
+          "name": { "type": "string", "description": "Full name.", "examples": ["Audrey Wallace"] },
+          "sortable_name": { "type": "string", "description": "Sortable name.", "examples": ["Wallace, Audrey"] },
+          "login_id": { "type": "string", "description": "Login identifier.", "examples": ["audrey.wallace"] },
+          "email": { "type": "string", "format": "email", "description": "Learner email address.", "examples": ["audrey.wallace@example.com"] },
+          "profile": { "type": "object", "description": "SIS property columns.", "additionalProperties": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

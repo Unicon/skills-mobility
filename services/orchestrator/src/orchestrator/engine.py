@@ -26,6 +26,7 @@ from orchestrator.clients import (
 )
 from orchestrator.executor import execute_plan
 from orchestrator.schemas import (
+    DecisionArtifact,
     DeliveryPhasePlan,
     ExecutionMetadata,
     GateDecision,
@@ -83,7 +84,12 @@ def run_workflow(
 
     # Pre-target gate — Workflow Actions Stage 1 (best-effort; deterministic fallback).
     gate = _resolve_gate(workflow_actions, event_type, request.event, bundle, envelope)
-    store.record_gate_decision(execution_id, gate)
+    store.record_decision(
+        execution_id,
+        DecisionArtifact(
+            kind="gate", confidence=gate.confidence, rationale=gate.rationale, outcome=gate.decision
+        ),
+    )
     logger.info("gate decision: execution_id=%s decision=%s", execution_id, gate.decision)
     if gate.decision != "continue_to_delivery_targets":
         store.set_result(
@@ -95,6 +101,10 @@ def run_workflow(
 
     # Delivery target selection (best-effort; deterministic fallback).
     targets = _resolve_targets(delivery_targets, event_type, source_system, bundle, envelope)
+    store.record_decision(
+        execution_id,
+        DecisionArtifact(kind="delivery_targets", outcome=", ".join(targets)),
+    )
     key = planner.applicability_key(event_type, targets)
     plan = store.get_plan_by_key(key) if reusable_plan_lookup else None
     if plan is None:
@@ -120,12 +130,23 @@ def run_workflow(
                 execution_id, proposed.plan_id, reference.plan_id,
             )
             plan = reference
+        store.record_decision(
+            execution_id,
+            DecisionArtifact(
+                kind="workflow_actions_plan",
+                confidence=plan.confidence,
+                rationale=plan.rationale,
+                outcome=plan.plan_id,
+            ),
+        )
         store.save_plan(plan, key)
-        logger.info("delivery-phase plan generated: execution_id=%s plan_id=%s", execution_id,
-                    plan.plan_id)
+        logger.info(
+            "delivery-phase plan generated: execution_id=%s plan_id=%s", execution_id, plan.plan_id
+        )
     else:
-        logger.info("delivery-phase plan reused: execution_id=%s plan_id=%s", execution_id,
-                    plan.plan_id)
+        logger.info(
+            "delivery-phase plan reused: execution_id=%s plan_id=%s", execution_id, plan.plan_id
+        )
     store.set_plan(execution_id, plan.plan_id)
     store.set_status(execution_id, "ready")
 

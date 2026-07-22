@@ -1,0 +1,20 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS Rubrics (Canvas-style)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "RubricList": {
+        "type": "object",
+        "description": "Canvas course rubrics; the course_completed fetch profile returns the full list for the course (conditional resource).",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "rubrics",
+        "properties": {
+          "id": { "type": "string", "description": "Rubric id.", "examples": ["ACCY-111-RUB-ACCY-111-A-FINAL"] },
+          "course_id": { "type": "string", "description": "Course id.", "examples": ["ACCY-111"] },
+          "assignment_id": { "type": ["string", "null"], "description": "Associated assignment.", "examples": ["ACCY-111-A-FINAL"] },
+          "title": { "type": "string", "description": "Rubric title.", "examples": ["Final Accounting Exam Rubric"] }
+        }
+      }
+    }
+  }
+}
