@@ -1,0 +1,24 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS User (Canvas-style)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "description": "A Canvas account user (the learner); the account-user lookup resolves by UUID.",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "canvas_user",
+        "required": ["id", "name", "sortable_name", "login_id", "email"],
+        "properties": {
+          "id": { "type": "string", "description": "Canvas user id.", "examples": ["USER123"] },
+          "uuid": { "type": "string", "description": "Canvas user UUID (lookup input).", "examples": ["abc-123-def"] },
+          "name": { "type": "string", "description": "Full name.", "examples": ["Jane Doe"] },
+          "sortable_name": { "type": "string", "description": "Sortable name.", "examples": ["Doe, Jane"] },
+          "login_id": { "type": "string", "description": "Login identifier.", "examples": ["jane.doe"] },
+          "email": { "type": "string", "format": "email", "description": "Recipient identity for the badge.", "examples": ["jane.doe@school.edu"] },
+          "profile": { "type": "object", "description": "SIS property columns.", "additionalProperties": { "type": "string" } }
+        }
+      }
+    }
+  }
+}
