@@ -119,6 +119,7 @@ def test_configured_workflow_actions_decisions_reflect_the_real_call(sample_even
         profile_resolver=StubProfileResolver(),
         delivery_router=StubDeliveryRouter(),
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         delivery_config_ref="cfg",
         recipient_profile_id="smi-demo-learner",
