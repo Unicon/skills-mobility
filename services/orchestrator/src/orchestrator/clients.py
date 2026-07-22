@@ -14,6 +14,8 @@ from typing import Any, Protocol
 
 import httpx
 
+from orchestrator.schemas import DeliveryPhasePlan, GateDecision
+
 
 @dataclass(frozen=True)
 class EnvelopeContext:
@@ -33,6 +35,12 @@ class ContextBuilderClient(Protocol):
 class ProfileResolverClient(Protocol):
     def resolve(
         self, learner_id_type: str, learner_id_value: str, ctx: EnvelopeContext, step_id: str
+    ) -> dict[str, Any]: ...
+
+
+class FieldMappingClient(Protocol):
+    def map(
+        self, request: dict[str, Any], ctx: EnvelopeContext, step_id: str
     ) -> dict[str, Any]: ...
 
 
@@ -72,6 +80,21 @@ class StubProfileResolver:
             "profile_id": f"@{handle}",
             "did": f"did:web:network.learncard.com:users:{handle}",
             "resolution_method": "stubbed",
+        }
+
+
+class StubFieldMapping:
+    """Phase-1 Field Mapping stub: the §10 envelope with null refs (every field
+    maps directly, so no placeholders / synthesis). Behaviorally identical to the
+    pre-#27 inline stub; used when no field_mapping_url is configured."""
+
+    def map(self, request: dict[str, Any], ctx: EnvelopeContext, step_id: str) -> dict[str, Any]:
+        return {
+            "status": "succeeded",
+            "mapping_artifact_ref": None,
+            "synthesis_request_ref": None,
+            "requires_synthesis": False,
+            "llm_invocation_log_ref": None,
         }
 
 
@@ -197,3 +220,163 @@ class HttpDeliveryRouterClient:
         resp.raise_for_status()
         body: dict[str, Any] = resp.json()
         return body
+
+
+class HttpFieldMappingClient:
+    """Real Field Mapping client (#27) — POSTs a MappingRequest to /map and returns
+    the §10 response envelope. The caller (actions._generate_payload_mapping) treats
+    the result as best-effort: a failure does not fail the workflow, because the
+    deterministic obv3 stand-in still produces the delivered payload (build item 8).
+    ``execution_id`` / ``event_id`` are filled from the correlation envelope."""
+
+    def __init__(self, base_url: str, client: httpx.Client | None = None) -> None:
+        self._client = client or httpx.Client(base_url=base_url, timeout=60.0)
+
+    def map(self, request: dict[str, Any], ctx: EnvelopeContext, step_id: str) -> dict[str, Any]:
+        resp = self._client.post(
+            "/map",
+            json={
+                "execution_id": ctx.execution_id,
+                "event_id": ctx.correlation_id,
+                **request,
+            },
+        )
+        resp.raise_for_status()
+        body: dict[str, Any] = resp.json()
+        return body
+
+
+# --- LLM Decision Service planner seams (#27 / ADR-0007) ---
+# When their URLs are configured the planner path calls these real services;
+# otherwise the engine falls back to the deterministic planner stubs. The engine
+# treats them as best-effort — a failure falls back rather than failing the
+# workflow (the deterministic plan still runs).
+
+
+class DeliveryTargetsClient(Protocol):
+    def select_targets(
+        self,
+        event_type: str,
+        source_system: str,
+        learner_context: dict[str, Any],
+        ctx: EnvelopeContext,
+    ) -> list[str]: ...
+
+
+class WorkflowActionsClient(Protocol):
+    def pre_target_gate(
+        self,
+        event_type: str,
+        event: dict[str, Any],
+        context_bundle: dict[str, Any],
+        ctx: EnvelopeContext,
+    ) -> GateDecision: ...
+
+    def delivery_phase_plan(
+        self,
+        event_type: str,
+        source_system: str,
+        selected_targets: list[str],
+        event: dict[str, Any],
+        context_bundle: dict[str, Any],
+        ctx: EnvelopeContext,
+    ) -> DeliveryPhasePlan: ...
+
+
+class HttpDeliveryTargetsClient:
+    """Real Delivery Targets LLM Decision Service (#77) — POSTs to
+    /select-delivery-targets and returns the flat selected-targets list."""
+
+    def __init__(self, base_url: str, client: httpx.Client | None = None) -> None:
+        self._client = client or httpx.Client(base_url=base_url, timeout=60.0)
+
+    def select_targets(
+        self,
+        event_type: str,
+        source_system: str,
+        learner_context: dict[str, Any],
+        ctx: EnvelopeContext,
+    ) -> list[str]:
+        resp = self._client.post(
+            "/select-delivery-targets",
+            json={
+                "execution_id": ctx.execution_id,
+                "event_id": ctx.correlation_id,
+                "event_type": event_type,
+                "source_system": source_system,
+                "learner_context": learner_context,
+            },
+        )
+        resp.raise_for_status()
+        body: dict[str, Any] = resp.json()
+        if body.get("status") != "succeeded":
+            raise RuntimeError(f"delivery-targets returned {body.get('status')}")
+        targets: list[str] = list(body["selected_targets"])
+        return targets
+
+
+class HttpWorkflowActionsClient:
+    """Real Workflow Actions LLM Decision Service (#78) — the two-stage planner.
+    The gate service returns a discriminated ``decision`` string; we normalize it
+    to the Orchestrator's continue/terminate Literal, preserving the specific
+    terminate reason in the rationale."""
+
+    def __init__(self, base_url: str, client: httpx.Client | None = None) -> None:
+        self._client = client or httpx.Client(base_url=base_url, timeout=60.0)
+
+    def pre_target_gate(
+        self,
+        event_type: str,
+        event: dict[str, Any],
+        context_bundle: dict[str, Any],
+        ctx: EnvelopeContext,
+    ) -> GateDecision:
+        resp = self._client.post(
+            "/pre-target-gate",
+            json={
+                "execution_id": ctx.execution_id,
+                "event_id": ctx.correlation_id,
+                "event_type": event_type,
+                "event": event,
+                "context_bundle": context_bundle,
+            },
+        )
+        resp.raise_for_status()
+        body: dict[str, Any] = resp.json()
+        if body.get("status") != "succeeded":
+            raise RuntimeError(f"workflow-actions gate returned {body.get('status')}")
+        raw = str(body.get("decision") or "terminate")
+        rationale = str(body.get("rationale") or "")
+        if raw == "continue_to_delivery_targets":
+            return GateDecision(decision="continue_to_delivery_targets",
+                                confidence=body.get("confidence"), rationale=rationale)
+        # Any terminate_* reason maps to the orchestrator's "terminate" Literal.
+        return GateDecision(decision="terminate", confidence=body.get("confidence"),
+                            rationale=f"{raw}: {rationale}" if rationale else raw)
+
+    def delivery_phase_plan(
+        self,
+        event_type: str,
+        source_system: str,
+        selected_targets: list[str],
+        event: dict[str, Any],
+        context_bundle: dict[str, Any],
+        ctx: EnvelopeContext,
+    ) -> DeliveryPhasePlan:
+        resp = self._client.post(
+            "/delivery-phase-plan",
+            json={
+                "execution_id": ctx.execution_id,
+                "event_id": ctx.correlation_id,
+                "event_type": event_type,
+                "source_system": source_system,
+                "event": event,
+                "context_bundle": context_bundle,
+                "selected_targets": selected_targets,
+            },
+        )
+        resp.raise_for_status()
+        body: dict[str, Any] = resp.json()
+        if body.get("status") != "succeeded" or not body.get("plan"):
+            raise RuntimeError(f"workflow-actions plan returned {body.get('status')}")
+        return DeliveryPhasePlan(**body["plan"])

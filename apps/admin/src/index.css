@@ -1,0 +1,326 @@
+/* ============================================================
+   Admin UI — re-expresses the Mock LMS's mission-control identity
+   through the shared token layer (NFR-AU-4), applied to a workflow
+   timeline surface instead of a course console.
+   ============================================================ */
+
+@import "@skills-mobility/ui/tokens.css";
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 0 22px;
+  height: 64px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(20, 23, 27, 0.9), rgba(11, 12, 14, 0.6));
+}
+
+.wordmark {
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.wordmark span {
+  color: var(--gold);
+}
+
+.main {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.pivot {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.pivot input {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--line-bright);
+  border-radius: 7px;
+  padding: 8px 10px;
+}
+.pivot button {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line-bright);
+  color: var(--ink);
+}
+.pivot button:hover {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+}
+
+.exec-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.exec-table th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.exec-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.exec-row {
+  cursor: pointer;
+}
+.exec-row:hover td {
+  background: var(--panel);
+}
+.exec-row.failed td {
+  color: var(--danger);
+}
+
+.row-open {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.status-chip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--line-bright);
+}
+.status-chip.completed {
+  color: var(--live);
+}
+.status-chip.failed {
+  color: var(--danger);
+}
+
+.back-link {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+  margin-bottom: 14px;
+  display: inline-block;
+}
+.back-link:hover {
+  color: var(--gold);
+}
+
+.detail-header {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+.detail-header h2 {
+  font-size: 18px;
+  font-weight: 800;
+}
+.detail-header .row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--ink-dim);
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.card > header {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.card .body {
+  padding: 12px 15px;
+}
+
+.step-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  padding: 10px 15px;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+}
+.step-row:first-child {
+  border-top: none;
+}
+.step-row:hover {
+  background: var(--panel-2);
+}
+
+.step-panel {
+  background: var(--panel-2);
+  border-top: 1px solid var(--line);
+  padding: 12px 15px;
+}
+.step-panel pre {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.empty {
+  border: 1px dashed var(--line-bright);
+  border-radius: 12px;
+  padding: 30px 18px;
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+
+.placeholder {
+  color: var(--ink-faint);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.decision-flow-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.decision-detail-card {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.decision-detail-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.decision-conversation-bubble {
+  padding: 10px 12px;
+  border-left: 2px solid var(--line-bright);
+  margin-bottom: 16px;
+}
+.decision-conversation-bubble-response {
+  border-left-color: var(--gold);
+}
+.decision-conversation-header {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+  color: var(--ink-faint);
+  margin-bottom: 6px;
+}
+.decision-conversation-text {
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+.decision-conversation-bubble pre {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+  overflow: auto;
+  white-space: pre-wrap;
+}
+.decision-detail-candidates {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.decision-detail-candidates li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+}
+.decision-candidate-label {
+  min-width: 120px;
+}
+.decision-candidate-rejected {
+  color: var(--ink-dim);
+  opacity: 0.6;
+}
+.decision-candidate-selected {
+  color: var(--ink);
+  font-weight: 700;
+}
+.decision-detail-raw-toggle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.decision-detail-raw-toggle:hover {
+  color: var(--gold-bright);
+}

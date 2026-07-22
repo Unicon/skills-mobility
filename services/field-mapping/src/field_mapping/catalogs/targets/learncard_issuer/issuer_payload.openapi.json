@@ -1,0 +1,65 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "LearnCard Issuer — unsigned OBv3 (issuer_payload)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "UnsignedOpenBadgeCredential": {
+        "type": "object",
+        "description": "The minimum unsigned Open Badges 3.0 credential the LearnCard Issuer Adapter signs (LearnCard SDK UnsignedVC shape).",
+        "x-transformation-type": "issuer_payload",
+        "x-delivery-target": "learncard_issuer",
+        "required": ["@context", "type", "issuer", "credentialSubject"],
+        "properties": {
+          "@context": {
+            "type": "array", "items": { "type": "string" },
+            "description": "JSON-LD context (VC v2 + OBv3).",
+            "x-no-mapping-behavior": "disallowed",
+            "examples": [["https://www.w3.org/ns/credentials/v2", "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"]]
+          },
+          "type": {
+            "type": "array", "items": { "type": "string" },
+            "description": "Credential types.",
+            "x-no-mapping-behavior": "disallowed",
+            "examples": [["VerifiableCredential", "OpenBadgeCredential"]]
+          },
+          "issuer": {
+            "type": "object",
+            "description": "The issuing profile.",
+            "required": ["id", "type"],
+            "properties": {
+              "id": { "type": "string", "description": "Issuer DID (resolvable).", "x-no-mapping-behavior": "disallowed", "examples": ["did:web:issuer.example.com"] },
+              "type": { "type": "array", "items": { "type": "string" }, "description": "Issuer type.", "x-no-mapping-behavior": "disallowed", "examples": [["Profile"]] }
+            }
+          },
+          "credentialSubject": {
+            "type": "object",
+            "description": "The achievement subject (the learner).",
+            "required": ["id", "type", "achievement"],
+            "properties": {
+              "id": { "type": "string", "description": "Recipient DID resolved by the Profile Resolver.", "x-no-mapping-behavior": "disallowed", "examples": ["did:web:network.learncard.com:users:learner"] },
+              "type": { "type": "array", "items": { "type": "string" }, "description": "Subject type.", "x-no-mapping-behavior": "disallowed", "examples": [["AchievementSubject"]] },
+              "achievement": {
+                "type": "object",
+                "description": "The achievement being credentialed.",
+                "required": ["id", "type", "name", "description", "criteria"],
+                "properties": {
+                  "id": { "type": "string", "description": "Achievement id (URN; derived from the achievement name).", "x-no-mapping-behavior": "disallowed", "examples": ["urn:poc:achievement:demonstrate-the-sample-competency"] },
+                  "type": { "type": "array", "items": { "type": "string" }, "description": "Achievement type.", "x-no-mapping-behavior": "disallowed", "examples": [["Achievement"]] },
+                  "name": { "type": "string", "description": "Achievement name (from the outcome display name/title).", "x-no-mapping-behavior": "blank", "examples": ["Demonstrate the sample competency"] },
+                  "description": { "type": "string", "description": "Achievement description (synthesis-backed when synthesis is allowed).", "x-no-mapping-behavior": "blank", "examples": ["Awarded for demonstrating the achievement."] },
+                  "criteria": {
+                    "type": "object",
+                    "description": "How the achievement is earned. Carried forward from the credential_template phase (the DCC Credential Co-writer produces a narrative); synthesis-backed when synthesis is allowed.",
+                    "properties": {
+                      "narrative": { "type": "string", "description": "Narrative describing the criteria for earning the achievement.", "x-no-mapping-behavior": "blank", "examples": ["Complete the module assessment demonstrating mastery of the listed transactions."] }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

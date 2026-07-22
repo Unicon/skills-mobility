@@ -2,6 +2,8 @@ import type {
   Assignment,
   Course,
   CourseWithActions,
+  ExecutionMetadata,
+  ExecutionSummary,
   Module,
   Outcome,
   Rubric,
@@ -45,4 +47,17 @@ export const api = {
     req<Submission[]>(
       `/api/v1/courses/${courseId}/students/submissions?student_ids[]=${encodeURIComponent(userId)}`,
     ),
+};
+
+// Orchestrator read client (Admin UI half).
+export const orchestratorApi = {
+  listExecutions: ({ limit, correlationId }: { limit?: number; correlationId?: string } = {}) => {
+    const params = new URLSearchParams();
+    if (limit !== undefined) params.set("limit", String(limit));
+    if (correlationId) params.set("correlation_id", correlationId);
+    const qs = params.toString();
+    return req<ExecutionSummary[]>(`/executions${qs ? `?${qs}` : ""}`);
+  },
+  getExecution: (executionId: string) =>
+    req<ExecutionMetadata>(`/executions/${encodeURIComponent(executionId)}`),
 };

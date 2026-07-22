@@ -1,0 +1,25 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS Submissions (Canvas-style)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "SubmissionList": {
+        "type": "object",
+        "description": "Canvas student submissions for a course; the course_completed fetch profile returns all graded submissions for the learner.",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "submissions",
+        "properties": {
+          "id": { "type": "string", "description": "Submission id.", "examples": ["ACCY-111-SUB-ACCY-111-A-FINAL-WU1125875"] },
+          "course_id": { "type": "string", "description": "Course id.", "examples": ["ACCY-111"] },
+          "assignment_id": { "type": "string", "description": "Assignment this submission is for.", "examples": ["ACCY-111-A-FINAL"] },
+          "user_id": { "type": "string", "description": "Learner user id.", "examples": ["WU1125875"] },
+          "score": { "type": ["number", "null"], "description": "Numeric score.", "examples": [92.0] },
+          "grade": { "type": ["string", "null"], "description": "Letter grade.", "examples": ["A-"] },
+          "workflow_state": { "type": "string", "description": "Canvas submission state.", "examples": ["graded"] },
+          "submitted_at": { "type": ["string", "null"], "format": "date-time", "description": "Submission timestamp.", "examples": ["2026-01-22T09:20:43Z"] },
+          "graded_at": { "type": ["string", "null"], "format": "date-time", "description": "Grading timestamp.", "examples": ["2026-03-04T23:53:18Z"] }
+        }
+      }
+    }
+  }
+}
