@@ -1,0 +1,24 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS Outcome (Canvas-style)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "Outcome": {
+        "type": "object",
+        "description": "A Canvas learning outcome (competency) the learner has mastered.",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "outcome",
+        "required": ["id", "title"],
+        "properties": {
+          "id": { "type": "string", "description": "Global outcome id.", "examples": ["OUT1"] },
+          "title": { "type": "string", "description": "Outcome title (code-prefixed).", "examples": ["1.0.0 Sample Competency"] },
+          "display_name": { "type": "string", "description": "Human-readable outcome name; preferred for the achievement name.", "examples": ["Demonstrate the sample competency"] },
+          "description": { "type": "string", "description": "Outcome description.", "examples": ["Demonstrates mastery of the sample competency."] },
+          "code": { "type": "string", "description": "Flat Canvas outcome code.", "examples": ["1.0.0"] },
+          "mastery_points": { "type": "number", "description": "Points required for mastery.", "examples": [3.0] },
+          "points_possible": { "type": "number", "description": "Total possible points.", "examples": [5.0] }
+        }
+      }
+    }
+  }
+}

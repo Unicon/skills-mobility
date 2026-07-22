@@ -8,9 +8,10 @@ scoped "spine now, grow as the delivery PRs merge.")
 docker compose up --build     # from the repo root
 ```
 
-Then: mock-lms `http://localhost:8000`, context-builder `:8100`, event-consumer
-`:8200`, orchestrator `:8400`, profile-resolver `:8700`, delivery-router `:8800`,
-issuer-adapter `:8910`, wallet-adapter `:8900` (each serves `/healthz`).
+Then: mock-lms `http://localhost:8000`, context-builder `:8100`, field-mapping
+`:8120`, event-consumer `:8200`, orchestrator `:8400`, profile-resolver `:8700`,
+delivery-router `:8800`, issuer-adapter `:8910`, wallet-adapter `:8900` (each
+serves `/healthz`).
 
 The LearnCard adapters/resolver need secrets (tokens + issuer seed) from the demo
 provisioning step — see **Secrets** below. Without them the stack still comes up,
@@ -24,7 +25,8 @@ mock-lms (8000) --emits--> event-consumer (8200) --hands off--> orchestrator (84
      |                                                          builds context
      +------------------ context-builder (8100) <----------------------+
                                                                         |
-                          resolve learner + deliver credential         v
+                     map/transform + resolve learner + deliver          v
+   field-mapping (8120) <------------------------------------- orchestrator
    profile-resolver (8700) <---------------------------------- orchestrator
    delivery-router (8800) <------------------------------------ orchestrator
         |  routes by action
@@ -40,6 +42,7 @@ Set via compose env (services reach each other by service name):
 | event-consumer | `EVENT_CONSUMER_ORCHESTRATOR_URL` | `http://orchestrator:8400` |
 | context-builder | `CONTEXT_BUILDER_LMS_BASE_URL` | `http://mock-lms:8000` |
 | orchestrator | `ORCHESTRATOR_CONTEXT_BUILDER_URL` | `http://context-builder:8100` |
+| orchestrator | `ORCHESTRATOR_FIELD_MAPPING_URL` | `http://field-mapping:8120` |
 | orchestrator | `ORCHESTRATOR_PROFILE_RESOLVER_URL` | `http://profile-resolver:8700` |
 | orchestrator | `ORCHESTRATOR_DELIVERY_ROUTER_URL` | `http://delivery-router:8800` |
 | delivery-router | `DELIVERY_ROUTER_LEARNCARD_ISSUER_URL` | `http://learncard-issuer-adapter:8910` |

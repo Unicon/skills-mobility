@@ -1,0 +1,21 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS Pages (Canvas-style)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "PageList": {
+        "type": "object",
+        "description": "Canvas course pages (instructional readings); returned as an array.",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "pages",
+        "properties": {
+          "id": { "type": "string", "description": "Page id.", "examples": ["ACCY-111-PAGE-M1-1"] },
+          "course_id": { "type": "string", "description": "Course id.", "examples": ["ACCY-111"] },
+          "url": { "type": "string", "description": "Page slug.", "examples": ["m1-p1"] },
+          "title": { "type": "string", "description": "Page title.", "examples": ["Reading: The Trial Balance"] },
+          "body": { "type": "string", "description": "Page content.", "examples": ["After posting to the ledger..."] }
+        }
+      }
+    }
+  }
+}
