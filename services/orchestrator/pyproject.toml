@@ -11,6 +11,10 @@ dependencies = [
     "httpx>=0.27",
 ]
 
+[project.optional-dependencies]
+# Installed only in the container-image Lambda build; keeps local/compose lean.
+lambda = ["mangum>=0.19"]
+
 [project.scripts]
 orchestrator = "orchestrator.app:run"
 

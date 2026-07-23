@@ -12,6 +12,10 @@ dependencies = [
     "pyyaml>=6.0",
 ]
 
+[project.optional-dependencies]
+# Installed only in the container-image Lambda build; keeps local/compose lean.
+lambda = ["mangum>=0.19"]
+
 [project.scripts]
 context-builder = "context_builder.app:run"
 
