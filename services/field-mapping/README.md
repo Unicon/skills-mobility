@@ -85,9 +85,41 @@ caches the config at startup.
 ### Supplying source_payloads from the Context Builder
 
 The Context Builder (port 8100) produces the `source_payloads` object the Field
-Mapping service expects. Run the Context Builder with a skill-mastered or
-course-completed request to capture its output, then pass that output as
-`source_payloads` in your `/map` request. Alternatively, the orchestrator's
+Mapping service expects. It fetches from the Mock LMS, so start both (Mock LMS on
+`:8000`, Context Builder on `:8100` with `CONTEXT_BUILDER_LMS_BASE_URL=http://127.0.0.1:8000`),
+then run the three-step recipe:
+
+```bash
+# 1. Emit an event from the Mock LMS. scope=one limits it to a single learner.
+curl -s localhost:8000/demo/courses/ACCY-111/actions \
+  -H 'content-type: application/json' \
+  -d '{"action_id": "ACCY-111-grade-m1", "scope": "one"}' \
+  | jq '.emitted[0]' > /tmp/envelope.json
+
+# 2. Build context from that envelope (execution_id is any correlation string).
+curl -s localhost:8100/build-context \
+  -H 'content-type: application/json' \
+  -d "$(jq -n --slurpfile e /tmp/envelope.json '{execution_id: "smoke-1", event: $e[0]}')" \
+  | jq '.source_data' > /tmp/source_payloads.json
+
+# 3. Pass source_data straight through as source_payloads to /map (:8120).
+curl -s localhost:8120/map \
+  -H 'content-type: application/json' \
+  -d "$(jq -n --slurpfile s /tmp/source_payloads.json '{
+        execution_id: "smoke-1",
+        event_id: "evt-1",
+        transformation_type: "issuer_payload",
+        source_system: "mock_lms",
+        fetch_profile_id: "skill_mastered.v1",
+        delivery_target: "learncard_issuer",
+        synthesis_allowed: false,
+        source_payloads: $s[0]
+      }')"
+```
+
+`profile_resolution` can be skipped for a basic smoke test — the Context Builder
+doesn't produce it, and omitting it just shows up as lower confidence on the
+DID-dependent fields, which is expected. Alternatively, the orchestrator's
 execution trace stores the `source_payloads` it passes to Field Mapping in each
 step's output — check `artifact-output/orchestrator/` for captured runs.
 
