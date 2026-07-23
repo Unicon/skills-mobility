@@ -1,0 +1,22 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS Assignments (Canvas-style)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "AssignmentList": {
+        "type": "object",
+        "description": "Canvas course assignments; the course_completed fetch profile returns the full list for the course.",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "assignments",
+        "properties": {
+          "id": { "type": "string", "description": "Assignment id.", "examples": ["ACCY-111-A-FINAL"] },
+          "course_id": { "type": "string", "description": "Course id.", "examples": ["ACCY-111"] },
+          "name": { "type": "string", "description": "Assignment title.", "examples": ["Final Accounting Exam"] },
+          "description": { "type": "string", "description": "Assignment prompt.", "examples": ["Complete the capstone project."] },
+          "points_possible": { "type": "number", "description": "Total points.", "examples": [100.0] },
+          "role": { "type": "string", "enum": ["module", "final"], "description": "Module vs. course-final assignment.", "examples": ["final"] }
+        }
+      }
+    }
+  }
+}

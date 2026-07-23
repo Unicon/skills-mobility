@@ -244,3 +244,83 @@ button {
   font-size: 12px;
   font-style: italic;
 }
+
+.decision-flow-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.decision-detail-card {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.decision-detail-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.decision-conversation-bubble {
+  padding: 10px 12px;
+  border-left: 2px solid var(--line-bright);
+  margin-bottom: 16px;
+}
+.decision-conversation-bubble-response {
+  border-left-color: var(--gold);
+}
+.decision-conversation-header {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+  color: var(--ink-faint);
+  margin-bottom: 6px;
+}
+.decision-conversation-text {
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+.decision-conversation-bubble pre {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+  overflow: auto;
+  white-space: pre-wrap;
+}
+.decision-detail-candidates {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.decision-detail-candidates li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+}
+.decision-candidate-label {
+  min-width: 120px;
+}
+.decision-candidate-rejected {
+  color: var(--ink-dim);
+  opacity: 0.6;
+}
+.decision-candidate-selected {
+  color: var(--ink);
+  font-weight: 700;
+}
+.decision-detail-raw-toggle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.decision-detail-raw-toggle:hover {
+  color: var(--gold-bright);
+}

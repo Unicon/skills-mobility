@@ -1,0 +1,28 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS Assignment (Canvas-style)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "Assignment": {
+        "type": "object",
+        "description": "A Canvas assignment; the graded work that triggered the event.",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "assignment",
+        "required": ["id", "course_id", "name"],
+        "properties": {
+          "id": { "type": "string", "description": "Global assignment id.", "examples": ["ASG1"] },
+          "course_id": { "type": "string", "description": "Course containing the assignment.", "examples": ["ACCY-111"] },
+          "name": { "type": "string", "description": "Assignment title.", "examples": ["Final Project"] },
+          "description": { "type": "string", "description": "Assignment description / prompt.", "examples": ["Complete the capstone project."] },
+          "points_possible": { "type": "number", "description": "Total points.", "examples": [100.0] },
+          "due_at": { "type": ["string", "null"], "format": "date-time", "description": "Due date.", "examples": ["2026-07-15T23:59:59Z"] },
+          "role": { "type": "string", "enum": ["module", "final"], "description": "Module vs. course-final assignment.", "examples": ["final"] },
+          "module_id": { "type": ["string", "null"], "description": "Parent module id, if any.", "examples": ["MOD1"] },
+          "outcome_id": { "type": ["string", "null"], "description": "Associated outcome (standard courses).", "examples": ["OUT1"] },
+          "badge_id": { "type": ["string", "null"], "description": "Associated badge (digital-credential courses).", "examples": ["BADGE1"] },
+          "rubric_id": { "type": ["string", "null"], "description": "Associated rubric id; gates the conditional rubric fetch.", "examples": ["RUB1"] }
+        }
+      }
+    }
+  }
+}
