@@ -55,7 +55,6 @@ provisioning step (`tools/learncard-demo`, ADR-0020) — `provision.mjs` derives
 fixed demo wallets from committed non-secret labels and emits the tokens/seed:
 
 - `LEARNCARD_API_TOKEN` — sender bearer for profile-resolver + wallet-adapter.
-- `LEARNCARD_RECIPIENT_API_TOKEN` — recipient read token for the wallet read-back.
 - `SEED_LABEL` (default `organization`) — the issuer adapter derives its signing
   seed from this label internally (#48 option b): nothing to copy or compute by
   hand. In the demo the issuer is the *organization* profile `provision.mjs`
