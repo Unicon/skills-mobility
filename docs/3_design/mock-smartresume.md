@@ -49,11 +49,11 @@ services/mock-smartresume/
 ### Modules
 
 - `app.py` — creates the FastAPI application and registers the three route groups.
-- `api/token.py` — handles `POST /api/v1/token`; parses form body, validates `grant_type`, checks Basic auth header (permissive: any non-empty pair), returns canned `access_token`.
+- `api/token.py` — handles `POST /api/v1/token`; parses form body, validates `grant_type`, validates the Basic-auth pair against the configured `client_id`/`access_key`, returns canned `access_token`.
 - `api/credentials.py` — handles `POST /api/v1/credentials`; validates Bearer token, validates required body fields, derives the deterministic `redirect_url`, returns it.
 - `api/health.py` — handles `GET /healthz`.
 - `schemas.py` — Pydantic models for the token response, the credentials request body, and the credentials response. These mirror the real SmartResume API shapes.
-- `config.py` — `Settings` with `env_prefix="MOCK_SMARTRESUME_"`: `port` (default 8930), `log_level` (default `INFO`).
+- `config.py` — `Settings` with `env_prefix="MOCK_SMARTRESUME_"`: `port` (default 8930), `log_level` (default `INFO`), `client_id` (default `mock-client-id`), `access_key` (default `mock-access-key`). The token endpoint compares the incoming Basic-auth pair against `client_id`/`access_key`.
 - `token_store.py` — the canned access token string (a fixed constant, not randomly generated) and the `derive_redirect_token(recipient_id, credential_id)` function that produces the deterministic identifier in the `redirect_url`.
 
 ---
@@ -67,7 +67,7 @@ Accepts `application/x-www-form-urlencoded`. The `Authorization` header carries 
 **Validation:**
 
 - If `Authorization` header is absent or not Basic: return `401`.
-- If decoded credentials are empty strings: return `401`.
+- If the decoded `ClientID`/`AccessKey` pair does not match the configured `client_id`/`access_key`: return `401`.
 - If `grant_type` form field is absent or not `"client_credentials"`: return `400`.
 - Scope is accepted as-is; the mock does not validate scope values.
 
@@ -131,7 +131,7 @@ The Mock SmartResume is deployed in **both local and AWS** environments. Accessi
 | Concern | AWS | Local |
 |---|---|---|
 | Runtime | Lambda or container (same Python service) | `uvicorn` serving the FastAPI app |
-| Credentials | None required — any non-empty `ClientID`/`AccessKey` pair works | None required — any non-empty `ClientID`/`AccessKey` pair works |
+| Credentials | Configured `MOCK_SMARTRESUME_CLIENT_ID` / `MOCK_SMARTRESUME_ACCESS_KEY` (non-secret demo defaults) | Same configured pair (defaults `mock-client-id` / `mock-access-key`) |
 | Persistence | None — stateless | None — stateless |
 
 **Port:** `8930` — outside Consul's reserved range (8300–8302, 8500, 8600) and clear of the other POC services (mock-lms 8000, orchestrator 8400, delivery-router 8800, learncard-wallet-adapter 8900, learncard-issuer-adapter 8910, smartresume-adapter 8920).
@@ -157,7 +157,7 @@ Because it is stateless and small, the full service is built in one pass — the
 
 The mock's own tests use the FastAPI `TestClient` directly (no running server needed):
 
-- **Token endpoint:** valid Basic auth + correct `grant_type` → 200 with canned token; missing/empty credentials → 401; wrong `grant_type` → 400.
+- **Token endpoint:** matching Basic-auth pair + correct `grant_type` → 200 with canned token; missing header or a pair that doesn't match the configured `client_id`/`access_key` → 401; wrong `grant_type` → 400.
 - **Credentials endpoint:** valid Bearer + well-formed body → 200 with deterministic `redirect_url`; missing Bearer → 401; wrong token value → 401; missing `recipient.id` → 400; missing credential `id` → 400; `proof` absent → 200 (unverified path); `proof` present → 200 (verified path).
 - **Health:** `GET /healthz` → 200.
 - **Unknown routes:** `GET /api/v1/credentials` → 405; `GET /nonexistent` → 404.

@@ -86,7 +86,7 @@ Recommended request shape:
 }
 ```
 
-The `proof` field is present in this example because Finance-routed credentials are issued and signed by `issue_learncard_badge` before reaching SmartResume. The adapter passes `proof` through verbatim. When the incoming credential has no proof (e.g. a non-credential-enabled course event), `proof` is omitted and SmartResume accepts the result as an unverified achievement record.
+The `proof` field is present in this example because Finance-routed credentials are issued and signed by `issue_learncard_badge` before reaching SmartResume. The adapter passes `proof` through verbatim. If an incoming credential ever arrives without a `proof`, the adapter omits it and SmartResume accepts the result as an unverified achievement record — this is retained only because SmartResume's API supports it, not because any current POC path produces a no-proof payload (`issue_learncard_badge` signs every delivery).
 
 Recommended response shape:
 
@@ -216,8 +216,8 @@ All resolved from environment (`.env` locally; Secrets Manager in AWS):
 | `SMARTRESUME_ADAPTER_PORT` | HTTP port (default: `8920`) |
 | `SMARTRESUME_ADAPTER_LOG_LEVEL` | Root log level (default: `INFO`) |
 | `SMARTRESUME_ADAPTER_API_URL` | SmartResume base URL — **no default**; must be set explicitly. Local: `http://localhost:8930` (Mock SmartResume). AWS: URL of the AWS-deployed Mock SmartResume. |
-| `SMARTRESUME_ADAPTER_CLIENT_ID` | OAuth2 `ClientID` — any non-empty string works against Mock SmartResume; real creds required only if a live SmartResume environment is ever reachable |
-| `SMARTRESUME_ADAPTER_ACCESS_KEY` | OAuth2 `AccessKey` — same note as `CLIENT_ID` above |
+| `SMARTRESUME_ADAPTER_CLIENT_ID` | OAuth2 `ClientID` — must match Mock SmartResume's configured `MOCK_SMARTRESUME_CLIENT_ID` (demo default `mock-client-id`); real creds required only if a live SmartResume environment is ever reachable |
+| `SMARTRESUME_ADAPTER_ACCESS_KEY` | OAuth2 `AccessKey` — must match Mock SmartResume's `MOCK_SMARTRESUME_ACCESS_KEY` (demo default `mock-access-key`) |
 
 `.env.example` is committed; `.env` is gitignored.
 

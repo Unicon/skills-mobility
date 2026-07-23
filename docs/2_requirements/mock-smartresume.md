@@ -29,7 +29,7 @@ It covers only the two endpoints the adapter calls. All other SmartResume Creden
 ### Token endpoint
 
 - **FR-MSR-1** `POST /api/v1/token` SHALL accept HTTP Basic auth (`ClientID`:`AccessKey`).
-- **FR-MSR-2** The token endpoint SHALL accept any non-empty `ClientID`/`AccessKey` pair and return a canned access token. Credential validation is deliberately permissive — the goal is offline demo operation, not security.
+- **FR-MSR-2** The token endpoint SHALL validate the incoming Basic-auth pair against the configured `MOCK_SMARTRESUME_CLIENT_ID` / `MOCK_SMARTRESUME_ACCESS_KEY` values, returning a canned access token on a match and `401` otherwise. This mirrors the FR-MSR-6 pattern (Bearer token compared against a canned constant): deliberately minimal — enough to exercise the auth handshake, not real security.
 - **FR-MSR-3** The token endpoint SHALL require `grant_type=client_credentials` in the form body and return `400` if it is absent or set to another value.
 - **FR-MSR-4** The token response SHALL conform to the real SmartResume token response shape: `{ "access_token": "<canned token>", "token_type": "Bearer", "expires_in": 3600 }`.
 - **FR-MSR-5** The canned token SHALL be a fixed, deterministic string (not a random UUID) so tests can assert on its value.
@@ -62,8 +62,10 @@ All configuration via environment variables with the `MOCK_SMARTRESUME_` prefix.
 |---|---|---|
 | `MOCK_SMARTRESUME_PORT` | HTTP port | `8930` |
 | `MOCK_SMARTRESUME_LOG_LEVEL` | Root log level | `INFO` |
+| `MOCK_SMARTRESUME_CLIENT_ID` | Expected Basic-auth `ClientID` at the token endpoint | `mock-client-id` |
+| `MOCK_SMARTRESUME_ACCESS_KEY` | Expected Basic-auth `AccessKey` at the token endpoint | `mock-access-key` |
 
-No vendor secrets are needed. The mock accepts any non-empty `ClientID`/`AccessKey` pair at the token endpoint.
+No real vendor secrets are needed. The token endpoint validates the incoming `ClientID`/`AccessKey` pair against the configured `MOCK_SMARTRESUME_CLIENT_ID` / `MOCK_SMARTRESUME_ACCESS_KEY` values; the defaults are non-secret demo constants.
 
 ## 5. Out of Scope
 

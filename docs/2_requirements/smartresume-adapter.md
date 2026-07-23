@@ -10,7 +10,7 @@ The **SmartResume Adapter** is the vendor-specific adapter that delivers an achi
 
 Its reason to exist is architectural: the Delivery Router dispatches to registered adapters by key (`smart_resume`), so adding SmartResume as a delivery target required no changes to the router — only this adapter. The same pattern governs all current and future delivery targets.
 
-The in-scope POC credential is a Finance course credential that travels the full issuance pipeline (`issue_learncard_badge` runs for every delivery in this POC) before reaching SmartResume. By the time it arrives here it already carries a signed `proof`. **Verified, signed delivery is the primary case.** The adapter also supports the no-proof path — SmartResume's API accepts achievements without proof as unverified skill records, and that path may be needed for non-credential-enabled course events. The `/credentials` endpoint is the same either way; only the presence or absence of a `proof` array distinguishes verified from unverified submissions.
+The in-scope POC credential is a Finance course credential that travels the full issuance pipeline (`issue_learncard_badge` runs for every delivery in this POC) before reaching SmartResume. By the time it arrives here it already carries a signed `proof`. **Verified, signed delivery is the primary case.** The adapter also supports the no-proof path — SmartResume's API accepts achievements without proof as unverified skill records. That branch exists only because the API supports it and is retained for a possible future case; no current POC course routes through it, since `issue_learncard_badge` signs every delivery. The `/credentials` endpoint is the same either way; only the presence or absence of a `proof` array distinguishes verified from unverified submissions.
 
 This document assumes the SmartResume CredentialConnect API is callable from Python using standard HTTP client tooling. SmartResume publishes no SDK; the API contract is prose-documented at the URL above and is stable enough to build against.
 
@@ -90,7 +90,7 @@ The SmartResume `POST /api/v1/credentials` endpoint expects a JSON body conformi
 
 **Verified credentials (primary POC case):** the in-scope Finance course credential travels the full issuance pipeline and arrives at this adapter already signed. The `proof` field is present and the adapter SHALL pass it through verbatim.
 
-**Unverified achievements:** when the upstream payload represents a non-credential-enabled course event, the `proof` array is omitted entirely. SmartResume accepts achievements without proof as unverified skill records. The adapter SHALL omit `proof` when the incoming payload does not include one.
+**Unverified achievements:** SmartResume accepts achievements without proof as unverified skill records, so the adapter SHALL omit the `proof` array when the incoming payload has none. This branch is retained for that possible future case, not because any current POC course routes that way — every current delivery is signed by `issue_learncard_badge` and arrives with a `proof`.
 
 **SkillSync (skills):** when `achievementType` is `"SkillsAndAbilities"`, skills are listed under `credentialSubject.achievement.alignment[]` with `targetName` (max 40 characters), `targetDescription`, and `targetType: "Competency"`. The adapter SHALL enforce the 40-character limit on `targetName` by truncating if necessary and logging a warning.
 
