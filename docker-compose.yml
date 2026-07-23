@@ -68,6 +68,21 @@ services:
       timeout: 3s
       retries: 5
 
+  # Field Mapping LLM Decision Service (#27/ADR-0007). Replay mode by default
+  # (deterministic fixtures, no AWS creds); FIELD_MAPPING_MODE=bedrock for live.
+  field-mapping:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('field_mapping.api:create_app', factory=True, host='0.0.0.0', port=8120)"]
+    environment:
+      FIELD_MAPPING_MODE: ${FIELD_MAPPING_MODE:-replay}
+    ports: ["8120:8120"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8120/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Transformation Executor (#98) — deterministic JSONata runner (no LLM).
   transformation-executor:
     <<: *python
     command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('transformation_executor.app:create_app', factory=True, host='0.0.0.0', port=8160)"]
@@ -83,6 +98,7 @@ services:
     command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('orchestrator.app:create_app', factory=True, host='0.0.0.0', port=8400)"]
     environment:
       ORCHESTRATOR_CONTEXT_BUILDER_URL: http://context-builder:8100
+      ORCHESTRATOR_FIELD_MAPPING_URL: http://field-mapping:8120
       ORCHESTRATOR_PROFILE_RESOLVER_URL: http://profile-resolver:8700
       ORCHESTRATOR_DELIVERY_ROUTER_URL: http://delivery-router:8800
       ORCHESTRATOR_TRANSFORMATION_EXECUTOR_URL: http://transformation-executor:8160
@@ -95,6 +111,8 @@ services:
     ports: ["8400:8400"]
     depends_on:
       context-builder:
+        condition: service_healthy
+      field-mapping:
         condition: service_healthy
       profile-resolver:
         condition: service_healthy

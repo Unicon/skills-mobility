@@ -1,5 +1,6 @@
 import { CopyableId } from "@skills-mobility/ui";
 import { useExecution } from "../hooks/useExecution";
+import { DecisionFlow } from "./DecisionFlow";
 import { StepRow } from "./StepRow";
 
 export function WorkflowDetail({ executionId, onBack }: { executionId: string; onBack: () => void }) {
@@ -34,13 +35,9 @@ export function WorkflowDetail({ executionId, onBack }: { executionId: string; o
           </div>
 
           <div className="card">
-            <header>Decision log</header>
+            <header>Decision flow</header>
             <div className="body">
-              {execution.gate_decision ? (
-                <pre className="mono">{JSON.stringify(execution.gate_decision, null, 2)}</pre>
-              ) : (
-                <span className="placeholder">No decision recorded yet.</span>
-              )}
+              <DecisionFlow execution={execution} />
             </div>
           </div>
 

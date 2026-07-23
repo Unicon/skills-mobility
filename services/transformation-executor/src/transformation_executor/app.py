@@ -32,31 +32,28 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.post("/execute")
     def execute(request: ExecutionRequest) -> ExecutionResponse:
         response = executor.run(request)
-        mapping_prefix = request.mapping[:16]
         if response.status == "succeeded" and response.result is not None:
             logger.info(
                 "execution execution_id=%s event_id=%s correlation_id=%s "
-                "transformation_type=%s status=%s mapping_prefix=%r output_keys=%d",
+                "transformation_type=%s status=%s output_keys=%d",
                 request.execution_id,
                 request.event_id,
                 request.correlation_id,
                 request.transformation_type,
                 response.status,
-                mapping_prefix,
                 len(response.result),
             )
         else:
             error_type = response.error.error_type if response.error else "unknown"
             logger.info(
                 "execution execution_id=%s event_id=%s correlation_id=%s "
-                "transformation_type=%s status=%s error_type=%s mapping_prefix=%r",
+                "transformation_type=%s status=%s error_type=%s",
                 request.execution_id,
                 request.event_id,
                 request.correlation_id,
                 request.transformation_type,
                 response.status,
                 error_type,
-                mapping_prefix,
             )
         return response
 

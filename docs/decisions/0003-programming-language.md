@@ -1,6 +1,6 @@
 # ADR-0003: Primary Programming Language Selection
 
-Status: Accepted  
+Status: Accepted (infrastructure-as-code revised 2026-07-20: AWS CDK → CloudFormation — see [Revision History](#revision-history))  
 Date: 2026-06-10
 
 ## Context
@@ -46,7 +46,7 @@ Specifically:
 | Delivery Routing Service | Python |
 | Audit Logging Services | Python |
 | LearnCloud/LearnCard Adapter | TypeScript |
-| AWS CDK Infrastructure | TypeScript |
+| AWS infrastructure (IaC) | CloudFormation (YAML) — revised 2026-07-20, was AWS CDK/TypeScript |
 | Demo UI | React/TypeScript |
 
 ## Rationale
@@ -206,3 +206,19 @@ This allows future support for:
 - Maintain language-neutral interfaces between services.
 - Keep LearnCloud-specific logic isolated behind a dedicated adapter boundary.
 - Avoid introducing additional TypeScript services unless a clear requirement emerges.
+
+## Revision History
+
+### 2026-07-20 — Infrastructure-as-code: CloudFormation instead of AWS CDK
+
+**Change.** The infrastructure-as-code tool is **CloudFormation (YAML)**, not AWS CDK (TypeScript); the language table above is updated accordingly. This reverses the original CDK choice. Per [ADR-0019](./0019-adr-governance-and-lifecycle.md), the superseded option and its rationale are kept visible here rather than deleted.
+
+**Unchanged — compute is AWS Lambda.** This revision concerns only the IaC authoring tool. The serverless compute model remains AWS **Lambda + SQS + EventBridge**, decided in [ADR-0015](./0015-orchestrator-execution-model.md) and reaffirmed here — we are **not** adopting a long-running ECS/Fargate model (the CloudFormation reference we are borrowing from happens to be ECS-based; we take its CloudFormation + CI patterns, not its compute model).
+
+**Why CloudFormation over CDK for this POC.**
+
+- **Ownership / hand-off.** The Ops team maintains our AWS environment and already has a working CloudFormation reference (per-service templates + a declarative, ordered deploy) we can adapt; they are most fluent in CloudFormation. For a hand-off-oriented POC, matching the tooling Ops will own outweighs CDK's authoring ergonomics.
+- **Scale and timeline.** CDK's advantages — less code via constructs, loops, refactoring — compound on large, long-lived, evolving infrastructure. This POC is small (~14 small services), single-environment, and approaching a code freeze, so those advantages are muted while CDK's costs land now: a `cdk bootstrap` dependency and a CLI/synth step in the Ops account, a heavy fast-moving `aws-cdk-lib` dependency, a net-new build vs. adapting Ops's proven templates, and a synthesized-CloudFormation debugging indirection for whoever owns it after hand-off.
+- **Language fit.** CDK's best-supported language is TypeScript, which cuts against this ADR's own goal of minimizing TypeScript. (Python-CDK exists but is the rougher, less-polished path.) Dropping CDK removes a TypeScript surface, leaving TS confined to the LearnCard adapter and the UI — reinforcing the "limit TypeScript" mitigation above.
+
+**Superseded option — AWS CDK.** CDK (ideally its Python bindings, to preserve language consistency) remains a reasonable choice if this system becomes long-lived and Python-team-owned; it was set aside for the reasons above, not because it is unsuitable.
