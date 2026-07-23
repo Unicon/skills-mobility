@@ -276,8 +276,6 @@ The synchronous response returns generated content inline always:
 
 `values`, `confidence`, and `rationale` are always present. `synthesis_result_ref` is an optional storage-correlation pointer the Orchestrator may pass downstream; the Transformation Executor extracts the `values` map from this response directly rather than resolving a ref. `llm_invocation_log_ref` points to detailed per-invocation metadata (token counts, latency, model ID) in execution logs — those fields do not belong in the synchronous response.
 
-There is no `_debug_inline` mode: inline delivery is the default contract, not a debugging path.
-
 ## 10. Validation
 
 The service should validate before reporting success:
@@ -383,7 +381,7 @@ Recommended implementation order, mirroring Field Mapping's build sequence adapt
 4. Implement coverage validation.
 5. Add a deterministic replay adapter and fixture-driven tests (Layer A gates must pass before any model work begins).
 6. Add the provider-adapter boundary and the Bedrock implementation with the prompt templates and per-invocation metadata capture.
-7. Wire the Orchestrator seam: accept `synthesis_request_ref` from Field Mapping's response; pass `synthesis_result_ref` to the Transformation Executor.
+7. Wire the Orchestrator seam: accept `synthesis_request_ref` from Field Mapping's response; pass the inline `values` (plus `synthesis_result_ref` for storage correlation) to the Transformation Executor.
 8. Enable live Bedrock mode for prompt iteration and Layer B evaluation runs.
 
 That order ensures the service is testable and contracts are stable before any live Bedrock work begins.

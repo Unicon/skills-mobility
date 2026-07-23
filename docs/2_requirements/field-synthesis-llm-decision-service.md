@@ -57,7 +57,7 @@ The primary input is the synthesis-request artifact produced by the Field Mappin
 | Each brief's `instruction` | Field-specific guidance on length, tone, or framing for the generated value |
 | Each brief's `source_payloads` and/or `source_payload_paths` | The targeted source-data snapshot for that specific placeholder |
 
-The synthesis request is an **array of per-placeholder brief objects** (intentional deviation from the flat-table style of sibling docs — a table cannot convey the repeated-object structure). Abbreviated structural sketch:
+The synthesis request is an **array of per-placeholder brief objects**. Abbreviated structural sketch:
 
 ```json
 {
