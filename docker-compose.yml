@@ -177,8 +177,6 @@ services:
     environment:
       LEARNCARD_API_URL: ${LEARNCARD_API_URL:-https://network.learncard.com/api}
       LEARNCARD_API_TOKEN: ${LEARNCARD_API_TOKEN:-}
-      # Recipient-scoped read token for the delivered-credential read-back (#53/#55).
-      LEARNCARD_RECIPIENT_API_TOKEN: ${LEARNCARD_RECIPIENT_API_TOKEN:-}
     ports: ["8900:8900"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8900/healthz')"]
