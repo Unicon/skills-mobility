@@ -25,7 +25,7 @@ import json
 from typing import Any
 
 import boto3
-from boto3.dynamodb.conditions import Attr
+from boto3.dynamodb.conditions import Attr, ConditionBase
 
 from orchestrator.schemas import (
     DecisionArtifact,
@@ -184,7 +184,7 @@ class DynamoExecutionStore:
     def list_executions(
         self, limit: int = 50, correlation_id: str | None = None
     ) -> list[ExecutionSummary]:
-        cond = Attr("entity").eq("execution")
+        cond: ConditionBase = Attr("entity").eq("execution")
         if correlation_id is not None:
             cond = cond & Attr("correlation_id").eq(correlation_id)
         docs = [json.loads(i["body"]) for i in self._scan(cond)]
@@ -219,7 +219,7 @@ class DynamoExecutionStore:
             return fallback
         return len(json.loads(item["body"]).get("steps", []))
 
-    def _scan(self, filter_expr: Any) -> list[dict[str, Any]]:
+    def _scan(self, filter_expr: ConditionBase) -> list[dict[str, Any]]:
         items: list[dict[str, Any]] = []
         kwargs: dict[str, Any] = {"FilterExpression": filter_expr}
         while True:
