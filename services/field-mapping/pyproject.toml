@@ -9,6 +9,7 @@ dependencies = [
     "pydantic-settings>=2.4",
     "uvicorn>=0.30",
     "jsonata-python>=0.5",
+    "boto3>=1.35",
 ]
 
 [project.scripts]
