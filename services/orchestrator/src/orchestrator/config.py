@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     port: int = 8400
     # Execution-state store (ADR-0014: SQLite locally). ":memory:" for ephemeral runs.
     db_path: str = "orchestrator.db"
+    # When set, the execution store is DynamoDB instead of SQLite — required on
+    # Lambda, whose per-instance /tmp can't be shared across invocations (the
+    # Admin UI polls a possibly-different instance than the one that ran the
+    # workflow). Names the single state table (ADR-0014 §9; infra #107 foundation).
+    dynamo_table: str | None = None
+    # Region for the DynamoDB client; None → boto3 default (AWS_REGION on Lambda).
+    aws_region: str | None = None
     # Issuer identity stamped into the stubbed OBv3 credential.
     issuer_id: str = "did:web:poc.skills-mobility.example"
     # Shared LearnCard delivery config (resolver + router), so it carries the

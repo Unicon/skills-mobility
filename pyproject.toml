@@ -28,6 +28,9 @@ dev = [
     "coverage>=7",
     "faker>=30",
     "types-pyyaml>=6",
+    # DynamoDB execution store (orchestrator) + its in-process AWS fake for tests.
+    "boto3>=1.35",
+    "moto>=5",
 ]
 
 [tool.ruff]
@@ -44,9 +47,9 @@ strict = true
 # mangum is an optional per-service [lambda] extra (installed only in the
 # container-image Lambda build), so it is absent from the dev/CI venv that
 # type-checks src/. The only import site is each service's trivial
-# lambda_handler.py.
+# lambda_handler.py. boto3 ships no type stubs, so it needs the same treatment.
 [[tool.mypy.overrides]]
-module = "mangum.*"
+module = ["mangum.*", "boto3.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

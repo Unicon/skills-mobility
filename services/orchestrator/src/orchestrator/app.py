@@ -36,7 +36,7 @@ from orchestrator.clients import (
 )
 from orchestrator.config import Settings, get_settings
 from orchestrator.schemas import WorkflowStartRequest
-from orchestrator.store import ExecutionStore
+from orchestrator.store import ExecutionStore, ExecutionStoreProtocol
 
 
 class PlanLookupToggle(BaseModel):
@@ -51,7 +51,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         summary="Phase-1 constrained plan executor (POC)",
     )
     app.state.settings = settings
-    app.state.store = ExecutionStore(settings.db_path)
+    store: ExecutionStoreProtocol
+    if settings.dynamo_table:
+        # Lazy import so local/compose (SQLite) never needs boto3.
+        from orchestrator.store_dynamo import DynamoExecutionStore
+
+        store = DynamoExecutionStore(settings.dynamo_table, region=settings.aws_region)
+    else:
+        store = ExecutionStore(settings.db_path)
+    app.state.store = store
     # Context Builder is built (#20): use the real HTTP client when its URL is set.
     context_builder: ContextBuilderClient = (
         HttpContextBuilderClient(settings.context_builder_url)
@@ -119,13 +127,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def list_executions(
         limit: int = 50, correlation_id: str | None = None
     ) -> list[dict[str, Any]]:
-        store: ExecutionStore = app.state.store
+        store: ExecutionStoreProtocol = app.state.store
         rows = store.list_executions(limit=limit, correlation_id=correlation_id)
         return [r.model_dump() for r in rows]
 
     @app.get("/executions/{execution_id}")
     def get_execution(execution_id: str) -> dict[str, Any]:
-        store: ExecutionStore = app.state.store
+        store: ExecutionStoreProtocol = app.state.store
         metadata = store.get_execution_metadata(execution_id)
         if metadata is None:
             raise HTTPException(
@@ -141,7 +149,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.delete("/admin/plans/{plan_id}", tags=["admin"])
     def delete_plan(plan_id: str) -> dict[str, Any]:
-        store: ExecutionStore = app.state.store
+        store: ExecutionStoreProtocol = app.state.store
         return {"deleted": store.delete_plan(plan_id)}
 
     @app.get("/healthz", tags=["meta"])

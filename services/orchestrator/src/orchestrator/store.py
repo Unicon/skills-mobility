@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
 
 from orchestrator.schemas import (
     DecisionArtifact,
@@ -22,6 +22,29 @@ from orchestrator.schemas import (
     StepProgress,
     StepResult,
 )
+
+
+@runtime_checkable
+class ExecutionStoreProtocol(Protocol):
+    """The execution-state store interface the engine and read API depend on.
+    Implemented by the SQLite ``ExecutionStore`` (local) and the DynamoDB
+    ``DynamoExecutionStore`` (Lambda) — see ADR-0014 §9."""
+
+    def create_execution(
+        self, execution_id: str, event_id: str, correlation_id: str, event_type: str
+    ) -> None: ...
+    def set_status(self, execution_id: str, status: str) -> None: ...
+    def record_decision(self, execution_id: str, decision: DecisionArtifact) -> None: ...
+    def set_plan(self, execution_id: str, plan_id: str) -> None: ...
+    def set_result(self, execution_id: str, result: dict[str, Any]) -> None: ...
+    def save_step(self, execution_id: str, step: StepResult) -> None: ...
+    def save_plan(self, plan: DeliveryPhasePlan, applicability_key: str) -> None: ...
+    def get_plan_by_key(self, applicability_key: str) -> DeliveryPhasePlan | None: ...
+    def delete_plan(self, plan_id: str) -> bool: ...
+    def get_execution_metadata(self, execution_id: str) -> ExecutionMetadata | None: ...
+    def list_executions(
+        self, limit: int = 50, correlation_id: str | None = None
+    ) -> list[ExecutionSummary]: ...
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS workflow_execution (
