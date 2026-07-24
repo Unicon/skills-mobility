@@ -59,7 +59,7 @@ def test_gate_skill_mastered_returns_continue(
 ) -> None:
     resp = make_service().run_gate(skill_mastered_gate_request)
     assert resp.status == "succeeded"
-    assert resp.decision == "continue_to_delivery_targets"
+    assert resp.decision == "continue"
     assert resp.confidence is not None and 0.0 <= resp.confidence <= 1.0
     assert resp.rationale
     assert resp.llm_invocation_log_ref is not None
@@ -79,7 +79,7 @@ def test_gate_unsupported_event_type_returns_terminate(
     resp = make_service().run_gate(request)
     assert resp.status == "succeeded"
     assert resp.decision is not None
-    assert resp.decision.startswith("terminate_")
+    assert resp.decision == "terminate"
 
 
 def test_gate_invalid_generation_returns_failed(

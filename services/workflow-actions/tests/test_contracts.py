@@ -21,14 +21,14 @@ _PLAN_SEAM_KEYS = {
 
 def test_gate_response_succeeded_has_exact_seam_keys() -> None:
     resp = GateResponse.succeeded(
-        decision="continue_to_delivery_targets",
+        decision="continue",
         confidence=0.98,
         rationale="no disqualifier",
         llm_invocation_log_ref="llmcall:g-1",
     )
     assert set(resp.model_dump().keys()) == _GATE_SEAM_KEYS
     assert resp.status == "succeeded"
-    assert resp.decision == "continue_to_delivery_targets"
+    assert resp.decision == "continue"
 
 
 def test_gate_response_failed_nulls_fields() -> None:

@@ -11,11 +11,10 @@ from __future__ import annotations
 
 from .contracts import GateGeneration, PlanGeneration
 
-# The known valid gate decisions.  Additional terminate_* values are allowed as
-# discriminated strings (design §2) — the validator only requires the decision
-# starts with "continue_to_delivery_targets" or "terminate_".
-_CONTINUE_DECISION = "continue_to_delivery_targets"
-_TERMINATE_PREFIX = "terminate_"
+# The two valid gate decisions (FR-WA-2): exactly "continue" or "terminate".
+# The reason for a terminate is carried in ``rationale``, not encoded in the
+# decision string.
+_VALID_DECISIONS = frozenset({"continue", "terminate"})
 
 # The workflow-context keys the executor populates before the plan runs.
 # Binding resolvability for "workflow" source paths is checked against these.
@@ -38,7 +37,7 @@ def validate_gate(
     """Validate a gate decision generation. Returns error list (empty = pass).
 
     allowed_decisions: explicit set of valid decisions; if None, the default
-    rules apply (continue_to_delivery_targets OR any terminate_* string).
+    rule applies (exactly "continue" or "terminate").
     """
     errors: list[str] = []
     decision = generation.decision
@@ -49,11 +48,8 @@ def validate_gate(
                 f"gate decision '{decision}' is not in allowed set {sorted(allowed_decisions)}"
             )
     else:
-        if decision != _CONTINUE_DECISION and not decision.startswith(_TERMINATE_PREFIX):
-            errors.append(
-                f"gate decision '{decision}' is not 'continue_to_delivery_targets' "
-                f"or a 'terminate_*' string"
-            )
+        if decision not in _VALID_DECISIONS:
+            errors.append(f"gate decision '{decision}' is not 'continue' or 'terminate'")
 
     if not (0.0 <= generation.confidence <= 1.0):
         errors.append(f"gate confidence {generation.confidence} is out of range [0,1]")

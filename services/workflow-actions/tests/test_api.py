@@ -36,7 +36,7 @@ def test_post_gate_returns_seam_envelope(tmp_path: Path) -> None:
     body = resp.json()
     assert set(body.keys()) == _GATE_SEAM_KEYS
     assert body["status"] == "succeeded"
-    assert body["decision"] == "continue_to_delivery_targets"
+    assert body["decision"] == "continue"
 
 
 def test_post_plan_returns_seam_envelope(tmp_path: Path) -> None:

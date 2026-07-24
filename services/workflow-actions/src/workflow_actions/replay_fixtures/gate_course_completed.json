@@ -1,5 +1,5 @@
 {
-  "decision": "continue_to_delivery_targets",
+  "decision": "continue",
   "confidence": 0.96,
   "rationale": "course_completed event with no disqualifying signals; proceeding to delivery-target selection."
 }

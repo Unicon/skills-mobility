@@ -1,5 +1,5 @@
 {
-  "decision": "continue_to_delivery_targets",
+  "decision": "continue",
   "confidence": 0.98,
   "rationale": "skill_mastered at a parent-competency level; no disqualifier present. Proceeding to delivery-target selection."
 }

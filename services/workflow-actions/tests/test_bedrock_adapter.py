@@ -62,7 +62,7 @@ def _registry_view() -> list[dict[str, str]]:
 
 def test_gate_builds_converse_request_and_parses_output() -> None:
     tool_input = {
-        "decision": "continue_to_delivery_targets",
+        "decision": "continue",
         "confidence": 0.98,
         "rationale": "no disqualifier",
     }
@@ -75,7 +75,7 @@ def test_gate_builds_converse_request_and_parses_output() -> None:
     gen, meta = adapter.gate(_gate_request(), gating_prose="Terminate on failing grades.")
 
     assert isinstance(gen, GateGeneration)
-    assert gen.decision == "continue_to_delivery_targets"
+    assert gen.decision == "continue"
     assert gen.confidence == 0.98
     kwargs = fake.last_kwargs
     assert kwargs is not None
@@ -138,7 +138,7 @@ def test_extract_tool_input_raises_without_tooluse() -> None:
 
 def test_adapter_lazy_client_not_created_until_called() -> None:
     tool_input = {
-        "decision": "continue_to_delivery_targets",
+        "decision": "continue",
         "confidence": 0.9,
         "rationale": "x",
     }
@@ -149,14 +149,14 @@ def test_adapter_lazy_client_not_created_until_called() -> None:
         client=fake,
     )
     gen, _meta = adapter.gate(_gate_request(), gating_prose="Terminate on failures.")
-    assert gen.decision == "continue_to_delivery_targets"
+    assert gen.decision == "continue"
 
 
 def test_gate_logs_injection_findings(caplog: Any) -> None:
     import logging
 
     tool_input = {
-        "decision": "continue_to_delivery_targets",
+        "decision": "continue",
         "confidence": 0.9,
         "rationale": "ok",
     }

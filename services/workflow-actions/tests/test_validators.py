@@ -29,14 +29,14 @@ _REGISTRY: set[tuple[str, str]] = {
 
 def test_valid_continue_gate_passes() -> None:
     g = GateGeneration(
-        decision="continue_to_delivery_targets", confidence=0.98, rationale="no disqualifier"
+        decision="continue", confidence=0.98, rationale="no disqualifier"
     )
     assert validate_gate(g) == []
 
 
 def test_valid_terminate_gate_passes() -> None:
     g = GateGeneration(
-        decision="terminate_sub_competency", confidence=1.0, rationale="sub-competency outcome"
+        decision="terminate", confidence=1.0, rationale="sub-competency outcome"
     )
     assert validate_gate(g) == []
 
@@ -48,27 +48,27 @@ def test_unknown_decision_fails() -> None:
 
 
 def test_allowed_decisions_set_restricts_values() -> None:
-    allowed = {"continue_to_delivery_targets", "terminate_failing_grade"}
-    g = GateGeneration(decision="terminate_sub_competency", confidence=0.9, rationale="x")
+    allowed = {"continue"}
+    g = GateGeneration(decision="terminate", confidence=0.9, rationale="x")
     errors = validate_gate(g, allowed_decisions=allowed)
     assert errors
 
 
 def test_allowed_decisions_set_accepts_valid() -> None:
-    allowed = {"continue_to_delivery_targets", "terminate_failing_grade"}
-    g = GateGeneration(decision="continue_to_delivery_targets", confidence=0.95, rationale="ok")
+    allowed = {"continue", "terminate"}
+    g = GateGeneration(decision="continue", confidence=0.95, rationale="ok")
     assert validate_gate(g, allowed_decisions=allowed) == []
 
 
 def test_confidence_out_of_range_fails() -> None:
-    g = GateGeneration(decision="continue_to_delivery_targets", confidence=1.5, rationale="x")
+    g = GateGeneration(decision="continue", confidence=1.5, rationale="x")
     errors = validate_gate(g)
     assert any("confidence" in e for e in errors)
 
 
 def test_empty_rationale_fails() -> None:
     g = GateGeneration(
-        decision="continue_to_delivery_targets", confidence=0.9, rationale="   "
+        decision="continue", confidence=0.9, rationale="   "
     )
     errors = validate_gate(g)
     assert any("rationale" in e for e in errors)

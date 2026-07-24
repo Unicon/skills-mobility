@@ -83,7 +83,7 @@ class GateDecision(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    decision: str  # "continue_to_delivery_targets" or "terminate_*"
+    decision: str  # "continue" or "terminate" (reason in rationale, FR-WA-2)
     confidence: float = 1.0
     rationale: str = ""
 
