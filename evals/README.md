@@ -49,8 +49,8 @@ Seven hand-labeled scenarios for the Workflow Actions Gate service
 - `event_type` — `skill_mastered`, `course_completed`, or `badge_awarded`
 - `event` — raw event body (metadata + body) sent to the service
 - `context_bundle` — currently empty `{}` for all POC scenarios
-- `expected_decision` — the ground-truth label:
-  `continue_to_delivery_targets` or a `terminate_*` string
+- `expected_decision` — the ground-truth label: `continue` or `terminate`
+  (the reason for a terminate is in `rationale`, not the decision string; FR-WA-2)
 
 ### `corpus/delivery_targets.json`
 
@@ -60,16 +60,17 @@ Six hand-labeled scenarios for the Delivery Targets service
 - `corpus_scenario_id`
 - `event_type`, `source_system`, `learner_context`
 - `expected_targets` — list of target strings (e.g. `["learncard_issuer", "learncard_wallet"]`)
-- `label_status`: `"provisional"` for all current entries
 
-**IMPORTANT: delivery_targets labels are PROVISIONAL.** The
-LearnCard-vs-SmartResume routing use case is an open question (spec review #75).
-These labels encode the *intended* bifurcation:
+Labels follow the resolved #75 routing — the bifurcation is by course subject via
+the institution's partnership associations:
 
-- `kind: "digital_credential"` courses → `["learncard_issuer", "learncard_wallet"]`
-- `kind: "standard"` courses → `["smart_resume"]`
+- Accounting (`ACCY-*`) courses → `["learncard_issuer", "learncard_wallet"]`
+  (Pretend Association of Accountants / LearnCard)
+- Finance (`FINC-*`) courses → `["smart_resume"]`
+  (Pretend Association of Finance / SmartResume)
 
-Do not treat these as a settled contract until #75 is resolved.
+`issue_learncard_badge` runs first for every credential; the selected target
+distinguishes only the final delivery step.
 
 ## Metric rationale (ADR-0013/0021)
 

@@ -12,7 +12,7 @@
       }
     },
     "context_bundle": {},
-    "expected_decision": "continue_to_delivery_targets"
+    "expected_decision": "continue"
   },
   {
     "corpus_scenario_id": "skill_mastered.sub_competency.v1",
@@ -27,7 +27,7 @@
       }
     },
     "context_bundle": {},
-    "expected_decision": "terminate_sub_competency"
+    "expected_decision": "terminate"
   },
   {
     "corpus_scenario_id": "skill_mastered.top_level_pass_2.v1",
@@ -42,7 +42,7 @@
       }
     },
     "context_bundle": {},
-    "expected_decision": "continue_to_delivery_targets"
+    "expected_decision": "continue"
   },
   {
     "corpus_scenario_id": "course_completed.passing.v1",
@@ -57,7 +57,7 @@
       }
     },
     "context_bundle": {},
-    "expected_decision": "continue_to_delivery_targets"
+    "expected_decision": "continue"
   },
   {
     "corpus_scenario_id": "course_completed.passing_high.v1",
@@ -72,7 +72,7 @@
       }
     },
     "context_bundle": {},
-    "expected_decision": "continue_to_delivery_targets"
+    "expected_decision": "continue"
   },
   {
     "corpus_scenario_id": "course_completed.failing_grade.v1",
@@ -87,7 +87,7 @@
       }
     },
     "context_bundle": {},
-    "expected_decision": "terminate_failing_grade"
+    "expected_decision": "terminate"
   },
   {
     "corpus_scenario_id": "badge_awarded.not_accepted.v1",
@@ -100,6 +100,6 @@
       }
     },
     "context_bundle": {},
-    "expected_decision": "terminate_badge_not_accepted"
+    "expected_decision": "terminate"
   }
 ]
