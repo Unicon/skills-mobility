@@ -2,19 +2,19 @@
   {
     "delivery_target": "learncard_issuer",
     "delivery_action": "issue_learncard_badge",
-    "description": "Issues a verifiable Open Badge credential via the LearnCard issuer service. Use this target when the course or skill event is credential-enabled and the learner should receive a digitally-signed achievement badge. This target is typically paired with the LearnCard wallet target so the issued badge is also delivered to the learner's wallet.",
-    "eligibility_notes": "Appropriate for skill_mastered and course_completed events where the course has digital credential issuance enabled. Requires an issuer DID to be configured for the source system. Not appropriate for non-credential-enabled courses or where the learner does not have a resolvable DID."
+    "description": "LearnCard badge issuer. We use this for our Accounting courses (the ACCY-* subjects). The Pretend Association of Accountants partners with LearnCard, so badges issued here reach their employer members. This runs first for any credential we send out — it's the only issuer we have — and it's normally paired with the LearnCard wallet target so the learner also gets the badge in their wallet.",
+    "eligibility_notes": "Select for Accounting (ACCY-*) course and skill events that should produce a badge. Pair with learncard_wallet. Not the right target for Finance (FINC-*) events — those go to SmartResume."
   },
   {
     "delivery_target": "learncard_wallet",
     "delivery_action": "deliver_to_learncard_wallet",
-    "description": "Delivers an issued credential to the learner's LearnCard wallet. Use this when the learner has a LearnCard profile and should receive the credential in their wallet for long-term storage and sharing. This target depends on the learncard_issuer target having been selected — it delivers the issued badge, not the raw event data.",
-    "eligibility_notes": "Appropriate when learncard_issuer is also selected and the learner has a resolvable LearnCard wallet profile (recipient_profile_id present in learner context). Not appropriate on its own without the issuer target. Not appropriate for non-credential-enabled courses."
+    "description": "Delivers the issued badge into the learner's LearnCard wallet for long-term storage and sharing. Goes together with the LearnCard issuer for our Accounting (ACCY-*) courses, under the Pretend Association of Accountants / LearnCard partnership. It delivers the issued badge, so it only makes sense when learncard_issuer was also selected.",
+    "eligibility_notes": "Select alongside learncard_issuer for Accounting (ACCY-*) events where the learner has a resolvable LearnCard wallet profile (recipient_profile_id in the learner context). Not on its own without the issuer."
   },
   {
     "delivery_target": "smart_resume",
     "delivery_action": "deliver_to_smartresume",
-    "description": "Sends the learner achievement data to SmartResume for inclusion in the learner's professional record. Use this when the course or event is not credential-enabled (no Open Badge issuance) but the achievement should still be recorded in the learner's SmartResume profile. Also consider this target when SmartResume is the institution's primary record-of-learning system.",
-    "eligibility_notes": "Appropriate for non-credential-enabled courses or where SmartResume is the designated downstream system. Typically mutually exclusive with learncard_issuer/learncard_wallet for a given event — a credential-enabled course routes to LearnCard, a non-credential course routes to SmartResume. However, dual routing is possible if the institution configures both systems."
+    "description": "SmartResume delivery. We use this for our Finance courses (the FINC-* subjects). The Pretend Association of Finance partners with SmartResume, so Finance credentials are delivered there for their members. The LearnCard issuer still runs first (it's our only issuer); this target just changes the final delivery step to SmartResume instead of the LearnCard wallet.",
+    "eligibility_notes": "Select for Finance (FINC-*) course and skill events. Normally mutually exclusive with learncard_wallet for a given event — Accounting routes to LearnCard, Finance routes to SmartResume — though an institution could configure both."
   }
 ]
