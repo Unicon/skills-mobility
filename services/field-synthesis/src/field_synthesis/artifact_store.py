@@ -1,8 +1,11 @@
 """File-based JSON artifact store (design §16 / ADR-0014).
 
 Synthesis-result artifacts and invocation logs are written to local JSON files keyed
-by execution_id. This keeps local dev/test free of any running store while preserving
-the interface a cloud storage layer will back in AWS.
+by Field Mapping's ``stable_key`` (design §16) — co-locating all three artifact kinds
+(mapping, synthesis-request, synthesis-result) under one key so result reuse
+(FR-FS-21) is possible; the caller derives the key (falling back to execution_id only
+for the ref-less inline dev flow). This keeps local dev/test free of any running store
+while preserving the interface a cloud storage layer will back in AWS.
 
 The store also supports loading synthesis-request artifacts (Field Mapping's output)
 so the service can resolve by-ref requests without a live source-system call.
@@ -48,24 +51,24 @@ class ArtifactStore:
 
     # --- synthesis result artifacts ---
 
-    def store_synthesis_result(self, artifact: SynthesisResultArtifact) -> str:
-        """Persist a successful synthesis result artifact; returns ``"synthesis_result:<key>"``."""
-        key = artifact.execution_id
+    def store_synthesis_result(self, artifact: SynthesisResultArtifact, key: str) -> str:
+        """Persist a successful synthesis result artifact under ``key`` (Field
+        Mapping's stable_key); returns ``"synthesis_result:<key>"``."""
         return self._write(
             "synthesis_result",
             key,
             {"status": "succeeded", "artifact": artifact.model_dump(mode="json")},
         )
 
-    def store_failed(self, execution_id: str, reason: str) -> str:
-        """Persist a failed-synthesis record; returns the loadable ``"synthesis_result:<key>"`` ref.
+    def store_failed(self, key: str, reason: str) -> str:
+        """Persist a failed-synthesis record under ``key``; returns the loadable
+        ``"synthesis_result:<key>"`` ref.
 
         The record is written to the same path as a successful artifact so that
         a subsequent ``load_synthesis_result`` attempt raises ``FailedArtifactError``
         (audit trail, FR-FS-10). The returned ref resolves via ``_read`` — loading
         it raises FailedArtifactError, not a not-found error.
         """
-        key = execution_id
         return self._write("synthesis_result", key, {"status": "failed", "reason": reason})
 
     def load_synthesis_result(self, ref: str) -> SynthesisResultArtifact:

@@ -10,7 +10,14 @@ from field_synthesis.service import SynthesisService
 
 from .conftest import OPEN_BADGE_BODY
 
-_SEAM_KEYS = {"status", "synthesis_result_ref", "llm_invocation_log_ref", "values"}
+_SEAM_KEYS = {
+    "status",
+    "synthesis_result_ref",
+    "llm_invocation_log_ref",
+    "values",
+    "confidence",
+    "rationale",
+}
 
 
 def _client(tmp_path: Path) -> TestClient:

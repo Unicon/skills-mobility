@@ -59,15 +59,17 @@ class SynthesisService:
         generation, meta = self._adapter.generate(request, briefs=briefs)
         errors = validate_generation(generation, requested_ids=requested_ids)
 
+        # All three artifact kinds (mapping, synthesis-request, synthesis-result)
+        # are co-located under Field Mapping's stable_key (design §16).
+        key = _artifact_key(request)
+
         log_ref = self._artifact_store.store_invocation_log(
             _invocation_log(request, generation, meta, errors, findings),
-            key=request.execution_id,
+            key=key,
         )
 
         if errors:
-            self._artifact_store.store_failed(
-                request.execution_id, "; ".join(errors)
-            )
+            self._artifact_store.store_failed(key, "; ".join(errors))
             return SynthesisResponse.failed(llm_invocation_log_ref=log_ref)
 
         artifact = SynthesisResultArtifact(
@@ -77,11 +79,13 @@ class SynthesisService:
             confidence=generation.confidence,
             rationale=generation.rationale,
         )
-        result_ref = self._artifact_store.store_synthesis_result(artifact)
+        result_ref = self._artifact_store.store_synthesis_result(artifact, key=key)
         return SynthesisResponse.succeeded(
             synthesis_result_ref=result_ref,
             llm_invocation_log_ref=log_ref,
             values=generation.values,
+            confidence=generation.confidence,
+            rationale=generation.rationale,
         )
 
     def _resolve_synthesis_request(
@@ -94,6 +98,19 @@ class SynthesisService:
         raise ValueError(
             "SynthesisRequest must supply either synthesis_request or synthesis_request_ref"
         )
+
+
+def _artifact_key(request: SynthesisRequest) -> str:
+    """Field Mapping's ``stable_key`` governs all three artifact kinds (design §16).
+    It is the suffix of ``synthesis_request_ref`` (``synthesis:<stable_key>``), so
+    it is extracted directly from the ref. Falls back to ``execution_id`` for the
+    inline dev/test flow that carries no ref — but keying results off execution_id
+    is exactly what would defeat reuse (FR-FS-21), so the ref is preferred whenever
+    present."""
+    ref = request.synthesis_request_ref
+    if ref and ":" in ref:
+        return ref.split(":", 1)[1]
+    return request.execution_id
 
 
 def _invocation_log(

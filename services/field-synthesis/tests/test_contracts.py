@@ -10,7 +10,14 @@ from field_synthesis.contracts import (
 )
 from pydantic import ValidationError
 
-_SEAM_KEYS = {"status", "synthesis_result_ref", "llm_invocation_log_ref", "values"}
+_SEAM_KEYS = {
+    "status",
+    "synthesis_result_ref",
+    "llm_invocation_log_ref",
+    "values",
+    "confidence",
+    "rationale",
+}
 
 
 # --- SynthesisBrief ---
@@ -87,10 +94,14 @@ def test_response_envelope_has_exact_seam_keys() -> None:
         synthesis_result_ref="synthesis_result:exec_1",
         llm_invocation_log_ref="llmcall:exec_1",
         values={"achievement_description": "You did it."},
+        confidence=0.9,
+        rationale="grounded in the outcome record",
     )
     assert set(resp.model_dump().keys()) == _SEAM_KEYS
     assert resp.status == "succeeded"
     assert resp.synthesis_result_ref == "synthesis_result:exec_1"
+    assert resp.confidence == 0.9
+    assert resp.rationale == "grounded in the outcome record"
 
 
 def test_failed_response_has_none_result_ref() -> None:

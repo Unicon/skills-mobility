@@ -9,7 +9,7 @@ from field_synthesis.contracts import (
     SynthesisRequest,
 )
 
-from .conftest import make_artifact, make_brief
+from .conftest import OPEN_BADGE_BODY, make_artifact, make_brief
 
 _REPLAY_META = LlmCallMeta(provider="replay", model_id="replay", temperature=0.0)
 
@@ -176,3 +176,20 @@ def test_replay_adapter_coverage_guarantee_for_unseen_placeholder(
     assert "totally_new_field" in artifact.values
     # Stand-in value is deterministic: starts with [replay:
     assert artifact.values["totally_new_field"].startswith("[replay:")
+
+
+def test_result_keyed_by_stable_key_from_ref(
+    make_service: Any,
+    artifact_store: ArtifactStore,
+) -> None:
+    # With a synthesis_request_ref present, artifacts are keyed by Field Mapping's
+    # stable_key (the ref suffix), not execution_id (design §16 / FR-FS-21) — so
+    # the synthesis-result co-locates with the mapping/request artifacts.
+    body = {**OPEN_BADGE_BODY, "synthesis_request_ref": "synthesis:sk_demo123"}
+    request = SynthesisRequest(**body)
+    resp = make_service().synthesize(request)
+    assert resp.status == "succeeded"
+    assert resp.synthesis_result_ref == "synthesis_result:sk_demo123"
+    # The run id is still recorded in the artifact body for audit.
+    artifact = artifact_store.load_synthesis_result(resp.synthesis_result_ref)
+    assert artifact.execution_id == "exec_1"
