@@ -87,13 +87,13 @@ class _StubDT:
 
 def test_gate_uses_deterministic_when_unconfigured() -> None:
     gate = _resolve_gate(None, "skill_mastered", {}, {}, _CTX)
-    assert gate.decision == "continue_to_delivery_targets"
+    assert gate.decision == "continue"
 
 
 def test_gate_falls_back_when_service_raises() -> None:
     # A failing Workflow Actions gate must NOT fail the workflow — deterministic fallback.
     gate = _resolve_gate(_RaisingWA(), "skill_mastered", {}, {}, _CTX)
-    assert gate.decision == "continue_to_delivery_targets"
+    assert gate.decision == "continue"
     # The deterministic gate reports no LLM confidence (None), not a fake 1.0.
     assert gate.confidence is None
 
@@ -136,7 +136,7 @@ def test_targets_use_service_result_when_configured_and_succeeds() -> None:
 
 def test_plan_uses_service_result_when_configured_and_succeeds() -> None:
     plan = planner.delivery_phase_plan("skill_mastered", _TARGETS, "2026-01-01T00:00:00Z")
-    gate = GateDecision(decision="continue_to_delivery_targets", confidence=1.0, rationale="")
+    gate = GateDecision(decision="continue", confidence=1.0, rationale="")
     wa = _StubWA(gate=gate, plan=plan)
     result = _resolve_plan(
         wa, "skill_mastered", "mock_lms", _TARGETS, {}, {}, "2026-01-01T00:00:00Z", _CTX,
@@ -186,11 +186,11 @@ def test_http_gate_continue_passes_through() -> None:
     client = HttpWorkflowActionsClient(
         "http://x",
         client=_FakeHttp(  # type: ignore[arg-type]
-            {"status": "succeeded", "decision": "continue_to_delivery_targets", "rationale": "ok"}
+            {"status": "succeeded", "decision": "continue", "rationale": "ok"}
         ),
     )
     gate = client.pre_target_gate("skill_mastered", {}, {}, _CTX)
-    assert gate.decision == "continue_to_delivery_targets"
+    assert gate.decision == "continue"
     # An omitted confidence stays None (not a fake 1.0) so it's distinguishable from a
     # genuine full-confidence decision (Phil, #79 review).
     assert gate.confidence is None

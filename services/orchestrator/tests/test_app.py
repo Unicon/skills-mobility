@@ -48,7 +48,7 @@ def test_run_workflow_completes_and_persists(client, sample_event):
         "kind": "gate",
         "confidence": None,
         "rationale": "Deterministic Phase 1 happy-path gate decision.",
-        "outcome": "continue_to_delivery_targets",
+        "outcome": "continue",
         "candidates": [],
         "artifact_ref": None,
         "invocation_log_ref": None,

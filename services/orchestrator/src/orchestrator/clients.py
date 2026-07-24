@@ -347,12 +347,15 @@ class HttpWorkflowActionsClient:
             raise RuntimeError(f"workflow-actions gate returned {body.get('status')}")
         raw = str(body.get("decision") or "terminate")
         rationale = str(body.get("rationale") or "")
-        if raw == "continue_to_delivery_targets":
-            return GateDecision(decision="continue_to_delivery_targets",
+        if raw == "continue":
+            return GateDecision(decision="continue",
                                 confidence=body.get("confidence"), rationale=rationale)
-        # Any terminate_* reason maps to the orchestrator's "terminate" Literal.
+        # Per FR-WA-2 the service returns a bare "terminate" with the reason in
+        # rationale. Tolerate a legacy "terminate_<reason>" by folding it into rationale.
+        if raw != "terminate":
+            rationale = f"{raw}: {rationale}" if rationale else raw
         return GateDecision(decision="terminate", confidence=body.get("confidence"),
-                            rationale=f"{raw}: {rationale}" if rationale else raw)
+                            rationale=rationale)
 
     def delivery_phase_plan(
         self,
