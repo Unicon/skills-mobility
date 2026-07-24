@@ -10,7 +10,8 @@ from mock_smartresume.config import Settings
 from mock_smartresume.token_store import CANNED_TOKEN
 
 client = TestClient(create_app(Settings()))
-BASIC = "Basic " + base64.b64encode(b"cid:akey").decode()
+# Matches the configured demo pair (mock-client-id / mock-access-key).
+BASIC = "Basic " + base64.b64encode(b"mock-client-id:mock-access-key").decode()
 FORM = {"grant_type": "client_credentials", "scope": "delete readonly replace"}
 
 
@@ -32,6 +33,13 @@ def test_token_missing_auth_is_401() -> None:
 def test_token_empty_credentials_is_401() -> None:
     empty = "Basic " + base64.b64encode(b":").decode()
     resp = client.post("/api/v1/token", headers={"Authorization": empty}, data=FORM)
+    assert resp.status_code == 401
+
+
+def test_token_wrong_credentials_is_401() -> None:
+    # Non-empty but not the configured pair (FR-MSR-2).
+    wrong = "Basic " + base64.b64encode(b"wrong-id:wrong-key").decode()
+    resp = client.post("/api/v1/token", headers={"Authorization": wrong}, data=FORM)
     assert resp.status_code == 401
 
 

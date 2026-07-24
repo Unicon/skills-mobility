@@ -1,6 +1,7 @@
 """Settings for the Mock SmartResume (prefix: MOCK_SMARTRESUME_).
 
-Stateless and secret-free — the mock accepts any non-empty ClientID/AccessKey.
+Stateless and secret-free — the token endpoint validates the incoming Basic-auth
+pair against the configured (non-secret) ClientID/AccessKey demo constants.
 """
 
 from __future__ import annotations
@@ -27,6 +28,11 @@ class Settings(BaseSettings):
     # delivery-router 8800, learncard-wallet 8900, learncard-issuer 8910,
     # smartresume-adapter 8920).
     port: int = 8930
+
+    # Expected Basic-auth pair at the token endpoint (FR-MSR-2). Non-secret demo
+    # constants; the SmartResume adapter must send a matching pair.
+    client_id: str = "mock-client-id"
+    access_key: str = "mock-access-key"
 
     log_level: str = "INFO"
 

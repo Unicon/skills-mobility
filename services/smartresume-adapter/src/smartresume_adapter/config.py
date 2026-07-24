@@ -32,15 +32,20 @@ class Settings(BaseSettings):
     # Root log level for the service entrypoint (e.g. INFO, DEBUG, WARNING).
     log_level: str = "INFO"
 
-    # SmartResume base URL. Staging by default; point at the Mock SmartResume
-    # (http://localhost:8930) locally or prod (https://my.smartresume.com) via env.
-    api_url: str = "https://mystage.smartresume.com"
+    # SmartResume base URL — no hard-coded default (FR-SR-13); must be set
+    # explicitly. Expected value is the Mock SmartResume in all current
+    # environments (local: http://localhost:8930; AWS: the deployed mock's URL).
+    api_url: str
 
-    # OAuth2 client_credentials — vendor secrets, resolved from env (FR-SR-11).
+    # OAuth2 client_credentials — resolved from env, kept out of source (FR-SR-11).
+    # Must match the Mock SmartResume's configured pair (demo: mock-client-id /
+    # mock-access-key), supplied via .env / .env.example.
     client_id: str = ""
     access_key: str = ""
 
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    # api_url is required (FR-SR-13) and supplied via env at runtime; mypy can't
+    # see the env source, so the "missing arg" it infers here is expected.
+    return Settings()  # type: ignore[call-arg]
