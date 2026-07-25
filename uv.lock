@@ -363,6 +363,7 @@ name = "field-mapping"
 version = "0.1.0"
 source = { editable = "services/field-mapping" }
 dependencies = [
+    { name = "boto3" },
     { name = "fastapi" },
     { name = "jsonata-python" },
     { name = "pydantic" },
@@ -372,6 +373,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "boto3", specifier = ">=1.35" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "jsonata-python", specifier = ">=0.5" },
     { name = "pydantic", specifier = ">=2.7" },

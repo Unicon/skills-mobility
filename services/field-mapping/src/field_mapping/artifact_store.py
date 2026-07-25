@@ -113,10 +113,32 @@ class ArtifactStore:
             raise FailedArtifactError(list(record.get("validation_errors", [])))
         return SynthesisRequestArtifact(**record["artifact"])
 
-    # --- invocation log (§14) ---
+    # --- invocation log (§14, append-only) ---
 
     def store_invocation_log(self, record: dict[str, Any], *, key: str) -> str:
-        return self._write("llmcall", key, record)
+        """Append a new invocation-log record for ``key``.
+
+        Each call writes to a distinct file at ``llmcall/<key>/<NNNN>.json``
+        where NNNN is the zero-padded index of the next record (determined by
+        counting existing files). This makes the log append-only so successive
+        calls for the same input shape can be compared over time (design §14).
+
+        Returns a ref of the form ``llmcall:<key>/<NNNN>`` pointing at this
+        specific record.
+
+        Note: the ``_reuse`` path in service.py constructs the synthetic ref
+        ``llmcall:<key>`` (without a record index) because it has not written a
+        new record — that ref now points to a directory, not a file. The reuse
+        path is default-off and used only in production-like mode; it is clearly
+        a directory-level ref rather than a specific record ref.
+        """
+        key_dir = self._base / "llmcall" / key
+        key_dir.mkdir(parents=True, exist_ok=True)
+        index = len(list(key_dir.glob("*.json")))
+        record_name = f"{index:04d}"
+        path = key_dir / f"{record_name}.json"
+        path.write_text(json.dumps(record, indent=2))
+        return f"llmcall:{key}/{record_name}"
 
     def _read(self, ref: str) -> dict[str, Any]:
         kind, key = ref.split(":", 1)
