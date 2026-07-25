@@ -13,7 +13,7 @@ from typing import Any
 
 from orchestrator.actions import ACTIONS, ActionDeps
 from orchestrator.schemas import DeliveryPhasePlan, InputBinding, PlanStep, StepResult
-from orchestrator.store import ExecutionStore
+from orchestrator.store import ExecutionStoreProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ def execute_plan(
     plan: DeliveryPhasePlan,
     workflow_ctx: dict[str, Any],
     deps: ActionDeps,
-    store: ExecutionStore,
+    store: ExecutionStoreProtocol,
     execution_id: str,
 ) -> tuple[str, dict[str, Any]]:
     """Run the plan's steps in order. Returns ``(workflow_status, result)`` where

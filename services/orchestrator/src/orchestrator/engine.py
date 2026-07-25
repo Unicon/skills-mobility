@@ -33,7 +33,7 @@ from orchestrator.schemas import (
     GateDecision,
     WorkflowStartRequest,
 )
-from orchestrator.store import ExecutionStore
+from orchestrator.store import ExecutionStoreProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 def run_workflow(
     request: WorkflowStartRequest,
     *,
-    store: ExecutionStore,
+    store: ExecutionStoreProtocol,
     context_builder: ContextBuilderClient,
     profile_resolver: ProfileResolverClient,
     delivery_router: DeliveryRouterClient,
@@ -255,7 +255,7 @@ def _resolve_plan(
     return planner.delivery_phase_plan(event_type, targets, generated_at)
 
 
-def _metadata(store: ExecutionStore, execution_id: str) -> ExecutionMetadata:
+def _metadata(store: ExecutionStoreProtocol, execution_id: str) -> ExecutionMetadata:
     meta = store.get_execution_metadata(execution_id)
     assert meta is not None  # just created in this call
     return meta
