@@ -148,6 +148,8 @@ class MappingService:
             llm_invocation_log_ref=log_ref,
             synthesis_allowed=request.synthesis_allowed,
             placeholder_ids=generation.placeholder_ids,
+            mapping=generation.jsonata,
+            target_schema=target_schema,
             # exclude_none so the inline artifact matches the Field Synthesis brief
             # schema (its source_payloads/paths default to empty, not null).
             synthesis_request=(

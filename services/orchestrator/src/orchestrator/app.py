@@ -26,12 +26,14 @@ from orchestrator.clients import (
     HttpDeliveryTargetsClient,
     HttpFieldMappingClient,
     HttpProfileResolverClient,
+    HttpTransformationExecutorClient,
     HttpWorkflowActionsClient,
     ProfileResolverClient,
     StubContextBuilder,
     StubDeliveryRouter,
     StubFieldMapping,
     StubProfileResolver,
+    TransformationExecutorClient,
     WorkflowActionsClient,
 )
 from orchestrator.config import Settings, get_settings
@@ -80,6 +82,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.profile_resolver = profile_resolver
     app.state.delivery_router = delivery_router
     app.state.field_mapping = field_mapping
+    # Transformation Executor (#98): real HTTP client when its URL is set, else
+    # None → the translation actions fall back to the deterministic obv3 stand-in.
+    transformation_executor: TransformationExecutorClient | None = (
+        HttpTransformationExecutorClient(settings.transformation_executor_url)
+        if settings.transformation_executor_url
+        else None
+    )
+    app.state.transformation_executor = transformation_executor
     # LLM Decision Service planner seams (#77/#78): real HTTP clients when their
     # URLs are set, else None → the engine uses the deterministic planner stubs.
     delivery_targets: DeliveryTargetsClient | None = (
@@ -111,6 +121,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             recipient_profile_id=settings.demo_recipient_profile_id,
             delivery_targets=app.state.delivery_targets,
             workflow_actions=app.state.workflow_actions,
+            transformation_executor=app.state.transformation_executor,
             reusable_plan_lookup=app.state.reusable_plan_lookup_enabled,
         )
         return metadata.model_dump()
