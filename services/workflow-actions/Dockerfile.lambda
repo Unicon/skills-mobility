@@ -1,0 +1,9 @@
+# Container-image Lambda for the Workflow Actions LLM Decision Service.
+# Build from the repo root:
+#   docker build -f services/workflow-actions/Dockerfile.lambda -t workflow-actions-lambda .
+FROM public.ecr.aws/lambda/python:3.12
+
+COPY services/workflow-actions /build/workflow-actions
+RUN pip install --no-cache-dir /build/workflow-actions[lambda]
+
+CMD ["workflow_actions.lambda_handler.handler"]

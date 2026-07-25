@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Skills Mobility — EOW demo-slice foundation (IAM-free).
+  Provisions only what the synchronous Function-URL demo needs: the DynamoDB
+  execution-state table (pk-keyed, matching DynamoExecutionStore), one ECR repo
+  per slice service, and a private bucket for the Admin UI static assets.
+  No IAM, EventBridge, SQS, or OIDC — the deploying principal is PowerUserAccess
+  (cannot create IAM), and the demo runs the sync HTTP chain, not the async model.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: skills-mobility
+  EnvName:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+
+Resources:
+
+  # Execution state — one JSON-body item per execution, addressed by `pk`
+  # (EXEC#<id> / PLAN#<id>). Must match DynamoExecutionStore's key attribute.
+  ExecutionStateTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-${EnvName}-execution-state"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+
+  MockLmsRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}/mock-lms"
+      EmptyOnDelete: true
+
+  EventConsumerRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}/event-consumer"
+      EmptyOnDelete: true
+
+  OrchestratorRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}/orchestrator"
+      EmptyOnDelete: true
+
+  ContextBuilderRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}/context-builder"
+      EmptyOnDelete: true
+
+  DeliveryTargetsRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}/delivery-targets"
+      EmptyOnDelete: true
+
+  WorkflowActionsRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}/workflow-actions"
+      EmptyOnDelete: true
+
+  FieldMappingRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}/field-mapping"
+      EmptyOnDelete: true
+
+  FieldSynthesisRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}/field-synthesis"
+      EmptyOnDelete: true
+
+  TransformationExecutorRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}/transformation-executor"
+      EmptyOnDelete: true
+
+  # Admin UI static assets (private; fronted by CloudFront in a later step).
+  AdminUiBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectName}-${EnvName}-admin-ui-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+Outputs:
+  ExecutionStateTableName:
+    Value: !Ref ExecutionStateTable
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-table-name"
+  ExecutionStateTableArn:
+    Value: !GetAtt ExecutionStateTable.Arn
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-table-arn"
+  AdminUiBucketName:
+    Value: !Ref AdminUiBucket
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-admin-ui-bucket"

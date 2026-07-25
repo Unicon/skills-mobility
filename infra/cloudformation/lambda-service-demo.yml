@@ -1,0 +1,155 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Skills Mobility — EOW demo-slice Lambda service (container image, Function URL).
+  Deploy once per service. IAM-free: the execution role is passed in as
+  ExecutionRoleArn (PowerUserAccess can't create roles; Ops pre-creates one
+  shared role). arm64 to match the pushed images.
+
+  Env-var strategy: every service's full env union is injected on every function.
+  This is safe because each service's pydantic-settings env_prefix means it only
+  reads its own prefixed keys and never sees the others; empty URL values are
+  falsy (→ the service uses its in-process stub); and the fields that can't take
+  an empty value (DB_PATH, MODE, artifact dirs) get safe literals/defaults.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: skills-mobility
+  EnvName:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  ServiceName:
+    Type: String
+    Description: Service id, e.g. "orchestrator". Function name suffix.
+  ImageUri:
+    Type: String
+    Description: Fully-qualified ECR image URI including tag.
+  ExecutionRoleArn:
+    Type: String
+    Description: Pre-created shared Lambda execution role ARN.
+  MemorySize:
+    Type: Number
+    Default: 512
+    MinValue: 128
+    MaxValue: 10240
+  TimeoutSeconds:
+    Type: Number
+    Default: 30
+    MinValue: 1
+    MaxValue: 900
+
+  # --- cross-service wiring (filled in pass 2, once Function URLs exist) ---
+  EventConsumerUrl:
+    Type: String
+    Default: ""
+    Description: mock-lms → event-consumer Function URL.
+  OrchestratorUrl:
+    Type: String
+    Default: ""
+    Description: event-consumer → orchestrator Function URL.
+  ContextBuilderUrl:
+    Type: String
+    Default: ""
+    Description: orchestrator → context-builder Function URL.
+  DeliveryTargetsUrl:
+    Type: String
+    Default: ""
+    Description: orchestrator → delivery-targets Function URL.
+  WorkflowActionsUrl:
+    Type: String
+    Default: ""
+    Description: orchestrator → workflow-actions Function URL.
+  FieldMappingUrl:
+    Type: String
+    Default: ""
+    Description: orchestrator → field-mapping Function URL.
+  FieldSynthesisUrl:
+    Type: String
+    Default: ""
+    Description: orchestrator → field-synthesis Function URL.
+  TransformationExecutorUrl:
+    Type: String
+    Default: ""
+    Description: orchestrator → transformation-executor Function URL.
+  LmsBaseUrl:
+    Type: String
+    Default: ""
+    Description: context-builder → mock-lms Function URL.
+  DynamoTable:
+    Type: String
+    Default: ""
+    Description: orchestrator DynamoDB execution-state table name.
+  LlmMode:
+    Type: String
+    Default: replay
+    AllowedValues: [replay, bedrock]
+    Description: >
+      LLM adapter mode for the four Bedrock-backed services (delivery-targets,
+      workflow-actions, field-mapping, field-synthesis).
+
+Resources:
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${EnvName}-${ServiceName}"
+      PackageType: Image
+      Architectures: [arm64]
+      Code:
+        ImageUri: !Ref ImageUri
+      Role: !Ref ExecutionRoleArn
+      MemorySize: !Ref MemorySize
+      Timeout: !Ref TimeoutSeconds
+      Environment:
+        Variables:
+          # Cross-service URLs (empty → the reading service falls back to its stub).
+          MOCK_LMS_EVENT_CONSUMER_URL: !Ref EventConsumerUrl
+          EVENT_CONSUMER_ORCHESTRATOR_URL: !Ref OrchestratorUrl
+          ORCHESTRATOR_CONTEXT_BUILDER_URL: !Ref ContextBuilderUrl
+          ORCHESTRATOR_DELIVERY_TARGETS_URL: !Ref DeliveryTargetsUrl
+          ORCHESTRATOR_WORKFLOW_ACTIONS_URL: !Ref WorkflowActionsUrl
+          ORCHESTRATOR_FIELD_MAPPING_URL: !Ref FieldMappingUrl
+          ORCHESTRATOR_FIELD_SYNTHESIS_URL: !Ref FieldSynthesisUrl
+          ORCHESTRATOR_TRANSFORMATION_EXECUTOR_URL: !Ref TransformationExecutorUrl
+          CONTEXT_BUILDER_LMS_BASE_URL: !Ref LmsBaseUrl
+          ORCHESTRATOR_DYNAMO_TABLE: !Ref DynamoTable
+          # LLM adapter mode (only the four Bedrock services read their prefix).
+          DELIVERY_TARGETS_MODE: !Ref LlmMode
+          WORKFLOW_ACTIONS_MODE: !Ref LlmMode
+          FIELD_MAPPING_MODE: !Ref LlmMode
+          FIELD_SYNTHESIS_MODE: !Ref LlmMode
+          # Writable /tmp for the services that persist to a local path
+          # (Lambda's /var/task is read-only). Wrong-prefix services ignore these.
+          EVENT_CONSUMER_DB_PATH: "/tmp/event-consumer.db"
+          DELIVERY_TARGETS_ARTIFACT_DIR: "/tmp/artifact-output/delivery-targets"
+          WORKFLOW_ACTIONS_ARTIFACT_DIR: "/tmp/artifact-output/workflow-actions"
+          FIELD_MAPPING_ARTIFACT_DIR: "/tmp/artifact-output/field-mapping"
+          FIELD_SYNTHESIS_ARTIFACT_DIR: "/tmp/artifact-output/field-synthesis"
+
+  FunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt LambdaFunction.Arn
+      AuthType: NONE
+      Cors:
+        AllowOrigins: ["*"]
+        AllowMethods: ["*"]
+        AllowHeaders: ["*"]
+
+  FunctionUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt LambdaFunction.Arn
+      Action: lambda:InvokeFunctionUrl
+      Principal: "*"
+      FunctionUrlAuthType: NONE
+
+Outputs:
+  FunctionUrl:
+    Value: !GetAtt FunctionUrl.FunctionUrl
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-${ServiceName}-url"
+  FunctionArn:
+    Value: !GetAtt LambdaFunction.Arn
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-${ServiceName}-function-arn"
