@@ -82,6 +82,42 @@ services:
       timeout: 3s
       retries: 5
 
+  delivery-targets:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('delivery_targets.api:create_app', factory=True, host='0.0.0.0', port=8130)"]
+    environment:
+      DELIVERY_TARGETS_MODE: ${DELIVERY_TARGETS_MODE:-replay}
+    ports: ["8130:8130"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8130/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  workflow-actions:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('workflow_actions.api:create_app', factory=True, host='0.0.0.0', port=8140)"]
+    environment:
+      WORKFLOW_ACTIONS_MODE: ${WORKFLOW_ACTIONS_MODE:-replay}
+    ports: ["8140:8140"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8140/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  field-synthesis:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('field_synthesis.api:create_app', factory=True, host='0.0.0.0', port=8150)"]
+    environment:
+      FIELD_SYNTHESIS_MODE: ${FIELD_SYNTHESIS_MODE:-replay}
+    ports: ["8150:8150"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8150/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   # Transformation Executor (#98) — deterministic JSONata runner (no LLM).
   transformation-executor:
     <<: *python
@@ -99,9 +135,14 @@ services:
     environment:
       ORCHESTRATOR_CONTEXT_BUILDER_URL: http://context-builder:8100
       ORCHESTRATOR_FIELD_MAPPING_URL: http://field-mapping:8120
-      ORCHESTRATOR_PROFILE_RESOLVER_URL: http://profile-resolver:8700
-      ORCHESTRATOR_DELIVERY_ROUTER_URL: http://delivery-router:8800
+      ORCHESTRATOR_DELIVERY_TARGETS_URL: http://delivery-targets:8130
+      ORCHESTRATOR_WORKFLOW_ACTIONS_URL: http://workflow-actions:8140
+      ORCHESTRATOR_FIELD_SYNTHESIS_URL: http://field-synthesis:8150
       ORCHESTRATOR_TRANSFORMATION_EXECUTOR_URL: http://transformation-executor:8160
+      # profile-resolver + delivery-router intentionally unset → orchestrator uses
+      # its in-process stubs (StubProfileResolver/StubDeliveryRouter). This e2e proof
+      # is the decision + transformation + audit chain; live LearnCard delivery
+      # (needs tokens) was proven separately.
       # The signed OBv3's issuer must be the real (resolvable) demo issuer DID, not
       # the placeholder default — else the issuer adapter's SDK sign fails resolving it.
       ORCHESTRATOR_ISSUER_ID: ${LEARNCARD_ISSUER_DID:-did:web:poc.skills-mobility.example}
@@ -114,9 +155,11 @@ services:
         condition: service_healthy
       field-mapping:
         condition: service_healthy
-      profile-resolver:
+      delivery-targets:
         condition: service_healthy
-      delivery-router:
+      workflow-actions:
+        condition: service_healthy
+      field-synthesis:
         condition: service_healthy
       transformation-executor:
         condition: service_healthy
