@@ -112,8 +112,8 @@ execute. That correctness check is handled by:
 
 - Re-binding validates executability, not semantic correctness; a policy mistake in the LLM's
   action selection runs until the Policy Rules Service is in place
-- The all-targets deterministic plan is built on every non-reused plan generation call to derive
-  templates (one extra in-process function call, not a service round-trip)
+- The deterministic reference plan for the selected targets is built on every non-reused plan
+  generation call to derive templates (one extra in-process function call, not a service round-trip)
 
 ### Supersedes
 
