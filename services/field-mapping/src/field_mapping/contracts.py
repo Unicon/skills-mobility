@@ -94,6 +94,11 @@ class MappingResponse(BaseModel):
     synthesis_request_ref: str | None
     requires_synthesis: bool
     llm_invocation_log_ref: str | None
+    # The synthesis-request artifact inline (serialized), so the Orchestrator can
+    # hand it straight to the Field Synthesis service — the two services keep
+    # separate artifact stores, so a bare ref does not resolve across the boundary.
+    # Present only when requires_synthesis; None otherwise.
+    synthesis_request: dict[str, Any] | None = None
 
     @classmethod
     def succeeded(
@@ -104,6 +109,7 @@ class MappingResponse(BaseModel):
         llm_invocation_log_ref: str,
         synthesis_allowed: bool,
         placeholder_ids: list[str],
+        synthesis_request: dict[str, Any] | None = None,
     ) -> Self:
         # §10 derivation — can never be true when the request forbade synthesis,
         # regardless of the placeholders/ref present.
@@ -116,6 +122,7 @@ class MappingResponse(BaseModel):
             synthesis_request_ref=synthesis_request_ref,
             requires_synthesis=requires_synthesis,
             llm_invocation_log_ref=llm_invocation_log_ref,
+            synthesis_request=synthesis_request if requires_synthesis else None,
         )
 
     @classmethod
@@ -209,3 +216,26 @@ class MappingGeneration(BaseModel):
     synthesis_requests: list[SynthesisRequestEntry] = Field(default_factory=list)
     confidence: float | None = None
     rationale: str | None = None
+
+
+class LlmCallMeta(BaseModel):
+    """Per-invocation model-call metadata the adapter captures (ADR-0010 §60), so
+    the invocation log can show exactly what the model received and returned.
+    Replay mode uses sentinel values (provider ``replay``, no token/latency)."""
+
+    provider: str
+    model_id: str
+    temperature: float
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    latency_ms: float | None = None
+    system_prompt: str | None = None
+    user_prompt: str | None = None
+    # ADR-0021 / FR-FM-27b: injection-screen findings recorded for audit visibility;
+    # each entry is {path, snippet}. Present only when findings were seen (bedrock mode);
+    # replay adapter leaves this empty.
+    injection_findings: list[dict[str, str]] = Field(default_factory=list)
+    # §14: prompt-template version so invocation logs show which template the model
+    # received.  Populated from prompt_builder.PROMPT_TEMPLATE_VERSION at call time;
+    # replay adapter uses its own sentinel ("replay").
+    prompt_template_version: str | None = None
