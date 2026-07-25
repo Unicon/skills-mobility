@@ -19,6 +19,7 @@ _SEAM_KEYS = {
     "llm_invocation_log_ref",
     "mapping",
     "target_schema",
+    "synthesis_request",
 }
 
 
