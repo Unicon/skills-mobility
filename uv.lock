@@ -13,6 +13,7 @@ members = [
     "delivery-targets",
     "event-consumer",
     "field-mapping",
+    "field-synthesis",
     "learncard-api",
     "learncard-profile-resolver",
     "learncard-wallet-adapter",
@@ -420,6 +421,47 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pydantic-settings", specifier = ">=2.4" },
     { name = "uvicorn", specifier = ">=0.30" },
+]
+
+[[package]]
+name = "field-synthesis"
+version = "0.1.0"
+source = { editable = "services/field-synthesis" }
+dependencies = [
+    { name = "boto3" },
+    { name = "fastapi" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "uvicorn" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "boto3-stubs", extra = ["bedrock-runtime"] },
+    { name = "coverage" },
+    { name = "httpx" },
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "boto3", specifier = ">=1.35" },
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "pydantic", specifier = ">=2.7" },
+    { name = "pydantic-settings", specifier = ">=2.4" },
+    { name = "uvicorn", specifier = ">=0.30" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "boto3-stubs", extras = ["bedrock-runtime"], specifier = ">=1.35" },
+    { name = "coverage", specifier = ">=7" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "mypy", specifier = ">=1.11" },
+    { name = "pytest", specifier = ">=8" },
+    { name = "ruff", specifier = ">=0.6" },
 ]
 
 [[package]]
