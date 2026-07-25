@@ -103,7 +103,7 @@ def run_workflow(
         "gate decision: execution_id=%s decision=%s correlation_id=%s",
         execution_id, gate.decision, correlation_id,
     )
-    if gate.decision != "continue_to_delivery_targets":
+    if gate.decision != "continue":
         store.set_result(
             execution_id, {"outcome": "terminated_before_delivery", "rationale": gate.rationale}
         )

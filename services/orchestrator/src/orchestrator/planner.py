@@ -47,7 +47,7 @@ def pre_target_gate(event_type: str) -> GateDecision:
     terminate otherwise (FR-OR-10)."""
     if event_type in _SUPPORTED:
         return GateDecision(
-            decision="continue_to_delivery_targets",
+            decision="continue",
             rationale="Deterministic Phase 1 happy-path gate decision.",
         )
     return GateDecision(

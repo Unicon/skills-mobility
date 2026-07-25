@@ -15,7 +15,7 @@ def test_event_type_mapping():
 
 def test_gate_continues_for_supported_events():
     for et in ("skill_mastered", "course_completed"):
-        assert planner.pre_target_gate(et).decision == "continue_to_delivery_targets"
+        assert planner.pre_target_gate(et).decision == "continue"
 
 
 def test_gate_terminates_for_unsupported_event():
