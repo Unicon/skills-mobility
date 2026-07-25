@@ -1,0 +1,14 @@
+{
+  "action_ids": [
+    "resolve_learncard_profile",
+    "generate_issuer_payload_mapping",
+    "generate_issuer_payload_synthesis",
+    "execute_issuer_payload_translation",
+    "issue_learncard_badge",
+    "generate_wallet_payload_mapping",
+    "execute_wallet_payload_translation",
+    "deliver_to_learncard_wallet"
+  ],
+  "confidence": 0.94,
+  "rationale": "Dual-target LearnCard issuance and wallet delivery: resolve profile, generate issuer mapping and synthesis, translate and issue badge, generate wallet mapping, translate and deliver to wallet."
+}

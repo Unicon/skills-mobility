@@ -1,0 +1,45 @@
+{
+  "gating_policy_prose": "The pre-target gate should 'terminate' early (before delivery-target selection) when the incoming event clearly does not warrant credential delivery, naming the specific disqualifier in the rationale. Terminate when the event represents a sub-competency or granular skill outcome that is a component of a larger parent competency — these partial mastery signals do not individually earn a credential. Terminate when the outcome contains a failing grade, a score below a passing threshold, or an explicit failure indicator, meaning the learner did not successfully demonstrate the required competency. Terminate when the learner's profile or consent state indicates they have declined or not accepted badge issuance. When none of these disqualifiers are present, return 'continue' so the workflow proceeds to select appropriate delivery channels.",
+  "actions": [
+    {
+      "action_id": "resolve_learncard_profile",
+      "type": "call",
+      "description": "Resolves the learner's LearnCard profile using a profile identifier (profile_id). Looks up the learner's wallet profile and delivery configuration in the LearnCard network so subsequent steps have a validated recipient to issue and deliver credentials to. This step is a prerequisite for all LearnCard-specific issuance and delivery steps."
+    },
+    {
+      "action_id": "generate_issuer_payload_mapping",
+      "type": "call",
+      "description": "Calls the Field Mapping LLM Decision Service to produce a field-level mapping specification for constructing the LearnCard issuer payload. The mapping describes how event and context fields correspond to the Open Badge credential fields the issuer expects. This is the field-mapping seam for the issuer credential path."
+    },
+    {
+      "action_id": "generate_issuer_payload_synthesis",
+      "type": "call",
+      "description": "Calls the Field Synthesis LLM Decision Service to synthesize any credential fields that cannot be directly mapped from existing event data — for example, generating a human-readable achievement description or deriving metadata. Works from the mapping produced in the previous step and the original event context."
+    },
+    {
+      "action_id": "execute_issuer_payload_translation",
+      "type": "call",
+      "description": "Executes the actual translation of the source event data into the LearnCard issuer payload format, applying the mapping and synthesis results. Produces the fully-formed credential payload ready to be submitted to the LearnCard issuer service. This is the translation executor seam for the issuer path."
+    },
+    {
+      "action_id": "issue_learncard_badge",
+      "type": "call",
+      "description": "Submits the translated issuer payload to the LearnCard issuer service to create and sign a verifiable Open Badge credential. Returns the issued credential artifact (the signed badge) that will subsequently be delivered to the learner's wallet. Requires the issuer payload produced by execute_issuer_payload_translation."
+    },
+    {
+      "action_id": "generate_wallet_payload_mapping",
+      "type": "call",
+      "description": "Calls the Field Mapping LLM Decision Service to produce a field-level mapping specification for constructing the LearnCard wallet delivery payload. The wallet delivery format differs from the issuer payload format, so a separate mapping step is needed. This is the field-mapping seam for the wallet delivery path."
+    },
+    {
+      "action_id": "execute_wallet_payload_translation",
+      "type": "call",
+      "description": "Executes the translation of the issued credential into the LearnCard wallet delivery payload, applying the wallet mapping. Produces the fully-formed wallet payload ready for delivery. Requires the issued credential from issue_learncard_badge and the resolved profile. This is the translation executor seam for the wallet path."
+    },
+    {
+      "action_id": "deliver_to_learncard_wallet",
+      "type": "call",
+      "description": "Delivers the wallet payload to the learner's LearnCard wallet using the resolved profile's wallet endpoint. This is the final delivery step for the LearnCard wallet target. Requires the wallet payload produced by execute_wallet_payload_translation."
+    }
+  ]
+}
