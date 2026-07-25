@@ -93,7 +93,7 @@ def test_continue_path_records_all_three_planner_decisions(sample_event):
     assert targets_decision.outcome == "learncard_issuer, learncard_wallet"
     assert targets_decision.confidence is None
     assert plan_decision.outcome == "phase1-skill_mastered.v1"
-    assert plan_decision.confidence == 1.0
+    assert plan_decision.confidence is None
 
 
 class _FakeWorkflowActions:

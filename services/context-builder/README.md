@@ -27,9 +27,11 @@ src/context_builder/
 
 ```bash
 uv sync --all-packages
-CONTEXT_BUILDER_LMS_BASE_URL=http://127.0.0.1:8000 uv run context-builder   # serves on :8100
+uv run context-builder   # serves on :8100
 ```
 
+Configuration comes from `.env` (copy [`.env.example`](./.env.example)) — the one
+setting is `CONTEXT_BUILDER_LMS_BASE_URL` (defaults to `http://127.0.0.1:8000`).
 It reads the Mock LMS Resource APIs, so run `uv run mock-lms` (:8000) alongside it.
 Interactive API docs (Swagger) are at `http://127.0.0.1:8100/docs`.
 

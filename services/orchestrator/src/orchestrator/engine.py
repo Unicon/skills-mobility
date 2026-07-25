@@ -54,14 +54,18 @@ def run_workflow(
     reusable_plan_lookup: bool = False,
 ) -> ExecutionMetadata:
     metadata = request.event.get("metadata", {})
+    correlation_id = request.correlation_id or metadata.get("correlation_id", "")
     execution_id = request.execution_id
     event_type = planner.event_type_of(request.event)
-    logger.info("workflow start: execution_id=%s event_type=%s", execution_id, event_type)
+    logger.info(
+        "workflow start: execution_id=%s event_type=%s correlation_id=%s",
+        execution_id, event_type, correlation_id,
+    )
 
     store.create_execution(
         execution_id,
         request.event_id or metadata.get("event_id", ""),
-        request.correlation_id or metadata.get("correlation_id", ""),
+        correlation_id,
         event_type,
     )
     store.set_status(execution_id, "planning")
@@ -69,7 +73,10 @@ def run_workflow(
     # Planner path: context → pre-target gate → targets → delivery-phase plan.
     bundle = context_builder.build_context(execution_id, request.event)
     if "context_builder_error" in bundle:
-        logger.warning("context builder failed: execution_id=%s", execution_id)
+        logger.warning(
+            "context builder failed: execution_id=%s correlation_id=%s",
+            execution_id, correlation_id,
+        )
         store.set_result(execution_id, {"error": "context_builder_failed"})
         store.set_status(execution_id, "failed")
         return _metadata(store, execution_id)
@@ -77,7 +84,7 @@ def run_workflow(
     envelope = EnvelopeContext(
         workflow_id=execution_id,  # Phase 1: one workflow per execution.
         execution_id=execution_id,
-        correlation_id=request.correlation_id or metadata.get("correlation_id", ""),
+        correlation_id=correlation_id,
         delivery_config_ref=delivery_config_ref,
     )
     source_system = str(metadata.get("source_system") or "mock_lms")
@@ -90,13 +97,19 @@ def run_workflow(
             kind="gate", confidence=gate.confidence, rationale=gate.rationale, outcome=gate.decision
         ),
     )
-    logger.info("gate decision: execution_id=%s decision=%s", execution_id, gate.decision)
+    logger.info(
+        "gate decision: execution_id=%s decision=%s correlation_id=%s",
+        execution_id, gate.decision, correlation_id,
+    )
     if gate.decision != "continue_to_delivery_targets":
         store.set_result(
             execution_id, {"outcome": "terminated_before_delivery", "rationale": gate.rationale}
         )
         store.set_status(execution_id, "completed")
-        logger.info("workflow terminated pre-delivery: execution_id=%s", execution_id)
+        logger.info(
+            "workflow terminated pre-delivery: execution_id=%s correlation_id=%s",
+            execution_id, correlation_id,
+        )
         return _metadata(store, execution_id)
 
     # Delivery target selection (best-effort; deterministic fallback).
@@ -172,7 +185,9 @@ def run_workflow(
     status, result = execute_plan(plan, workflow_ctx, deps, store, execution_id)
     store.set_result(execution_id, result)
     store.set_status(execution_id, status)
-    logger.info("workflow %s: execution_id=%s", status, execution_id)
+    logger.info(
+        "workflow %s: execution_id=%s correlation_id=%s", status, execution_id, correlation_id
+    )
     return _metadata(store, execution_id)
 
 

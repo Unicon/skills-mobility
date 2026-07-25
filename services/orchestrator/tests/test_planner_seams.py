@@ -92,9 +92,10 @@ def test_gate_uses_deterministic_when_unconfigured() -> None:
 
 def test_gate_falls_back_when_service_raises() -> None:
     # A failing Workflow Actions gate must NOT fail the workflow — deterministic fallback.
-    assert _resolve_gate(_RaisingWA(), "skill_mastered", {}, {}, _CTX).decision == (
-        "continue_to_delivery_targets"
-    )
+    gate = _resolve_gate(_RaisingWA(), "skill_mastered", {}, {}, _CTX)
+    assert gate.decision == "continue_to_delivery_targets"
+    # The deterministic gate reports no LLM confidence (None), not a fake 1.0.
+    assert gate.confidence is None
 
 
 def test_targets_fall_back_when_service_raises() -> None:
@@ -110,6 +111,7 @@ def test_plan_falls_back_when_service_raises() -> None:
     )
     assert isinstance(plan, DeliveryPhasePlan)
     assert plan.plan_id  # the deterministic plan
+    assert plan.confidence is None  # deterministic plan carries no LLM confidence
 
 
 # --- configured-and-succeeds: the wrapper returns the service's result ---
@@ -177,6 +179,7 @@ def test_http_gate_normalizes_terminate_reason() -> None:
     gate = client.pre_target_gate("skill_mastered", {}, {}, _CTX)
     assert gate.decision == "terminate"  # normalized to the orchestrator's Literal
     assert "terminate_failing_grade" in gate.rationale  # specific reason preserved
+    assert gate.confidence == 0.9  # a supplied confidence is preserved
 
 
 def test_http_gate_continue_passes_through() -> None:
@@ -186,9 +189,11 @@ def test_http_gate_continue_passes_through() -> None:
             {"status": "succeeded", "decision": "continue_to_delivery_targets", "rationale": "ok"}
         ),
     )
-    assert client.pre_target_gate("skill_mastered", {}, {}, _CTX).decision == (
-        "continue_to_delivery_targets"
-    )
+    gate = client.pre_target_gate("skill_mastered", {}, {}, _CTX)
+    assert gate.decision == "continue_to_delivery_targets"
+    # An omitted confidence stays None (not a fake 1.0) so it's distinguishable from a
+    # genuine full-confidence decision (Phil, #79 review).
+    assert gate.confidence is None
 
 
 def test_http_client_failed_status_raises() -> None:
