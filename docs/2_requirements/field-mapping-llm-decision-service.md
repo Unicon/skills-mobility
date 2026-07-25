@@ -127,7 +127,7 @@ The full stored mapping artifact should contain the actual JSONata and placehold
   - valid placeholder structure for synthesis-backed fields,
   - generated JSONata that references only fields available in the supplied source payload set,
   - generated output structure that is valid for the requested target schema,
-  - and presence of `confidence` and `rationale` in the model output.
+  - and presence of `confidence` and `rationale` in the model output. `confidence` is a single overall float in [0.0, 1.0]; `rationale` is 1–3 sentences overall plus a one-line note for each non-direct (synthesis or omit) field decision — direct fields need no per-field note.
 - **FR-FM-15** The service SHALL use a managed model-access adapter consistent with ADR-0010. For the POC, the primary provider SHALL be Amazon Bedrock.
 - **FR-FM-16** The service SHALL support configurable model ID, prompt-template version, and generation parameters without requiring a contract change.
 - **FR-FM-17** The service SHALL default to low-temperature generation appropriate for machine-executable structured output.

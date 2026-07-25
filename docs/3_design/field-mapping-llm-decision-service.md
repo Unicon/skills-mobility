@@ -27,7 +27,7 @@ The service should produce two stored artifacts:
 1. a **mapping artifact** containing ready-to-run JSONata for the current transformation target
 2. a **synthesis-request artifact** when the mapping contains placeholder-backed fields that need Field Synthesis
 
-The immediate service response to the Orchestrator should normally contain references to those stored artifacts, not the full JSONata program inline.
+The immediate service response to the Orchestrator carries these artifacts **inline** — the mapping JSONata and, when present, the synthesis request — each alongside a storage-correlation ref. Inline delivery is required, not a convenience: the downstream consumers (Transformation Executor, Field Synthesis) keep their own artifact stores, so a bare ref into Field Mapping's store does not resolve across that boundary. See §10.
 
 ### Stored mapping artifact
 
@@ -339,15 +339,18 @@ The model response should be constrained to a schema that includes at minimum:
 - `confidence`
 - `rationale`
 
+#### Confidence and rationale format
+
+`confidence` is a single overall float in [0.0, 1.0] representing the model's confidence that the mapping is correct and complete across all fields. It is not a per-field score.
+
+`rationale` is 1–3 sentences summarizing the overall mapping decision, **plus a one-line note for each field that was not a straightforward direct mapping** — every synthesis field and every omit/null/blank field gets a brief reason (e.g. `"achievement.description → synthesis: requires narrative composition from course description and learning outcomes"`). Direct fields need no individual note because their mapping is self-evident from the JSONata. For a target schema with many fields this keeps the rationale readable without becoming exhaustive (typically < 200 words for a ~100-field target).
+
 ### Prompt content
 
 The system prompt and request message together should tell the model all of the following:
 
 - it is mapping the supplied source payloads to the supplied target schema
-- every target field should be considered for one of three outcomes:
-  - direct mapping from one or more source fields
-  - synthesis from one or more source fields
-  - omission / null / blank when allowed by the target catalog and no credible mapping exists
+- it should work through target schema fields **one by one**: for each, consult the target catalog entry (description + `x-no-mapping-behavior`) and the relevant source-field catalog(s) + source payloads, decide direct / synthesis / omit, and emit the corresponding JSONata or placeholder before moving to the next field
 - direct mappings must reference only source fields that actually exist in the supplied payloads
 - synthesis requests must identify the relevant source material for the synthesis task
 - final human-facing synthesis text must not be generated in this service
@@ -432,25 +435,27 @@ That is the Bedrock best practice. No separate API-key layer should be introduce
 
 ## 10. Response Contract
 
-The synchronous response should be small:
+The synchronous response shape:
 
 ```json
 {
   "status": "succeeded",
+  "mapping": "<inline JSONata program>",
   "mapping_artifact_ref": "mapping:123",
   "synthesis_request_ref": "synthesis:456",
   "requires_synthesis": true,
-  "llm_invocation_log_ref": "llmcall:789"
+  "llm_invocation_log_ref": "llmcall:789",
+  "synthesis_request": { "...": "inline synthesis-request artifact" }
 }
 ```
 
-This keeps the Orchestrator contract stable and lightweight. The Orchestrator should not need all model metadata inline if it can retrieve that detail through the logged reference.
+`mapping` carries the ready-to-run JSONata program inline. `synthesis_request` carries the synthesis-request artifact inline when `requires_synthesis` is `true`; it is `null` otherwise. Both are inline for the same reason: the Field Mapping, Field Synthesis, and Transformation Executor services each maintain their own artifact store, so a bare `*_ref` into Field Mapping's store does not resolve across those boundaries. The Orchestrator passes the inline `mapping` to the Transformation Executor and the inline `synthesis_request` to the Field Synthesis service without any cross-store lookup. The `mapping_artifact_ref` / `synthesis_request_ref` fields are retained as storage-correlation pointers into Field Mapping's own store, not as cross-store dereference handles.
+
+This keeps the Orchestrator contract stable and lightweight for all other fields. The Orchestrator should not need all model metadata inline if it can retrieve that detail through the logged reference.
 
 `requires_synthesis` is a derived convenience field, not an independent source of truth: `requires_synthesis == synthesis_allowed && (placeholder_ids non-empty) && (synthesis_request_ref != null)`. Including `synthesis_allowed` in the derivation makes the §6 constraint self-enforcing at the field level: `requires_synthesis` can never be `true` when the request forbade synthesis, regardless of what `placeholder_ids` or `synthesis_request_ref` happen to contain.
 
-For local debugging only, the boundary may optionally support an inline-expansion mode that returns the stored artifacts directly. That should not be the default production-like path.
-
-The Orchestrator passes `mapping_artifact_ref` through opaquely as the step's output binding; it does not resolve the reference into the underlying JSONata itself. The **Transformation Executor** is the component responsible for dereferencing `mapping_artifact_ref` (and the corresponding synthesized values once Field Synthesis has resolved `synthesis_request_ref`) against the artifact store before it runs the JSONata against the source payloads.
+The Orchestrator threads the inline `mapping` (and, once Field Synthesis has run, the synthesized values inline) to the **Transformation Executor**, which runs that JSONata against the source payloads. It does not dereference `mapping_artifact_ref` against Field Mapping's store — the Transformation Executor keeps a separate store and has no access to Field Mapping's, which is exactly why the mapping is delivered inline. `mapping_artifact_ref` still travels through as the step's output binding for storage correlation and audit, not as a resolution handle.
 
 ## 11. Validation
 
