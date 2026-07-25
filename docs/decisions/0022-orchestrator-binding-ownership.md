@@ -40,14 +40,28 @@ recorded in the audit trail but never actually executed.
 
 The engine replaces strict plan conformance with **orchestrator-owned re-binding**.
 
-When the Workflow Actions service returns a proposed plan, the engine calls
-`planner.rebind_plan(proposed, event_type)` instead of comparing it against the reference.
-Re-binding:
+The Workflow Actions LLM's plan output is **descoped to an ordered list of `action_id`s**
+(plus confidence and rationale) — it does not supply step_ids, inputs, or produced-names.
+Every action in the catalog has exactly one valid input recipe, so there is no input decision
+for the model to make; the executable bindings are the orchestrator's to build. (`PlanStep.inputs`
+therefore defaults to `{}`.) If a future action ever legitimately needs more than one input
+recipe, that is the trigger to revisit this descope — the LLM's inputs would then be *used and
+validated*, not ignored.
 
-1. Derives per-action binding templates from the deterministic planner. The full
-   all-targets deterministic plan is built once and indexed by `action_id`. For each action the
-   template records what each input needs: a workflow-context path, a literal value, or the
-   *produced-name* of a prior step's output (not its integer step_id).
+When the Workflow Actions service returns a proposed plan, the engine calls
+`planner.rebind_plan(proposed, event_type, targets)` — passing the selected delivery targets —
+instead of comparing the plan against the reference. Re-binding reads **only** each step's
+`action_id` (it never inspects the LLM's own `inputs`/`step_id`, which it ignores rather than
+corrects) and rebuilds every binding from a static per-action template:
+
+1. Derives per-action binding templates from the deterministic planner, **scoped to the
+   delivery targets selected for this event** — the same targets the reference plan is built
+   from, not a superset of every known target. That reference plan is built once and indexed by
+   `action_id`. For each action the template records what each input needs: a workflow-context
+   path, a literal value, or the *produced-name* of a prior step's output (not its integer
+   step_id). An action proposed for a target that was **not** selected (e.g. a `smart_resume`
+   action when Delivery Targets chose against SmartResume) has no template and forces a fallback,
+   so the Delivery Targets decision is honored during re-binding, not silently bypassed.
 
 2. Walks the LLM's action sequence in order, assigning new sequential `step_id`s (1, 2, 3, …).
    For each step, inputs are built from the template: `step`-source bindings are resolved by
