@@ -118,7 +118,7 @@ def run_workflow(
         # If re-binding fails (unknown action or unmet dependency), fall back to the
         # deterministic reference plan. LLM output never flows straight to delivery
         # (ADR-0007); re-binding only guarantees executability (ADR-0022).
-        rebound = planner.rebind_plan(proposed, event_type)
+        rebound = planner.rebind_plan(proposed, event_type, targets)
         if rebound is not None:
             plan = rebound
             logger.info(

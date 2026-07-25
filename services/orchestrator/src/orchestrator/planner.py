@@ -227,13 +227,18 @@ def _build_steps(fetch_profile_id: str, targets: frozenset[str]) -> list[PlanSte
 
 
 def _action_templates(
-    event_type: str,
+    event_type: str, targets: list[str]
 ) -> dict[str, tuple[dict[str, tuple[str, ...]], str]]:
     """Derive per-action binding templates from the deterministic planner.
 
-    Builds the full deterministic plan covering all known targets and indexes it by
-    action_id. Each entry is ``(input_template, produces)`` where ``input_template``
-    maps each input name to a spec tuple:
+    Builds the deterministic reference plan for the **selected** delivery targets
+    — not a superset of every known target — and indexes it by action_id. So an
+    LLM-proposed action belonging to a target that was not selected (e.g. a
+    ``smart_resume`` action when Delivery Targets chose against SmartResume) finds
+    no template and forces a fallback: the Delivery Targets decision is honored
+    during re-binding, not bypassed (ADR-0022, #93). Each entry is
+    ``(input_template, produces)`` where ``input_template`` maps each input name to
+    a spec tuple:
 
     - ``("step", <produces-name>)`` — resolved from the step that produces that name
     - ``("literal", value)`` — a plan literal
@@ -241,13 +246,12 @@ def _action_templates(
 
     Returns ``dict[action_id, (input_template, produces)]``.
     """
-    all_targets = ["learncard_issuer", "learncard_wallet", "smart_resume"]
-    full_plan = delivery_phase_plan(event_type, all_targets, "")
+    reference_plan = delivery_phase_plan(event_type, targets, "")
     # Build step_id → produces map so step-source bindings can be resolved by name.
-    id_to_produces = {s.step_id: s.produces for s in full_plan.steps if s.produces}
+    id_to_produces = {s.step_id: s.produces for s in reference_plan.steps if s.produces}
 
     templates: dict[str, tuple[dict[str, tuple[str, ...]], str]] = {}
-    for step in full_plan.steps:
+    for step in reference_plan.steps:
         input_template: dict[str, tuple[str, ...]] = {}
         for name, binding in step.inputs.items():
             if binding.source == "step":
@@ -261,17 +265,23 @@ def _action_templates(
     return templates
 
 
-def rebind_plan(llm_plan: DeliveryPhasePlan, event_type: str) -> DeliveryPhasePlan | None:
+def rebind_plan(
+    llm_plan: DeliveryPhasePlan, event_type: str, targets: list[str]
+) -> DeliveryPhasePlan | None:
     """Re-bind the LLM's action sequence to executor-compatible step_id bindings.
 
-    The LLM owns action selection, order, and which steps to skip. The orchestrator
-    owns the bindings: it derives them from per-action templates built from the
-    deterministic planner, resolving cross-step dependencies by produced-name.
+    The LLM owns action selection, order, and which steps to skip — this reads only
+    each step's ``action_id`` and rebuilds every input from a static per-action
+    template, so the LLM's own ``inputs``/``step_id`` values (if any) are ignored,
+    not corrected. The orchestrator owns the bindings, derived from the deterministic
+    reference plan for the **selected** ``targets``, resolving cross-step dependencies
+    by produced-name.
 
-    Returns the re-bound plan, or ``None`` if re-binding fails (unknown action_id
-    or an unsatisfied cross-step dependency in the LLM's ordering).
+    Returns the re-bound plan, or ``None`` if re-binding fails: an unknown action_id
+    (including an action for a target that was not selected), or an unsatisfied
+    cross-step dependency in the LLM's ordering.
     """
-    templates = _action_templates(event_type)
+    templates = _action_templates(event_type, targets)
     produced: dict[str, int] = {}  # produced-name → new step_id
     new_steps: list[PlanStep] = []
 

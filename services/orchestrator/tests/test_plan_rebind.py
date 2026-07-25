@@ -89,7 +89,7 @@ def test_rebind_learncard_plan_fixes_step_bindings() -> None:
     bindings: the execute_issuer_payload_translation step's resolved_profile input must
     point (source=step) at the resolve step's re-bound step_id."""
     llm_plan = _llm_plan(_LC_ACTIONS)
-    rebound = planner.rebind_plan(llm_plan, "skill_mastered")
+    rebound = planner.rebind_plan(llm_plan, "skill_mastered", _LC_TARGETS)
 
     assert rebound is not None
 
@@ -112,7 +112,7 @@ def test_rebind_learncard_plan_fixes_step_bindings() -> None:
 def test_rebind_learncard_plan_executes_successfully() -> None:
     """A re-bound LLM plan (empty inputs replaced) executes to completion."""
     llm_plan = _llm_plan(_LC_ACTIONS)
-    rebound = planner.rebind_plan(llm_plan, "skill_mastered")
+    rebound = planner.rebind_plan(llm_plan, "skill_mastered", _LC_TARGETS)
     assert rebound is not None
 
     deps, envelope = _action_deps()
@@ -151,7 +151,7 @@ def test_rebind_returns_none_when_dependency_unmet() -> None:
         "deliver_to_learncard_wallet",
     ]
     llm_plan = _llm_plan(bad_order)
-    assert planner.rebind_plan(llm_plan, "skill_mastered") is None
+    assert planner.rebind_plan(llm_plan, "skill_mastered", _LC_TARGETS) is None
 
 
 # ---------------------------------------------------------------------------
@@ -163,7 +163,7 @@ def test_rebind_returns_none_for_unknown_action() -> None:
     """A plan containing an action_id not in the deterministic planner's catalog
     cannot be re-bound."""
     llm_plan = _llm_plan(["resolve_learncard_profile", "invent_new_action"])
-    assert planner.rebind_plan(llm_plan, "skill_mastered") is None
+    assert planner.rebind_plan(llm_plan, "skill_mastered", _LC_TARGETS) is None
 
 
 # ---------------------------------------------------------------------------
@@ -175,7 +175,7 @@ def test_rebind_is_idempotent_on_deterministic_plan() -> None:
     """Applying rebind_plan to a plan already produced by delivery_phase_plan yields
     a plan with the same action_ids in the same order and resolvable bindings."""
     ref = planner.delivery_phase_plan("skill_mastered", _LC_TARGETS, "2026-01-01T00:00:00Z")
-    rebound = planner.rebind_plan(ref, "skill_mastered")
+    rebound = planner.rebind_plan(ref, "skill_mastered", _LC_TARGETS)
 
     assert rebound is not None
     assert [s.action_id for s in rebound.steps] == [s.action_id for s in ref.steps]
@@ -211,7 +211,7 @@ def test_rebind_smartresume_plan_executes_successfully() -> None:
         ],
     )
 
-    rebound = planner.rebind_plan(llm_plan, "skill_mastered")
+    rebound = planner.rebind_plan(llm_plan, "skill_mastered", _SR_TARGETS)
     assert rebound is not None
 
     # deliver_to_smartresume step must exist and have its issuer_payload bound to the
@@ -238,3 +238,18 @@ def test_rebind_smartresume_plan_executes_successfully() -> None:
     }
     status, _ = execute_plan(rebound, workflow_ctx, deps, store, "test-sr")
     assert status == "completed"
+
+
+# ---------------------------------------------------------------------------
+# (f) An action for an unselected target → None (Delivery Targets honored, #93)
+# ---------------------------------------------------------------------------
+
+
+def test_rebind_rejects_action_for_unselected_target() -> None:
+    """Templates are scoped to the selected targets, so when SmartResume was NOT
+    selected an LLM plan that slips in a deliver_to_smartresume action finds no
+    template and re-binding fails (→ deterministic fallback). The Delivery Targets
+    decision is honored during re-binding, not bypassed (ADR-0022, #93)."""
+    # LearnCard-only selection, but the LLM proposed a SmartResume delivery action.
+    llm_plan = _llm_plan(_LC_ACTIONS[:4] + ["deliver_to_smartresume"])
+    assert planner.rebind_plan(llm_plan, "skill_mastered", _LC_TARGETS) is None
