@@ -21,8 +21,10 @@ from .contracts import (
     GateGeneration,
     GateRequest,
     LlmCallMeta,
+    LlmPlanOutput,
     PlanGeneration,
     PlanRequest,
+    plan_generation_from_llm_output,
 )
 from .prompt_builder import (
     build_gate_user_message,
@@ -138,9 +140,10 @@ class BedrockAdapter:
             user_text=build_plan_user_message(request),
             tool_name=_PLAN_TOOL_NAME,
             tool_desc="Emit the delivery-phase plan.",
-            tool_schema=PlanGeneration.model_json_schema(),
+            tool_schema=LlmPlanOutput.model_json_schema(),
         )
-        return PlanGeneration(**_extract_tool_input(response)), meta
+        llm_out = LlmPlanOutput(**_extract_tool_input(response))
+        return plan_generation_from_llm_output(llm_out, request), meta
 
 
 def _extract_tool_input(response: dict[str, Any]) -> dict[str, Any]:

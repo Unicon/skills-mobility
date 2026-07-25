@@ -217,11 +217,27 @@ class PlanResponse(BaseModel):
         )
 
 
-class PlanGeneration(BaseModel):
-    """The structured model output for the plan stage.
+class LlmPlanOutput(BaseModel):
+    """The lean structured output the plan-stage LLM emits (ADR-0022): an ordered,
+    possibly-skipping list of ``action_ids`` plus confidence and rationale. The LLM
+    does **not** supply step_ids, inputs, or produced-names — every action in the
+    catalog has exactly one valid input recipe, so there is no input decision to
+    make; the executable bindings are rebuilt deterministically by the
+    orchestrator's re-binding. Descoping ``inputs`` from the model keeps its
+    contract honest about what it actually decides (action selection + order)."""
 
-    The service wraps this into a full DeliveryPhasePlan with generator/plan_id/
-    version before storing and returning.
+    model_config = ConfigDict(extra="forbid")
+
+    action_ids: list[str]
+    confidence: float
+    rationale: str
+
+
+class PlanGeneration(BaseModel):
+    """The plan-stage output in full-step form, mapped from ``LlmPlanOutput`` via
+    ``plan_generation_from_llm_output`` (step_ids assigned, inputs left empty for
+    the orchestrator to re-bind). The service wraps this into a full
+    DeliveryPhasePlan with generator/plan_id/version before storing and returning.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -245,3 +261,27 @@ class LlmCallMeta(BaseModel):
     latency_ms: float | None = None
     system_prompt: str | None = None
     user_prompt: str | None = None
+
+
+def plan_generation_from_llm_output(
+    llm: LlmPlanOutput, request: PlanRequest
+) -> PlanGeneration:
+    """Map the lean LLM plan output (ordered action_ids) to a full PlanGeneration.
+
+    step_ids are assigned by position; inputs are left empty (``{}``) and produces
+    is left unset — the orchestrator's re-binding rebuilds the executable bindings
+    from the deterministic reference plan (ADR-0022). Applicability is taken from
+    the request, not the model."""
+    return PlanGeneration(
+        applicability=PlanApplicability(
+            event_type=request.event_type,
+            source_system=request.source_system,
+            selected_targets=list(request.selected_targets),
+        ),
+        steps=[
+            PlanStep(step_id=i, action_id=action_id)
+            for i, action_id in enumerate(llm.action_ids, start=1)
+        ],
+        confidence=llm.confidence,
+        rationale=llm.rationale,
+    )

@@ -92,21 +92,9 @@ def test_gate_builds_converse_request_and_parses_output() -> None:
 
 
 def test_plan_builds_converse_request_and_parses_output() -> None:
+    # The LLM emits only an ordered action_id list (inputs descoped, ADR-0022).
     tool_input = {
-        "applicability": {
-            "event_type": "skill_mastered",
-            "source_system": "mock_lms",
-            "selected_targets": ["learncard_issuer"],
-        },
-        "steps": [
-            {
-                "step_id": 1,
-                "type": "call",
-                "action_id": "resolve_learncard_profile",
-                "inputs": {},
-                "produces": "resolved_profile",
-            }
-        ],
+        "action_ids": ["resolve_learncard_profile", "generate_issuer_payload_mapping"],
         "confidence": 0.94,
         "rationale": "minimal plan",
     }
@@ -119,8 +107,13 @@ def test_plan_builds_converse_request_and_parses_output() -> None:
     gen, meta = adapter.plan(_plan_request(), registry_view=_registry_view())
 
     assert isinstance(gen, PlanGeneration)
-    assert len(gen.steps) == 1
-    assert gen.steps[0].action_id == "resolve_learncard_profile"
+    # lean action_ids map to full steps: sequential step_ids, empty (to-be-rebound) inputs
+    assert [s.action_id for s in gen.steps] == [
+        "resolve_learncard_profile",
+        "generate_issuer_payload_mapping",
+    ]
+    assert [s.step_id for s in gen.steps] == [1, 2]
+    assert all(s.inputs == {} for s in gen.steps)
     kwargs = fake.last_kwargs
     assert kwargs is not None
     assert kwargs["toolConfig"]["toolChoice"]["tool"]["name"] == "emit_plan"

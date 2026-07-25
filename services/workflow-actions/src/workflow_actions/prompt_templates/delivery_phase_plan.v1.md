@@ -14,34 +14,23 @@ You may reference ONLY the following action_id and type values in your plan:
 Each action entry includes a description of what it does. Use these descriptions
 to determine the correct order and input bindings for your plan steps.
 
-## Input binding rules
-
-Each step input is declared as a binding with one of these source forms:
-
-- `{"source": "literal", "value": <constant>}` — a fixed value known at plan time
-- `{"source": "workflow", "path": "<key>"}` — a value from the workflow context
-  (resolved by the executor before the plan runs)
-- `{"source": "step", "step_id": <N>}` — the full output produced by step N,
-  which must be an earlier step that declares a `produces` value
-
-Valid workflow context keys: learner_id_value, delivery_config_ref, bundle, issuer_id.
-
 ## Plan rules
 
 - Delivery-target selection is already complete — do NOT include a target-selection step.
-- Profile resolution (resolve_learncard_profile) is a prerequisite for all
-  LearnCard-specific issuance and delivery steps.
-- The Field Mapping / Field Synthesis / Translation Executor seams appear where
-  the payload phase requires them (for both issuer and wallet paths).
-- Number steps sequentially starting at 1.
-- Every step must declare a `produces` value (the name of its output).
-- You MUST include plan-level `confidence` and `rationale`.
+- Emit an **ordered list of `action_id` values** — the sequence, and which actions you
+  skip, is your decision. You do NOT emit step ids, inputs, or produced-names: each
+  action has exactly one valid input recipe, which the orchestrator rebuilds
+  deterministically from your action ordering.
+- Order matters. Profile resolution (`resolve_learncard_profile`) must precede any
+  LearnCard-specific issuance or delivery step, and each payload's Field Mapping /
+  Field Synthesis / Translation Executor steps must come before the step that consumes
+  their output (issue / deliver).
+- Use the action descriptions above to choose the correct actions and their order.
 
 ## Output
 
-Call the `emit_plan` tool exactly once with the full plan:
-- `applicability`: event_type, source_system, selected_targets (from the request)
-- `steps`: the ordered step list
+Call the `emit_plan` tool exactly once with:
+- `action_ids`: the ordered list of action_id values to run
 - `confidence`: a 0.0–1.0 score reflecting your certainty the plan is correct
 - `rationale`: a brief explanation of the plan's approach
 

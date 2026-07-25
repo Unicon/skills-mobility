@@ -18,8 +18,10 @@ from .contracts import (
     GateGeneration,
     GateRequest,
     LlmCallMeta,
+    LlmPlanOutput,
     PlanGeneration,
     PlanRequest,
+    plan_generation_from_llm_output,
 )
 from .prompt_builder import (
     build_gate_user_message,
@@ -64,13 +66,10 @@ class ReplayAdapter:
     def plan(
         self, request: PlanRequest, *, registry_view: list[dict[str, str]]
     ) -> tuple[PlanGeneration, LlmCallMeta]:
-        # Phase 1: the dual-LearnCard fixture covers the happy path.
+        # Phase 1: the dual-LearnCard fixture covers the happy path. The fixture is
+        # the lean LLM shape (ordered action_ids); applicability + bindings are
+        # derived, not fixtured.
         raw = json.loads((self._dir / "plan_learncard_dual.json").read_text())
-        # Patch applicability to match the actual request.
-        raw["applicability"] = {
-            "event_type": request.event_type,
-            "source_system": request.source_system,
-            "selected_targets": list(request.selected_targets),
-        }
+        llm_out = LlmPlanOutput(**raw)
         meta = _replay_meta(plan_system_prompt(registry_view), build_plan_user_message(request))
-        return PlanGeneration(**raw), meta
+        return plan_generation_from_llm_output(llm_out, request), meta
