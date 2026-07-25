@@ -17,7 +17,12 @@ from orchestrator.actions import (
     _execute_issuer_payload_translation,
     _execute_wallet_payload_translation,
 )
-from orchestrator.clients import EnvelopeContext, StubDeliveryRouter, StubProfileResolver
+from orchestrator.clients import (
+    EnvelopeContext,
+    StubDeliveryRouter,
+    StubFieldSynthesis,
+    StubProfileResolver,
+)
 
 _ENV = EnvelopeContext(
     workflow_id="e1", execution_id="e1", correlation_id="c1", delivery_config_ref="cfg"
@@ -128,6 +133,7 @@ def _deps(executor: Any = None) -> ActionDeps:
         profile_resolver=StubProfileResolver(),
         delivery_router=StubDeliveryRouter(),
         field_mapping=StubDeliveryRouter(),  # not used in translation actions
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=_ENV,
         transformation_executor=executor,

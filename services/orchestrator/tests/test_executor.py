@@ -178,6 +178,7 @@ def test_deliver_to_smartresume_action_dispatches_correct_payload():
         profile_resolver=StubProfileResolver(),
         delivery_router=router,
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=_ENVELOPE,
     )
@@ -220,6 +221,7 @@ def test_deliver_to_smartresume_falls_back_to_email_when_no_did():
         profile_resolver=StubProfileResolver(),
         delivery_router=router,
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=_ENVELOPE,
     )
@@ -247,6 +249,7 @@ def test_smartresume_plan_executes_end_to_end(sample_event):
         profile_resolver=StubProfileResolver(),
         delivery_router=router,
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=_ENVELOPE,
     )
