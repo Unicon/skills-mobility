@@ -70,13 +70,13 @@ def test_run_workflow_completes_and_persists(client, sample_event):
         "kind": "workflow_actions_plan",
         "confidence": None,
         "rationale": "Deterministic Phase 1 LearnCard workflow.",
-        "outcome": "phase1-skill_mastered.v1",
+        "outcome": "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1",
         "candidates": [],
         "artifact_ref": None,
         "invocation_log_ref": None,
         "created_at": plan_decision["created_at"],
     }
-    assert body["plan_id"] == "phase1-skill_mastered.v1"
+    assert body["plan_id"] == "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1"
     assert [s["action_id"] for s in body["steps"]][0] == "resolve_learncard_profile"
     assert len(body["steps"]) == 8
     assert all(s["status"] == "succeeded" for s in body["steps"])
@@ -117,7 +117,7 @@ def test_course_completed_path_completes(client, course_event):
     body = resp.json()
     assert body["status"] == "completed"
     assert body["event_type"] == "course_completed"
-    assert body["plan_id"] == "phase1-course_completed.v1"
+    assert body["plan_id"] == "phase1-course_completed.learncard_issuer.learncard_wallet.v1"
 
 
 def test_plan_lookup_toggle_and_delete(client, sample_event):
@@ -126,9 +126,10 @@ def test_plan_lookup_toggle_and_delete(client, sample_event):
     assert client.put("/admin/plan-lookup-toggle", json={"enabled": True}).json() == {
         "reusable_plan_lookup_enabled": True
     }
-    assert client.delete("/admin/plans/phase1-skill_mastered.v1").json() == {"deleted": True}
+    plan_id = "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1"
+    assert client.delete(f"/admin/plans/{plan_id}").json() == {"deleted": True}
     # Second delete is a no-op (already gone).
-    assert client.delete("/admin/plans/phase1-skill_mastered.v1").json() == {"deleted": False}
+    assert client.delete(f"/admin/plans/{plan_id}").json() == {"deleted": False}
 
 
 def test_list_executions_and_correlation_filter(client, sample_event, course_event):

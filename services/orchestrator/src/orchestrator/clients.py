@@ -120,6 +120,13 @@ class StubDeliveryRouter:
                 "external_reference_id": "stub-delivered",
                 "result": {"delivery_state": "accepted"},
             }
+        if action == "deliver_to_smartresume":
+            return {
+                "status": "succeeded",
+                "action": action,
+                "external_reference_id": "stub-smartresume",
+                "result": {"redirect_url": "https://mock.smartresume.example/createmyresume/stub"},
+            }
         return {
             "status": "failed",
             "action": action,
@@ -147,6 +154,7 @@ class HttpContextBuilderClient:
 _ADAPTER_KEY_BY_ACTION = {
     "issue_learncard_badge": "learncard_issuer",
     "deliver_to_learncard_wallet": "learncard_wallet",
+    "deliver_to_smartresume": "smart_resume",
 }
 
 

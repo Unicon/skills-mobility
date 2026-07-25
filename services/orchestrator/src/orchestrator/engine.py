@@ -128,19 +128,26 @@ def run_workflow(
             workflow_actions, event_type, source_system, targets, request.event, bundle,
             generated_at, envelope,
         )
-        # Guardrail: the executor feeds each action solely from that step's declared
-        # input bindings, so an LLM plan whose steps omit the inputs an action reads is
-        # not runnable. Validate the proposal against the deterministic reference; if it
-        # doesn't conform, execute the deterministic plan instead. The LLM's gate
-        # decision and proposed plan_id stay in the trail — LLM output never flows
-        # straight to delivery (ADR-0007).
-        if _plan_conforms(proposed, reference):
-            plan = proposed
+        # Re-bind the LLM's action sequence to executor-compatible step_id bindings.
+        # The LLM owns action selection/order/skips; the orchestrator owns the bindings.
+        # If re-binding fails (unknown action or unmet dependency), fall back to the
+        # deterministic reference plan. LLM output never flows straight to delivery
+        # (ADR-0007); re-binding only guarantees executability (ADR-0022).
+        rebound = planner.rebind_plan(proposed, event_type, targets)
+        if rebound is not None:
+            plan = rebound
+            logger.info(
+                "workflow-actions plan accepted (re-bound to executor bindings): "
+                "execution_id=%s event_type=%s targets=%s plan_id=%s",
+                execution_id, event_type, targets, rebound.plan_id,
+            )
         else:
             logger.warning(
-                "workflow-actions plan not executor-conformant (execution_id=%s "
-                "proposed_plan_id=%s); executing deterministic plan %s",
-                execution_id, proposed.plan_id, reference.plan_id,
+                "workflow-actions plan not re-bindable (unknown action or unmet dependency); "
+                "executing deterministic plan: "
+                "execution_id=%s event_type=%s targets=%s "
+                "proposed_plan_id=%s reference_plan_id=%s",
+                execution_id, event_type, targets, proposed.plan_id, reference.plan_id,
             )
             plan = reference
         store.record_decision(
@@ -243,21 +250,6 @@ def _resolve_plan(
         except Exception as err:  # noqa: BLE001 — best-effort seam
             logger.warning("workflow-actions plan failed (non-fatal; deterministic plan): %s", err)
     return planner.delivery_phase_plan(event_type, targets, generated_at)
-
-
-def _plan_conforms(plan: DeliveryPhasePlan, reference: DeliveryPhasePlan) -> bool:
-    """Whether ``plan`` is runnable by the executor. The executor resolves every
-    action's inputs from that step's declared bindings, so a runnable plan must match
-    the deterministic reference step-for-step (same actions, in order) and declare at
-    least the inputs each action reads. Extra declared inputs are allowed."""
-    if len(plan.steps) != len(reference.steps):
-        return False
-    for step, ref in zip(plan.steps, reference.steps, strict=True):
-        if step.action_id != ref.action_id:
-            return False
-        if not set(ref.inputs).issubset(step.inputs):
-            return False
-    return True
 
 
 def _metadata(store: ExecutionStore, execution_id: str) -> ExecutionMetadata:

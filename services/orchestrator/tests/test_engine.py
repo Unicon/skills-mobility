@@ -76,7 +76,7 @@ def test_gate_continue_runs_full_plan(sample_event):
     assert meta.status == "completed"
     assert meta.decisions[0].kind == "gate"
     assert meta.decisions[0].outcome == "continue_to_delivery_targets"
-    assert meta.plan_id == "phase1-skill_mastered.v1"
+    assert meta.plan_id == "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1"
     assert len(meta.steps) == 8
 
 
@@ -89,7 +89,7 @@ def test_continue_path_records_all_three_planner_decisions(sample_event):
     targets_decision, plan_decision = meta.decisions[1], meta.decisions[2]
     assert targets_decision.outcome == "learncard_issuer, learncard_wallet"
     assert targets_decision.confidence is None
-    assert plan_decision.outcome == "phase1-skill_mastered.v1"
+    assert plan_decision.outcome == "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1"
     assert plan_decision.confidence is None
 
 
@@ -194,7 +194,7 @@ def test_plan_lookup_disabled_ignores_stored_plan(sample_event):
     _seed_stored_plan(store)
     meta = _run(sample_event, store=store, reusable=False)
     # Lookup off → the stored plan is ignored; a fresh Phase-1 plan is generated.
-    assert meta.plan_id == "phase1-skill_mastered.v1"
+    assert meta.plan_id == "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1"
     assert len(meta.steps) == 8
 
 
