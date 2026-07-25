@@ -12,6 +12,7 @@ from orchestrator.clients import (
     StubContextBuilder,
     StubDeliveryRouter,
     StubFieldMapping,
+    StubFieldSynthesis,
     StubProfileResolver,
 )
 from orchestrator.schemas import (
@@ -34,6 +35,7 @@ def _run(event, *, store, reusable=False, execution_id="e1", context_builder=Non
         profile_resolver=StubProfileResolver(),
         delivery_router=StubDeliveryRouter(),
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         delivery_config_ref="cfg",
         recipient_profile_id="smi-demo-learner",
@@ -64,6 +66,7 @@ def test_resolves_fixed_demo_recipient_by_profile_id(sample_event):
         profile_resolver=resolver,
         delivery_router=StubDeliveryRouter(),
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         delivery_config_ref="cfg",
         recipient_profile_id="smi-demo-learner",
@@ -116,6 +119,7 @@ def test_configured_workflow_actions_decisions_reflect_the_real_call(sample_even
         profile_resolver=StubProfileResolver(),
         delivery_router=StubDeliveryRouter(),
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         delivery_config_ref="cfg",
         recipient_profile_id="smi-demo-learner",
