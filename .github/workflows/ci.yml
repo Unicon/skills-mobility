@@ -28,7 +28,8 @@ jobs:
         run: uv run ruff check .
 
       - name: Type-check (mypy --strict)
-        run: uv run mypy libs/*/src services/*/src
+        # learncard-issuer-adapter is the one Node service — no Python sources.
+        run: uv run mypy libs/*/src $(ls -d services/*/src | grep -v learncard-issuer-adapter)
 
   ui:
     name: UI — typecheck / build
