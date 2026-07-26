@@ -70,7 +70,7 @@ uv run pytest                          # full suite
 uv run pytest services/mock-lms        # one package
 uv run pytest services/mock-lms/tests/test_emit_api.py::test_emit_single_skill_mastered  # one test
 uv run ruff check .                    # lint (fix: ruff check . --fix)
-uv run mypy libs/*/src services/*/src  # type-check (strict)
+uv run mypy libs/*/src $(ls -d services/*/src | grep -v learncard-issuer-adapter)  # type-check (strict; skip the Node service)
 uv run mock-lms-generate               # regenerate committed fixtures (seeded)
 
 # The three backends chain together (Mock LMS -> Event Consumer -> Orchestrator);
@@ -163,7 +163,7 @@ Dependency rules: `apps/` may use `packages/` but not `services/`; `services/` m
 [ ] Tests exist for the change (or I've explained why not)
 [ ] Tests pass: uv run pytest (and npm run build for UI changes)
 [ ] Lint clean: uv run ruff check .
-[ ] Types clean: uv run mypy libs/*/src services/*/src
+[ ] Types clean: uv run mypy libs/*/src $(ls -d services/*/src | grep -v learncard-issuer-adapter)
 [ ] packages/contracts/src/types.ts synced if the orchestrator execution read model changed
 [ ] No secrets, passwords, or hardcoded hostnames
 [ ] No AI attribution in commits or PR descriptions
