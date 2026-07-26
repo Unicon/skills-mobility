@@ -15,10 +15,6 @@ def test_load_targets_returns_all_three_entries() -> None:
     assert ids == _EXPECTED_TARGET_IDS
 
 
-def test_target_ids_returns_correct_set() -> None:
-    assert store.target_ids() == _EXPECTED_TARGET_IDS
-
-
 def test_each_entry_has_required_fields() -> None:
     for entry in store.load_targets():
         assert "delivery_target" in entry

@@ -56,7 +56,18 @@ class SelectionService:
 
         # Exactly one attempt (FR-DT-14); no hidden repair retry.
         generation, meta = self._adapter.select(request, catalog=catalog)
+        logger.info(
+            "selection generated: execution_id=%s event_id=%s event_type=%s provider=%s "
+            "proposed_targets=%s",
+            request.execution_id, request.event_id, request.event_type, meta.provider,
+            [sel.delivery_target for sel in generation.selections],
+        )
         errors = validate_selection(generation, catalog_target_ids=catalog_target_ids)
+        logger.info(
+            "validation decision: execution_id=%s event_id=%s status=%s errors=%s",
+            request.execution_id, request.event_id,
+            "failed" if errors else "succeeded", errors,
+        )
 
         log_ref = self._artifact_store.store_invocation_log(
             _invocation_log(request, generation, meta, errors, findings),
@@ -66,6 +77,10 @@ class SelectionService:
         if errors:
             self._artifact_store.store_failed(
                 request.execution_id, "; ".join(errors)
+            )
+            logger.info(
+                "failed artifact stored: execution_id=%s event_id=%s log_ref=%s",
+                request.execution_id, request.event_id, log_ref,
             )
             return SelectionResponse.failed(llm_invocation_log_ref=log_ref)
 
@@ -77,6 +92,11 @@ class SelectionService:
         )
         selection_ref = self._artifact_store.store_selection(artifact)
         selected_targets = [sel.delivery_target for sel in generation.selections]
+        logger.info(
+            "selection stored: execution_id=%s event_id=%s selected_targets=%s "
+            "selection_ref=%s log_ref=%s",
+            request.execution_id, request.event_id, selected_targets, selection_ref, log_ref,
+        )
         return SelectionResponse.succeeded(
             selection_artifact_ref=selection_ref,
             selected_targets=selected_targets,

@@ -10,38 +10,42 @@ from delivery_targets.contracts import SelectionRequest
 from delivery_targets.replay_adapter import ReplayAdapter
 from delivery_targets.service import SelectionService
 
-SKILL_MASTERED_BODY: dict[str, Any] = {
+# The routing bifurcation is course subject (design §3/§5): Accounting (ACCY-*)
+# pairs the issuer with the LearnCard wallet; Finance (FINC-*) pairs it with
+# SmartResume. course_id carries the subject, matching mock-lms's catalog ids.
+ACCOUNTING_BODY: dict[str, Any] = {
     "execution_id": "exec_1",
     "event_id": "evt_1",
     "event_type": "skill_mastered",
     "source_system": "mock_lms",
     "learner_context": {
         "learner_id": "learner_42",
+        "course_id": "ACCY-111",
         "recipient_profile_id": "smi-demo-learner",
-        "credential_enabled": True,
     },
 }
 
-COURSE_COMPLETED_BODY: dict[str, Any] = {
+FINANCE_BODY: dict[str, Any] = {
     "execution_id": "exec_2",
     "event_id": "evt_2",
     "event_type": "course_completed",
     "source_system": "mock_lms",
     "learner_context": {
         "learner_id": "learner_42",
-        "credential_enabled": False,
+        "course_id": "FINC-106",
+        "recipient_profile_id": "smi-demo-learner",
     },
 }
 
 
 @pytest.fixture
-def skill_mastered_request() -> SelectionRequest:
-    return SelectionRequest(**SKILL_MASTERED_BODY)
+def accounting_request() -> SelectionRequest:
+    return SelectionRequest(**ACCOUNTING_BODY)
 
 
 @pytest.fixture
-def course_completed_request() -> SelectionRequest:
-    return SelectionRequest(**COURSE_COMPLETED_BODY)
+def finance_request() -> SelectionRequest:
+    return SelectionRequest(**FINANCE_BODY)
 
 
 @pytest.fixture

@@ -58,6 +58,8 @@ def test_store_invocation_log_returns_ref(tmp_path: Path) -> None:
     ref = store.store_invocation_log(log, key="exec_1")
 
     assert ref == "llmcall:exec_1"
+    # The record round-trips — the log content was actually persisted.
+    assert store._read(ref) == log
 
 
 def test_load_missing_ref_raises_artifact_not_found(tmp_path: Path) -> None:

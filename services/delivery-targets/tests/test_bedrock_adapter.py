@@ -39,7 +39,7 @@ def _skill_mastered_request() -> SelectionRequest:
         event_id="evt_1",
         event_type="skill_mastered",
         source_system="mock_lms",
-        learner_context={"learner_id": "learner_42", "credential_enabled": True},
+        learner_context={"learner_id": "learner_42", "course_id": "ACCY-111"},
     )
 
 
