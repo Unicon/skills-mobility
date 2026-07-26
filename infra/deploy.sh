@@ -24,7 +24,7 @@ PROJECT=${PROJECT:-skills-mobility}
 ENV=${ENV:-dev}
 REGION=${REGION:-us-east-1}
 ACCOUNT=${ACCOUNT:-584569945336}
-IMAGE_TAG=${IMAGE_TAG:-f8d284d}
+IMAGE_TAG=${IMAGE_TAG:-6053c55}
 EXEC_ROLE_ARN=${EXEC_ROLE_ARN:-arn:aws:iam::${ACCOUNT}:role/${PROJECT}-${ENV}-lambda-exec}
 TABLE=${TABLE:-${PROJECT}-${ENV}-execution-state}
 REG="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
@@ -64,7 +64,10 @@ for svc in "${SERVICES[@]}"; do
     --image-ids imageTag="$IMAGE_TAG" >/dev/null \
     || { echo "MISSING image: $(image "$svc")"; exit 1; }
 done
-aws iam get-role --role-name "$(basename "$EXEC_ROLE_ARN")" >/dev/null \
+# iam:GetRole is denied under PowerUserAccess; iam:ListRoles is allowed.
+EXEC_ROLE_NAME=$(basename "$EXEC_ROLE_ARN")
+aws iam list-roles --query "Roles[?RoleName=='${EXEC_ROLE_NAME}'].RoleName" --output text \
+  | grep -q "$EXEC_ROLE_NAME" \
   || { echo "exec role not found: $EXEC_ROLE_ARN (Ops must create it — infra/iam/README.md)"; exit 1; }
 echo "  images present, exec role present"
 

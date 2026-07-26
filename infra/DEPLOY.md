@@ -7,14 +7,15 @@ prerequisites are in place, the backend is **one command**.
 
 | | State |
 |---|---|
-| Foundation stack (DynamoDB `pk` table + 6 ECR repos + UI bucket) | ✅ deployed (`skills-mobility-dev-foundation`) |
-| 6 service images in ECR (`mock-lms, event-consumer, context-builder, delivery-targets, workflow-actions, orchestrator`) @ `f8d284d` | ✅ pushed (arm64, single-manifest) |
-| **Lambda execution role** `skills-mobility-dev-lambda-exec` | ⛔ Ops (`infra/iam/README.md`) |
+| Foundation stack (DynamoDB `pk` table + 9 ECR repos + UI bucket) | ✅ deployed (`skills-mobility-dev-foundation`) |
+| 9 service images in ECR (the full chain incl. `field-mapping, field-synthesis, transformation-executor`) @ `6053c55` (built from `demo/e2e-aligned`) | ✅ pushed (arm64, single-manifest) |
+| **Lambda execution role** `skills-mobility-dev-lambda-exec` | ✅ created by Ops |
 | **Deploy role** `skills-mobility-dev-deploy` (PowerUser + `iam:PassRole`) | ⛔ Ops (`OPS-TICKET-aws-demo.md`) |
 | Fresh SSO login | `aws sso login --profile skills` (token expires ~8h) |
 
-The two roles are the only blockers. The deployer needs `iam:PassRole` on the exec
-role — hence the deploy role — because PowerUserAccess can't pass roles.
+The deploy role is the only blocker. The deployer needs `iam:PassRole` on the exec
+role — hence the deploy role — because PowerUserAccess can't pass roles (verified
+2026-07-25: a test stack create failed on exactly `iam:PassRole`).
 
 ## One-time: a profile that assumes the deploy role
 
@@ -34,22 +35,24 @@ AWS_PROFILE=smi-deploy ./infra/deploy.sh
 ```
 
 `deploy.sh` is idempotent and does the whole thing:
-1. **preflight** — verifies identity, that all 6 images exist, and the exec role exists;
+1. **preflight** — verifies identity, that all 9 images exist, and the exec role exists;
 2. **pass 1** — creates every Lambda + Function URL (orchestrator gets the DynamoDB
-   table; delivery-targets/workflow-actions get `LlmMode=bedrock`);
+   table; the four Bedrock services — delivery-targets, workflow-actions,
+   field-mapping, field-synthesis — get `LlmMode=bedrock`);
 3. collects the Function URLs;
 4. **pass 2** — feeds the URLs back in to wire the (circular) chain
-   mock-lms→event-consumer→orchestrator→context-builder→mock-lms;
+   mock-lms→event-consumer→orchestrator→context-builder→mock-lms, plus the
+   orchestrator's downstream seams (delivery-targets, workflow-actions,
+   field-mapping, field-synthesis, transformation-executor);
 5. **smoke test** — hits `/demo/courses`, fires an `ACCY-111` event, polls the
    orchestrator until the execution is `completed`.
 
 It prints the orchestrator + mock-lms Function URLs at the end.
 
-> **Scope:** the 6-service decision+audit slice (gate → targets → plan, live Bedrock;
-> delivery + transformation stubbed in the orchestrator). To extend to the full
-> transformation chain proven locally (`demo/e2e-aligned`), add Lambda packaging +
-> images for `field-mapping`, `field-synthesis`, `transformation-executor`, then append
-> them to `SERVICES` in `deploy.sh` (+ their `ORCHESTRATOR_*_URL` env in pass 2).
+> **Scope:** the full 9-service transformation chain proven locally on
+> `demo/e2e-aligned` (gate → targets → plan → mapping → synthesis → execute, live
+> Bedrock). LearnCard delivery stays stubbed (profile-resolver / delivery-router
+> URLs unset), matching the local e2e proof.
 
 ## Admin UI
 
@@ -78,14 +81,15 @@ aws cloudformation deploy --template-file infra/cloudformation/admin-ui.yml \
 aws cloudfront create-invalidation --distribution-id <id> --paths '/*' --profile smi-deploy
 ```
 
-> `admin-ui.yml` is written but **not yet AWS-validated** (SSO token expired at authoring
-> time) and can't be exercised until the backend is deployed. Validate on next login:
-> `aws cloudformation validate-template --template-body file://infra/cloudformation/admin-ui.yml`.
+> `admin-ui.yml` passes `aws cloudformation validate-template` but can't be
+> exercised end-to-end until the backend is deployed (it needs the orchestrator
+> Function URL domain).
 
 ## Teardown
 
 ```bash
-for s in mock-lms event-consumer context-builder delivery-targets workflow-actions orchestrator admin-ui; do
+for s in mock-lms event-consumer context-builder delivery-targets workflow-actions \
+         field-mapping field-synthesis transformation-executor orchestrator admin-ui; do
   aws cloudformation delete-stack --stack-name "skills-mobility-dev-$s" --profile smi-deploy
 done
 # foundation stack + ECR images left in place for redeploys
