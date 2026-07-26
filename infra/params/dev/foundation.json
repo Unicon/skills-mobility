@@ -1,0 +1,7 @@
+[
+  {"ParameterKey": "ProjectName",         "ParameterValue": "skills-mobility"},
+  {"ParameterKey": "EnvName",             "ParameterValue": "dev"},
+  {"ParameterKey": "GitHubOrg",           "ParameterValue": "Unicon"},
+  {"ParameterKey": "GitHubRepo",          "ParameterValue": "skills-mobility"},
+  {"ParameterKey": "CreateOidcProvider",  "ParameterValue": "true"}
+]

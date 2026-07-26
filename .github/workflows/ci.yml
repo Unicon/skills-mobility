@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  python:
+    name: Python — test / lint / typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.7.12"  # pin; update deliberately
+
+      - name: Install Python dependencies
+        run: uv sync --all-packages
+
+      - name: Run tests
+        run: uv run pytest
+
+      - name: Lint (ruff)
+        run: uv run ruff check .
+
+      - name: Type-check (mypy --strict)
+        # learncard-issuer-adapter is the one Node service — no Python sources.
+        run: uv run mypy libs/*/src $(ls -d services/*/src | grep -v learncard-issuer-adapter)
+
+  ui:
+    name: UI — typecheck / build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Typecheck (all workspaces)
+        run: npm run typecheck
+
+      - name: Build (mock-lms SPA)
+        run: npm run build -w apps/mock-lms
