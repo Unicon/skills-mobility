@@ -12,7 +12,9 @@ from skills_mobility_events import LiveEventEnvelope
 
 def _an_envelope() -> LiveEventEnvelope:
     """Emit a real skill-mastery event through the app and grab the envelope."""
-    app = create_app(Settings(emitter="local"))
+    # event_consumer_url=None so a developer's local .env can't turn the emitter
+    # into a forwarding one that fires at a real (or dead) event-consumer.
+    app = create_app(Settings(emitter="local", event_consumer_url=None))
     client = TestClient(app)
     courses = client.get("/demo/courses").json()
     std = next(c for c in courses if c["kind"] == "standard")
