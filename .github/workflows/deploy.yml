@@ -13,10 +13,12 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  # Fill in before first deploy:
-  AWS_ACCOUNT_ID: "REPLACE_WITH_ACCOUNT_ID"
-  ECR_REGISTRY: "REPLACE_WITH_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com"
-  DEPLOY_ROLE_ARN: "arn:aws:iam::REPLACE_WITH_ACCOUNT_ID:role/skills-mobility-dev-github-deploy"
+  AWS_ACCOUNT_ID: "584569945336"
+  ECR_REGISTRY: "584569945336.dkr.ecr.us-east-1.amazonaws.com"
+  # The shared deploy role (OPS-TICKET-aws-demo.md Task 2): PowerUserAccess +
+  # scoped iam:PassRole, with a GitHub-OIDC trust statement for this repo's
+  # main branch (Task 4). Same role a human deployer assumes as `smi-deploy`.
+  DEPLOY_ROLE_ARN: "arn:aws:iam::584569945336:role/skills-mobility-dev-deploy"
   PROJECT: skills-mobility
   ENV: dev
 
@@ -26,17 +28,19 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # The 9-service transformation chain (see infra/DEPLOY.md). The LearnCard
+        # delivery services (profile-resolver / delivery-router / issuer-adapter)
+        # are stubbed in the POC deploy — add them here when delivery goes live.
         service:
-          - context-builder
-          - delivery-router
-          - event-consumer
-          - learncard-profile-resolver
-          - learncard-wallet-adapter
           - mock-lms
+          - event-consumer
+          - context-builder
+          - delivery-targets
+          - workflow-actions
+          - field-mapping
+          - field-synthesis
+          - transformation-executor
           - orchestrator
-          # Uncomment as branches merge:
-          # - field-mapping
-          # - learncard-issuer-adapter
       fail-fast: false
 
     steps:
@@ -62,20 +66,29 @@ jobs:
             --repository-name "${{ env.PROJECT }}/${{ matrix.service }}" \
             --region "$AWS_REGION"
 
+      - name: Set up QEMU + Buildx (arm64 cross-build)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - uses: docker/setup-buildx-action@v3
+
       - name: Build and push image
         id: build
         env:
           IMAGE_URI: ${{ env.ECR_REGISTRY }}/${{ env.PROJECT }}/${{ matrix.service }}:${{ github.sha }}
         run: |
-          # Each service has a Dockerfile at services/<name>/Dockerfile.
-          # The image must include a Mangum handler:
-          #   from mangum import Mangum
-          #   handler = Mangum(app)
-          docker build \
+          # Each service has a Lambda image at services/<name>/Dockerfile.lambda
+          # (Mangum handler in <pkg>/lambda_handler.py), built from the repo root.
+          # arm64 to match the functions' Architectures; --provenance=false because
+          # buildx attestation manifest-lists are rejected by Lambda.
+          docker buildx build \
+            --platform linux/arm64 \
+            --provenance=false \
             -t "$IMAGE_URI" \
-            -f "services/${{ matrix.service }}/Dockerfile" \
+            -f "services/${{ matrix.service }}/Dockerfile.lambda" \
+            --push \
             .
-          docker push "$IMAGE_URI"
           echo "image_uri=${IMAGE_URI}" >> "$GITHUB_OUTPUT"
 
       - name: Deploy CloudFormation stack

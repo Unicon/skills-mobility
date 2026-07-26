@@ -196,6 +196,8 @@ Resources:
     Properties:
       FunctionName: !Sub "${ProjectName}-${EnvName}-${ServiceName}"
       PackageType: Image
+      # arm64 to match the CI-built images (deploy.yml builds --platform linux/arm64).
+      Architectures: [arm64]
       Code:
         ImageUri: !Ref ImageUri
       Role: !GetAtt LambdaExecutionRole.Arn
