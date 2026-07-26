@@ -2,19 +2,19 @@
   {
     "delivery_target": "learncard_issuer",
     "delivery_action": "issue_learncard_badge",
-    "description": "LearnCard badge issuer. We use this for our Accounting courses (the ACCY-* subjects). The Pretend Association of Accountants partners with LearnCard, so badges issued here reach their employer members. This runs first for any credential we send out — it's the only issuer we have — and it's normally paired with the LearnCard wallet target so the learner also gets the badge in their wallet.",
-    "eligibility_notes": "Select for Accounting (ACCY-*) course and skill events that should produce a badge. Pair with learncard_wallet. Not the right target for Finance (FINC-*) events — those go to SmartResume."
+    "description": "Our LearnCard badge issuer. This is the only issuer we have, so every credential we send out runs through here first.",
+    "eligibility_notes": "Select for every course/skill event that should produce a badge."
   },
   {
     "delivery_target": "learncard_wallet",
     "delivery_action": "deliver_to_learncard_wallet",
-    "description": "Delivers the issued badge into the learner's LearnCard wallet for long-term storage and sharing. Goes together with the LearnCard issuer for our Accounting (ACCY-*) courses, under the Pretend Association of Accountants / LearnCard partnership. It delivers the issued badge, so it only makes sense when learncard_issuer was also selected.",
-    "eligibility_notes": "Select alongside learncard_issuer for Accounting (ACCY-*) events where the learner has a resolvable LearnCard wallet profile (recipient_profile_id in the learner context). Not on its own without the issuer."
+    "description": "Puts the badge issued by learncard_issuer into the learner's own LearnCard wallet, right after issuance. We use this for our Accounting (ACCY-*) courses, since the Pretend Association of Accountants partnership expects these learner badges to be available to their member employers here.",
+    "eligibility_notes": "Select alongside learncard_issuer for Accounting (ACCY-*) events. Finance (FINC-*) events pair learncard_issuer with smart_resume instead."
   },
   {
     "delivery_target": "smart_resume",
     "delivery_action": "deliver_to_smartresume",
-    "description": "SmartResume delivery. We use this for our Finance courses (the FINC-* subjects). The Pretend Association of Finance partners with SmartResume, so Finance credentials are delivered there for their members. The LearnCard issuer still runs first (it's our only issuer); this target just changes the final delivery step to SmartResume instead of the LearnCard wallet.",
-    "eligibility_notes": "Select for Finance (FINC-*) course and skill events. Normally mutually exclusive with learncard_wallet for a given event — Accounting routes to LearnCard, Finance routes to SmartResume — though an institution could configure both."
+    "description": "SmartResume delivery, where Finance (FINC-*) credentials end up after they're issued through LearnCard. The Pretend Association of Finance partners with SmartResume, so that their members can view learner credentials here.",
+    "eligibility_notes": "Select for Finance (FINC-*) course and skill events, alongside learncard_issuer. Accounting (ACCY-*) events pair learncard_issuer with learncard_wallet instead."
   }
 ]

@@ -22,9 +22,26 @@ class DeliveryTarget(StrEnum):
 
 
 class SelectionRequest(BaseModel):
-    """§6 request. Context is passed inline by default (ADR-0007)."""
+    """§6 request. Context is passed inline by default (ADR-0007). The example
+    surfaces in Swagger's "Try it out" panel; ``course_id`` is what replay mode
+    resolves the course subject from (``ACCY-*`` vs ``FINC-*``)."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "execution_id": "exec_1",
+                "event_id": "evt_1",
+                "event_type": "skill_mastered",
+                "source_system": "mock_lms",
+                "learner_context": {
+                    "learner_id": "learner_42",
+                    "course_id": "ACCY-111",
+                    "recipient_profile_id": "smi-demo-learner",
+                },
+            }
+        },
+    )
 
     execution_id: str
     event_id: str

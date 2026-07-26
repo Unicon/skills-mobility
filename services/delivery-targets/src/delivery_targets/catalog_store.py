@@ -29,7 +29,3 @@ class CatalogStore:
             raise CatalogError(f"available-delivery-targets catalog not found: {path}")
         catalog: list[dict[str, Any]] = json.loads(path.read_text())
         return catalog
-
-    def target_ids(self) -> set[str]:
-        """Return the set of delivery_target identifiers from the catalog."""
-        return {entry["delivery_target"] for entry in self.load_targets()}

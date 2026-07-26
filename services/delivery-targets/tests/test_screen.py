@@ -5,7 +5,7 @@ def test_clean_context_has_no_findings() -> None:
     context = {
         "learner_id": "learner_42",
         "recipient_profile_id": "smi-demo-learner",
-        "credential_enabled": True,
+        "course_id": "ACCY-111",
     }
     assert screen_for_injection(context) == []
 

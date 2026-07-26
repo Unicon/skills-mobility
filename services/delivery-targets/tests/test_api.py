@@ -9,7 +9,7 @@ from delivery_targets.replay_adapter import ReplayAdapter
 from delivery_targets.service import SelectionService
 from fastapi.testclient import TestClient
 
-from .conftest import SKILL_MASTERED_BODY
+from .conftest import ACCOUNTING_BODY
 
 _SEAM_KEYS = {
     "status",
@@ -30,7 +30,7 @@ def _client(tmp_path: Path) -> TestClient:
 
 
 def test_post_select_returns_seam_envelope(tmp_path: Path) -> None:
-    resp = _client(tmp_path).post("/select-delivery-targets", json=SKILL_MASTERED_BODY)
+    resp = _client(tmp_path).post("/select-delivery-targets", json=ACCOUNTING_BODY)
     assert resp.status_code == 200
     body = resp.json()
     assert set(body.keys()) == _SEAM_KEYS

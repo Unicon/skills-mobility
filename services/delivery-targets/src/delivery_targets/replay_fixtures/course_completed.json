@@ -1,9 +1,0 @@
-{
-  "selections": [
-    {
-      "delivery_target": "smart_resume",
-      "confidence": 0.88,
-      "rationale": "A course_completed event for a non-credential-enabled course routes to SmartResume so the completion is recorded in the learner's professional profile."
-    }
-  ]
-}
