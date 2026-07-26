@@ -52,7 +52,7 @@ def test_record_decision_round_trips_gate_kind() -> None:
     store.record_decision(
         "exec_1",
         DecisionArtifact(
-            kind="gate", confidence=1.0, rationale="ok", outcome="continue_to_delivery_targets"
+            kind="gate", confidence=1.0, rationale="ok", outcome="continue"
         ),
     )
     meta = store.get_execution_metadata("exec_1")
@@ -62,7 +62,7 @@ def test_record_decision_round_trips_gate_kind() -> None:
     assert decision.kind == "gate"
     assert decision.confidence == 1.0
     assert decision.rationale == "ok"
-    assert decision.outcome == "continue_to_delivery_targets"
+    assert decision.outcome == "continue"
     assert decision.candidates == []
 
 
@@ -70,7 +70,7 @@ def test_record_decision_preserves_insertion_order() -> None:
     store = ExecutionStore(":memory:")
     store.create_execution("exec_1", "evt", "corr", "skill_mastered")
     store.record_decision(
-        "exec_1", DecisionArtifact(kind="gate", outcome="continue_to_delivery_targets")
+        "exec_1", DecisionArtifact(kind="gate", outcome="continue")
     )
     store.record_decision(
         "exec_1", DecisionArtifact(kind="delivery_targets", outcome="learncard_wallet")

@@ -18,7 +18,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-GateDecisionType = Literal["continue_to_delivery_targets", "terminate"]
+GateDecisionType = Literal["continue", "terminate"]
 DecisionKind = Literal["gate", "delivery_targets", "field_mapping", "workflow_actions_plan"]
 InputSource = Literal["workflow", "step", "literal"]
 StepType = Literal["call", "wait", "for_each", "terminate"]
