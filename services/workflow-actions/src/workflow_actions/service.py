@@ -13,6 +13,7 @@ Stage 2 — delivery-phase plan:
 from __future__ import annotations
 
 import datetime
+import logging
 from typing import Any
 
 from .action_registry_view import gating_prose, prompt_projection, valid_action_pairs
@@ -28,7 +29,9 @@ from .contracts import (
 from .llm_adapter import LLMAdapter
 from .plan_store import PlanStore
 from .prompt_builder import GATE_PROMPT_VERSION, PLAN_PROMPT_VERSION
-from .validators import WORKFLOW_CONTEXT_KEYS, validate_gate, validate_plan
+from .validators import validate_gate, validate_plan
+
+logger = logging.getLogger(__name__)
 
 _SERVICE_VERSION = "workflow-actions.v1"
 
@@ -50,11 +53,24 @@ class WorkflowActionsService:
 
         # Exactly one attempt; no repair retry.
         generation, meta = self._adapter.gate(request, gating_prose=prose)
+        logger.info(
+            "gate generated: execution_id=%s event_id=%s event_type=%s provider=%s decision=%s",
+            request.execution_id, request.event_id, request.event_type,
+            meta.provider, generation.decision,
+        )
         errors = validate_gate(generation)
+        logger.info(
+            "gate validation decision: execution_id=%s event_id=%s status=%s errors=%s",
+            request.execution_id, request.event_id,
+            "failed" if errors else "succeeded", errors,
+        )
 
         log_ref = self._plan_store.store_invocation_log(
             _gate_invocation_log(request, generation, meta, errors, self._settings),
             key=f"gate-{request.execution_id}",
+        )
+        logger.info(
+            "gate invocation log stored: execution_id=%s log_ref=%s", request.execution_id, log_ref
         )
 
         if errors:
@@ -73,10 +89,16 @@ class WorkflowActionsService:
 
         # Exactly one attempt; no repair retry.
         generation, meta = self._adapter.plan(request, registry_view=registry_view)
-        errors = validate_plan(
-            generation,
-            registry=registry,
-            workflow_context_keys=WORKFLOW_CONTEXT_KEYS,
+        logger.info(
+            "plan generated: execution_id=%s event_id=%s targets=%s provider=%s actions=%s",
+            request.execution_id, request.event_id, list(request.selected_targets),
+            meta.provider, [step.action_id for step in generation.steps],
+        )
+        errors = validate_plan(generation, registry=registry)
+        logger.info(
+            "plan validation decision: execution_id=%s event_id=%s status=%s errors=%s",
+            request.execution_id, request.event_id,
+            "failed" if errors else "succeeded", errors,
         )
 
         generated_at = datetime.datetime.now(datetime.UTC).isoformat()
@@ -104,10 +126,18 @@ class WorkflowActionsService:
         )
 
         if errors:
-            self._plan_store.store_failed(plan, errors)
+            failed_ref = self._plan_store.store_failed(plan, errors)
+            logger.info(
+                "failed plan stored: execution_id=%s ref=%s log_ref=%s",
+                request.execution_id, failed_ref, log_ref,
+            )
             return PlanResponse.failed(llm_invocation_log_ref=log_ref)
 
         plan_ref = self._plan_store.store_plan(plan)
+        logger.info(
+            "plan stored: execution_id=%s plan_id=%s plan_ref=%s log_ref=%s",
+            request.execution_id, plan.plan_id, plan_ref, log_ref,
+        )
         return PlanResponse.succeeded(
             plan=plan,
             plan_ref=plan_ref,

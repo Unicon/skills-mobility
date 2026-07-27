@@ -39,14 +39,24 @@ def test_store_and_load_plan(tmp_path: Path) -> None:
 def test_load_failed_plan_raises(tmp_path: Path) -> None:
     store = PlanStore(tmp_path / "artifacts")
     plan = _plan()
-    store.store_failed(plan, ["missing step 3"])
-    # The failed record occupies the same path — loading raises FailedPlanError.
+    ref = store.store_failed(plan, ["missing step 3"])
+    # Failed records live under their own kind — the ref loads as a failure.
     appl = plan.applicability
     targets = ".".join(sorted(appl.selected_targets))
-    ref = f"plan:{appl.event_type}.{appl.source_system}.{targets}"
+    assert ref == f"plan_failed:{appl.event_type}.{appl.source_system}.{targets}"
     with pytest.raises(FailedPlanError) as exc_info:
         store.load_plan(ref)
     assert "missing step 3" in exc_info.value.validation_errors
+
+
+def test_store_failed_does_not_overwrite_previous_success(tmp_path: Path) -> None:
+    # A failed attempt must not destroy a previously-stored successful plan for
+    # the same applicability key.
+    store = PlanStore(tmp_path / "artifacts")
+    plan = _plan()
+    ok_ref = store.store_plan(plan)
+    store.store_failed(plan, ["later attempt failed"])
+    assert store.load_plan(ok_ref).plan_id == plan.plan_id
 
 
 def test_load_nonexistent_ref_raises(tmp_path: Path) -> None:

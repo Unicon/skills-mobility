@@ -8,10 +8,10 @@
     "generate_issuer_payload_synthesis",
     "execute_issuer_payload_translation",
     "issue_learncard_badge",
-    "generate_smartresume_payload_mapping",
-    "execute_smartresume_payload_translation",
-    "deliver_to_smartresume"
+    "generate_learncard_wallet_payload_mapping",
+    "execute_learncard_wallet_payload_translation",
+    "deliver_to_learncard_wallet"
   ],
   "confidence": 0.94,
-  "rationale": "SmartResume delivery: resolve profile, generate the credential template, generate issuer mapping and synthesis, translate and issue badge, generate SmartResume mapping, translate and deliver to SmartResume."
+  "rationale": "LearnCard wallet delivery: resolve profile, generate the credential template, generate issuer mapping and synthesis, translate and issue badge, generate wallet mapping, translate and deliver to wallet."
 }

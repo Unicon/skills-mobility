@@ -67,9 +67,11 @@ def test_healthz_returns_ok(tmp_path: Path) -> None:
     assert resp.json() == {"status": "ok"}
 
 
-def test_build_service_unknown_mode_raises() -> None:
+def test_unknown_mode_rejected_at_settings_construction() -> None:
+    import pydantic
     import pytest
-    from workflow_actions.api import build_service
 
-    with pytest.raises(ValueError, match="not implemented"):
-        build_service(Settings(mode="unknown_mode"))
+    # mode is a Literal["replay", "bedrock"] — typos fail at config load, before
+    # build_service ever runs.
+    with pytest.raises(pydantic.ValidationError):
+        Settings(mode="unknown_mode")  # type: ignore[arg-type]

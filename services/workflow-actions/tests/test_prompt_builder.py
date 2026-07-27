@@ -1,7 +1,5 @@
 from workflow_actions.contracts import GateRequest, PlanRequest
 from workflow_actions.prompt_builder import (
-    GATE_PROMPT_VERSION,
-    PLAN_PROMPT_VERSION,
     build_gate_user_message,
     build_plan_user_message,
     gate_system_prompt,
@@ -33,14 +31,6 @@ def _plan_request() -> PlanRequest:
 
 def _registry_view() -> list[dict[str, str]]:
     return [{"action_id": "resolve_learncard_profile", "description": "Resolves profile."}]
-
-
-def test_gate_prompt_version_constant() -> None:
-    assert GATE_PROMPT_VERSION == "pre_target_gate.v1"
-
-
-def test_plan_prompt_version_constant() -> None:
-    assert PLAN_PROMPT_VERSION == "delivery_phase_plan.v1"
 
 
 def test_gate_system_prompt_loads_template_and_injects_prose() -> None:

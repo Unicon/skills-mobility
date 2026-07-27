@@ -5,8 +5,10 @@ applicability signature (event_type + source_system + sorted selected_targets).
 This keeps local dev/test free of any running store while preserving the interface
 a cloud storage layer will back in AWS.
 
-Failed plan records are stored with their validation errors so the audit trail
-captures rejected attempts. A failed record cannot be loaded as a successful plan.
+Failed plan records are stored with their validation errors under a separate
+``plan_failed`` kind, so the audit trail captures rejected attempts without a
+failed attempt overwriting a previously-stored successful plan for the same
+applicability. A failed record cannot be loaded as a successful plan.
 """
 
 from __future__ import annotations
@@ -58,16 +60,17 @@ class PlanStore:
         )
 
     def store_failed(self, plan: DeliveryPhasePlan, errors: list[str]) -> str:
-        """Persist a failed plan record; returns the loadable ``"plan:<key>"`` ref.
+        """Persist a failed plan record; returns the loadable
+        ``"plan_failed:<key>"`` ref.
 
-        The record is written to the same path as a successful plan so a
-        subsequent load_plan raises FailedPlanError (audit trail). The returned
-        ref resolves via ``_read`` — loading it raises FailedPlanError, not
-        PlanNotFoundError.
+        Failures live under their own kind so a failed attempt never overwrites
+        a previously-stored successful plan for the same applicability key. The
+        rejected attempt stays auditable: loading the returned ref raises
+        FailedPlanError, not PlanNotFoundError.
         """
         key = _applicability_key(plan)
         return self._write(
-            "plan", key, {"status": "failed", "validation_errors": errors}
+            "plan_failed", key, {"status": "failed", "validation_errors": errors}
         )
 
     def load_plan(self, ref: str) -> DeliveryPhasePlan:
@@ -83,7 +86,7 @@ class PlanStore:
         return self._write("llmcall", key, record)
 
     def _read(self, ref: str) -> dict[str, Any]:
-        # refs look like "plan:<key>" or "llmcall:<key>"
+        # refs look like "plan:<key>", "plan_failed:<key>" or "llmcall:<key>"
         kind, key = ref.split(":", 1)
         path = self._path(kind, key)
         if not path.exists():
