@@ -6,7 +6,11 @@ from __future__ import annotations
 from typing import Any
 
 from orchestrator import planner
-from orchestrator.actions import ActionDeps, _deliver_to_smartresume
+from orchestrator.actions import (
+    ActionDeps,
+    _deliver_to_smartresume,
+    _execute_smartresume_payload_translation,
+)
 from orchestrator.clients import (
     EnvelopeContext,
     StubContextBuilder,
@@ -93,10 +97,10 @@ def test_executes_steps_in_order_and_threads_data(sample_event):
     assert wallet["recipient_profile_id"].startswith("@")
     assert result["recipient_profile_id"].startswith("@")
 
-    # All eight steps persisted as succeeded, in order.
+    # All eleven steps persisted as succeeded, in order.
     meta = store.get_execution_metadata("exec_1")
     assert meta is not None
-    assert [s.step_id for s in meta.steps] == list(range(1, 9))
+    assert [s.step_id for s in meta.steps] == list(range(1, 12))
     assert all(s.status == "succeeded" for s in meta.steps)
 
     # Field Mapping seam (#27): the mapping steps emit exactly the §10 response
@@ -105,7 +109,7 @@ def test_executes_steps_in_order_and_threads_data(sample_event):
     # the stub maps every field directly, so no placeholders/synthesis request).
     by_action = {s.action_id: s.output for s in meta.steps}
     issuer_map = by_action["generate_issuer_payload_mapping"]
-    wallet_map = by_action["generate_wallet_payload_mapping"]
+    wallet_map = by_action["generate_learncard_wallet_payload_mapping"]
     assert issuer_map.keys() == {
         "status",
         "mapping_artifact_ref",
@@ -168,8 +172,10 @@ class SpySmartResumeRouter:
         return self._inner.dispatch(action, payload, ctx, step_id)
 
 
-def test_deliver_to_smartresume_action_dispatches_correct_payload():
-    """Unit test for the action function directly — assert payload shape + router result."""
+def test_smartresume_translation_builds_payload_and_delivery_dispatches():
+    """Unit test for the translation + delivery pair: the translation action builds
+    the CredentialConnect payload from the issued credential; the delivery action
+    dispatches it unchanged."""
     router = SpySmartResumeRouter()
     deps = ActionDeps(
         profile_resolver=StubProfileResolver(),
@@ -178,12 +184,12 @@ def test_deliver_to_smartresume_action_dispatches_correct_payload():
         issuer_id="did:web:issuer.example",
         envelope=_ENVELOPE,
     )
-    unsigned_vc = {
+    issued_credential = {
         "@context": ["https://www.w3.org/2018/credentials/v1"],
         "type": ["VerifiableCredential"],
     }
     inputs: dict[str, Any] = {
-        "issuer_payload": {"unsigned_vc": unsigned_vc},
+        "issued": {"result": {"issued_credential": issued_credential}},
         "resolved_profile": {"did": "did:web:example.com:users:alice", "profile_id": "@alice"},
         "bundle": {
             "source_data": {
@@ -193,42 +199,43 @@ def test_deliver_to_smartresume_action_dispatches_correct_payload():
         },
     }
 
-    result = _deliver_to_smartresume(inputs, deps)
+    payload = _execute_smartresume_payload_translation(inputs, deps)
 
-    assert result["status"] == "succeeded"
-    assert result["external_reference_id"] == "stub-smartresume"
-    assert "redirect_url" in result["result"]
-    assert len(router.calls) == 1
-    action, payload = router.calls[0]
-    assert action == "deliver_to_smartresume"
     cred = payload["credentials"][0]
     assert cred["id"] == "urn:poc:credential:exec_1"  # stamped from envelope execution_id
-    assert cred["type"] == unsigned_vc["type"]  # original OB3 fields preserved
-    assert cred["@context"] == unsigned_vc["@context"]
+    assert cred["type"] == issued_credential["type"]  # original OB3 fields preserved
+    assert cred["@context"] == issued_credential["@context"]
     assert payload["recipient"]["id"] == "did:web:example.com:users:alice"
     assert payload["recipient"]["email"] == "alice@example.com"
     assert payload["recipient"]["givenName"] == "Alice"
     assert payload["recipient"]["familyName"] == "Smith"
 
+    result = _deliver_to_smartresume({"smartresume_payload": payload}, deps)
+    assert result["status"] == "succeeded"
+    assert result["external_reference_id"] == "stub-smartresume"
+    assert "redirect_url" in result["result"]
+    assert len(router.calls) == 1
+    action, dispatched = router.calls[0]
+    assert action == "deliver_to_smartresume"
+    assert dispatched == payload
 
-def test_deliver_to_smartresume_falls_back_to_email_when_no_did():
-    router = SpySmartResumeRouter()
+
+def test_smartresume_translation_falls_back_to_email_when_no_did():
     deps = ActionDeps(
         profile_resolver=StubProfileResolver(),
-        delivery_router=router,
+        delivery_router=SpySmartResumeRouter(),
         field_mapping=StubFieldMapping(),
         issuer_id="did:web:issuer.example",
         envelope=_ENVELOPE,
     )
     inputs: dict[str, Any] = {
-        "issuer_payload": {"unsigned_vc": {}},
+        "issued": {"result": {"issued_credential": {}}},
         "resolved_profile": {"profile_id": "@bob"},  # no DID
         "bundle": {"source_data": {"learner_profile": {"email": "bob@example.com"}}},
     }
 
-    _deliver_to_smartresume(inputs, deps)
+    payload = _execute_smartresume_payload_translation(inputs, deps)
 
-    _, payload = router.calls[0]
     assert payload["recipient"]["id"] == "mailto:bob@example.com"
     # No givenName / familyName when absent from learner_profile
     assert "givenName" not in payload["recipient"]

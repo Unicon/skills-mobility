@@ -78,7 +78,7 @@ def test_run_workflow_completes_and_persists(client, sample_event):
     }
     assert body["plan_id"] == "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1"
     assert [s["action_id"] for s in body["steps"]][0] == "resolve_learncard_profile"
-    assert len(body["steps"]) == 8
+    assert len(body["steps"]) == 11
     assert all(s["status"] == "succeeded" for s in body["steps"])
     assert body["result"]["recipient_profile_id"].startswith("@")
     # Read-model fields the Admin UI needs (#28 G3/G4): correlation id + timestamps.
@@ -143,7 +143,7 @@ def test_list_executions_and_correlation_filter(client, sample_event, course_eve
     a = next(r for r in rows if r["execution_id"] == "exec_a")
     assert a["correlation_id"] == "corr_1"
     assert a["status"] == "completed"
-    assert a["step_progress"] == {"completed": 8, "total": 8}
+    assert a["step_progress"] == {"completed": 11, "total": 11}
     assert a["created_at"] and a["updated_at"]
     assert "steps" not in a and "result" not in a  # compact projection
 
