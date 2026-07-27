@@ -241,7 +241,8 @@ def test_deliver_to_smartresume_falls_back_to_email_when_no_did():
 
 
 def test_smartresume_plan_executes_end_to_end(sample_event):
-    """Execute the smart_resume-only plan; verify deliver_to_smartresume is called."""
+    """Execute the smart_resume plan; issuance runs first (only issuer), then
+    deliver_to_smartresume — and no wallet steps."""
     store = ExecutionStore(":memory:")
     store.create_execution("exec_sr", "evt_1", "corr_1", "skill_mastered")
     router = SpySmartResumeRouter()
@@ -259,12 +260,12 @@ def test_smartresume_plan_executes_end_to_end(sample_event):
 
     assert status == "completed"
     dispatched_actions = [a for a, _ in router.calls]
-    assert dispatched_actions == ["deliver_to_smartresume"]
-    # No LearnCard steps
+    assert dispatched_actions == ["issue_learncard_badge", "deliver_to_smartresume"]
+    # Issuance always runs; no wallet steps for a SmartResume selection.
     meta = store.get_execution_metadata("exec_sr")
     assert meta is not None
     action_ids = [s.action_id for s in meta.steps]
-    assert "issue_learncard_badge" not in action_ids
+    assert "issue_learncard_badge" in action_ids
     assert "deliver_to_learncard_wallet" not in action_ids
     assert "deliver_to_smartresume" in action_ids
     assert all(s.status == "succeeded" for s in meta.steps)

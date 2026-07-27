@@ -42,32 +42,58 @@ def test_delivery_phase_plan_shape():
     ]
 
 
-def test_delivery_phase_plan_smart_resume_only():
-    plan = planner.delivery_phase_plan("skill_mastered", ["smart_resume"], "2026-06-24T00:00:00Z")
+def test_delivery_phase_plan_finance_pairing_issuer_plus_smartresume():
+    # The canonical Finance selection: issuance always runs (LearnCard is the
+    # only issuer), SmartResume is the final delivery step — no wallet steps.
+    plan = planner.delivery_phase_plan(
+        "skill_mastered", ["learncard_issuer", "smart_resume"], "2026-06-24T00:00:00Z"
+    )
 
-    assert plan.plan_id == "phase1-skill_mastered.smart_resume.v1"
-    assert plan.applicability.selected_targets == ["smart_resume"]
+    assert plan.plan_id == "phase1-skill_mastered.learncard_issuer.smart_resume.v1"
     assert [s.action_id for s in plan.steps] == [
         "resolve_learncard_profile",
         "generate_issuer_payload_mapping",
         "generate_issuer_payload_synthesis",
         "execute_issuer_payload_translation",
+        "issue_learncard_badge",
         "deliver_to_smartresume",
     ]
-    # SmartResume step is step_id 5 when no LearnCard branch
+    # SmartResume step is step_id 6 when no wallet branch
     sr_step = plan.steps[-1]
-    assert sr_step.step_id == 5
+    assert sr_step.step_id == 6
     assert sr_step.produces == "delivered_smartresume"
 
 
-def test_delivery_phase_plan_learncard_targets():
-    for targets in (["learncard_issuer", "learncard_wallet"], ["learncard_issuer"],
-                    ["learncard_wallet"]):
+def test_delivery_phase_plan_smart_resume_only_still_issues():
+    # Even without learncard_issuer in the selection, issuance runs — it is the
+    # only issuer, so the plan cannot deliver an unissued credential.
+    plan = planner.delivery_phase_plan("skill_mastered", ["smart_resume"], "2026-06-24T00:00:00Z")
+
+    action_ids = [s.action_id for s in plan.steps]
+    assert "issue_learncard_badge" in action_ids
+    assert action_ids[-1] == "deliver_to_smartresume"
+    assert "deliver_to_learncard_wallet" not in action_ids
+
+
+def test_delivery_phase_plan_wallet_targets():
+    for targets in (["learncard_issuer", "learncard_wallet"], ["learncard_wallet"]):
         plan = planner.delivery_phase_plan("skill_mastered", targets, "2026-06-24T00:00:00Z")
         action_ids = [s.action_id for s in plan.steps]
         assert "issue_learncard_badge" in action_ids
         assert "deliver_to_learncard_wallet" in action_ids
         assert "deliver_to_smartresume" not in action_ids
+
+
+def test_delivery_phase_plan_issuer_only_falls_back_to_wallet_default():
+    # learncard_issuer alone names no final delivery step, so the Phase-1
+    # backward-compatible default applies: deliver to the wallet.
+    plan = planner.delivery_phase_plan(
+        "skill_mastered", ["learncard_issuer"], "2026-06-24T00:00:00Z"
+    )
+    action_ids = [s.action_id for s in plan.steps]
+    assert "issue_learncard_badge" in action_ids
+    assert "deliver_to_learncard_wallet" in action_ids
+    assert "deliver_to_smartresume" not in action_ids
 
 
 def test_delivery_phase_plan_all_targets():
