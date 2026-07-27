@@ -1,10 +1,11 @@
-import type { DecisionKind, ExecutionMetadata } from "@skills-mobility/contracts";
+import type { ExecutionMetadata } from "@skills-mobility/contracts";
 import { DecisionNode, FlowConnector, PipelineInfoNode } from "@skills-mobility/ui";
 import { Fragment, useState } from "react";
 import { KIND_LABEL, KIND_ORDER } from "./decisionKinds";
 import { DecisionDetailCard } from "./DecisionDetailCard";
+import { DeliveredDetailCard } from "./DeliveredDetailCard";
 import { EventDetailCard } from "./EventDetailCard";
-import { WalletDetailCard } from "./WalletDetailCard";
+import { stepPhase, type Phase } from "./stepPhases";
 
 function EventIcon() {
   return (
@@ -33,7 +34,7 @@ function EventIcon() {
   );
 }
 
-function WalletIcon() {
+function DeliveredIcon() {
   return (
     <svg width="32" height="26" viewBox="0 0 32.5 26" fill="none" aria-hidden="true">
       <path
@@ -46,16 +47,23 @@ function WalletIcon() {
   );
 }
 
-type ExpandedKey = DecisionKind | "event" | "wallet" | null;
-
-export function DecisionFlow({ execution }: { execution: ExecutionMetadata }) {
-  const [expandedKey, setExpandedKey] = useState<ExpandedKey>(null);
+export function DecisionFlow({
+  execution,
+  activePhase,
+  onActivePhaseChange,
+}: {
+  execution: ExecutionMetadata;
+  activePhase: Phase | null;
+  onActivePhaseChange: (phase: Phase | null) => void;
+}) {
+  const [expandedKey, setExpandedKey] = useState<Phase | null>(null);
   const byKind = new Map(execution.decisions.map((d) => [d.kind, d]));
-  const walletDelivered = execution.steps.some(
-    (s) => s.action_id === "deliver_to_learncard_wallet" && s.status === "succeeded",
-  );
+  // Any successful delivery — LearnCard Wallet today, and/or SmartResume once PR
+  // #89 (unmerged) lands; FR-P2-7 allows both to succeed in one execution.
+  const delivered = execution.steps.some((s) => stepPhase(s.action_id) === "delivered" && s.status === "succeeded");
+  const activeChange = (key: Phase) => (on: boolean) => onActivePhaseChange(on ? key : null);
 
-  const toggle = (key: ExpandedKey) => setExpandedKey(expandedKey === key ? null : key);
+  const toggle = (key: Phase) => setExpandedKey(expandedKey === key ? null : key);
 
   return (
     <div className="decision-flow">
@@ -66,6 +74,8 @@ export function DecisionFlow({ execution }: { execution: ExecutionMetadata }) {
           state="populated"
           expanded={expandedKey === "event"}
           onClick={() => toggle("event")}
+          highlighted={activePhase === "event"}
+          onActiveChange={activeChange("event")}
         />
         <FlowConnector state="populated" />
         {execution.decisions.length === 0 ? (
@@ -75,6 +85,8 @@ export function DecisionFlow({ execution }: { execution: ExecutionMetadata }) {
             state="pending"
             expanded={false}
             onClick={() => {}}
+            highlighted={activePhase === "gate"}
+            onActiveChange={activeChange("gate")}
           />
         ) : (
           KIND_ORDER.map((kind, i) => {
@@ -90,23 +102,33 @@ export function DecisionFlow({ execution }: { execution: ExecutionMetadata }) {
                   state={isPopulated ? "populated" : "pending"}
                   expanded={isPopulated && expandedKey === kind}
                   onClick={isPopulated ? () => toggle(kind) : () => {}}
+                  highlighted={activePhase === kind}
+                  onActiveChange={activeChange(kind)}
                 />
               </Fragment>
             );
           })
         )}
-        <FlowConnector state={walletDelivered ? "populated" : "pending"} />
+        <FlowConnector state={delivered ? "populated" : "pending"} />
         <PipelineInfoNode
-          icon={<WalletIcon />}
-          label="Wallet"
-          state={walletDelivered ? "populated" : "pending"}
-          expanded={walletDelivered && expandedKey === "wallet"}
-          onClick={walletDelivered ? () => toggle("wallet") : () => {}}
+          icon={<DeliveredIcon />}
+          label="Delivered"
+          state={delivered ? "populated" : "pending"}
+          expanded={delivered && expandedKey === "delivered"}
+          onClick={delivered ? () => toggle("delivered") : () => {}}
+          highlighted={activePhase === "delivered"}
+          onActiveChange={activeChange("delivered")}
         />
       </div>
+      {execution.steps.length > 0 ? (
+        <p className="decision-flow-legend">
+          Dashed phases run deterministically and record no separate AI decision to open — their
+          steps still run. Hover or focus any phase to highlight the steps it governs.
+        </p>
+      ) : null}
       {expandedKey === "event" ? <EventDetailCard execution={execution} /> : null}
-      {expandedKey === "wallet" && walletDelivered ? <WalletDetailCard execution={execution} /> : null}
-      {expandedKey !== "event" && expandedKey !== "wallet" && expandedKey && byKind.get(expandedKey) ? (
+      {expandedKey === "delivered" && delivered ? <DeliveredDetailCard execution={execution} /> : null}
+      {expandedKey !== "event" && expandedKey !== "delivered" && expandedKey && byKind.get(expandedKey) ? (
         <DecisionDetailCard decision={byKind.get(expandedKey)!} execution={execution} />
       ) : null}
     </div>

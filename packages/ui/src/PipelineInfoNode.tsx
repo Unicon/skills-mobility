@@ -9,20 +9,28 @@ export function PipelineInfoNode({
   state,
   expanded,
   onClick,
+  highlighted,
+  onActiveChange,
 }: {
   icon: ReactNode;
   label: string;
   state: "populated" | "pending";
   expanded: boolean;
   onClick: () => void;
+  highlighted?: boolean;
+  onActiveChange?: (active: boolean) => void;
 }) {
   return (
     <button
       type="button"
       className={`decision-node pipeline-info-node decision-node-${state}${
         expanded ? " decision-node-expanded" : ""
-      }`}
+      }${highlighted ? " decision-node-highlighted" : ""}`}
       onClick={onClick}
+      onMouseEnter={() => onActiveChange?.(true)}
+      onMouseLeave={() => onActiveChange?.(false)}
+      onFocus={() => onActiveChange?.(true)}
+      onBlur={() => onActiveChange?.(false)}
       aria-expanded={expanded}
       aria-label={label}
     >

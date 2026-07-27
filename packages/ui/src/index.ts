@@ -1,3 +1,4 @@
+export { BotIcon } from "./BotIcon";
 export { ClampedBlock } from "./ClampedBlock";
 export { ConfidenceMeter } from "./ConfidenceMeter";
 export { CopyableId } from "./CopyableId";

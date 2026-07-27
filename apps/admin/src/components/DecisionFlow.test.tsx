@@ -39,6 +39,12 @@ const deliveredStep: StepResult = {
   finished_at: "2026-07-09T00:00:03Z",
 };
 
+const smartResumeDeliveredStep: StepResult = {
+  ...deliveredStep,
+  step_id: 9,
+  action_id: "deliver_to_smartresume",
+};
+
 const baseExecution: ExecutionMetadata = {
   execution_id: "exec_1",
   correlation_id: "corr_1",
@@ -58,39 +64,80 @@ describe("DecisionFlow", () => {
   });
 
   test("renders a single pending gate node when decisions is empty", () => {
-    render(<DecisionFlow execution={baseExecution} />);
+    render(<DecisionFlow execution={baseExecution} activePhase={null} onActivePhaseChange={() => {}} />);
     const button = screen.getByRole("button", { name: "gate" });
     expect(button.className).toContain("decision-node-pending");
   });
 
-  test("always renders a populated Event node and a pending Wallet node when nothing was delivered", () => {
-    render(<DecisionFlow execution={baseExecution} />);
+  test("always renders a populated Event node and a pending Delivered node when nothing was delivered", () => {
+    render(<DecisionFlow execution={baseExecution} activePhase={null} onActivePhaseChange={() => {}} />);
     expect(screen.getByRole("button", { name: "Event" }).className).toContain("decision-node-populated");
-    expect(screen.getByRole("button", { name: "Wallet" }).className).toContain("decision-node-pending");
+    expect(screen.getByRole("button", { name: "Delivered" }).className).toContain("decision-node-pending");
   });
 
-  test("renders a populated Wallet node once the delivery step succeeded", () => {
-    render(<DecisionFlow execution={{ ...baseExecution, steps: [deliveredStep] }} />);
-    expect(screen.getByRole("button", { name: "Wallet" }).className).toContain("decision-node-populated");
+  test("renders a populated Delivered node once the LearnCard Wallet delivery step succeeded", () => {
+    render(
+      <DecisionFlow
+        execution={{ ...baseExecution, steps: [deliveredStep] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Delivered" }).className).toContain("decision-node-populated");
   });
 
-  test("expanding Event shows the reconstructed envelope; expanding Wallet is a no-op while pending", () => {
-    render(<DecisionFlow execution={baseExecution} />);
+  test("renders a populated Delivered node once the SmartResume delivery step succeeded (no LearnCard wallet delivery)", () => {
+    render(
+      <DecisionFlow
+        execution={{ ...baseExecution, steps: [smartResumeDeliveredStep] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Delivered" }).className).toContain("decision-node-populated");
+  });
+
+  test("expanding Event shows the reconstructed envelope; expanding Delivered is a no-op while pending", () => {
+    render(<DecisionFlow execution={baseExecution} activePhase={null} onActivePhaseChange={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: "Event" }));
     expect(screen.getByText(/skill_mastered/)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "Wallet" }));
-    expect(screen.getByRole("button", { name: "Wallet" }).getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: "Delivered" }));
+    expect(screen.getByRole("button", { name: "Delivered" }).getAttribute("aria-expanded")).toBe("false");
   });
 
-  test("expanding a populated Wallet node shows the mocked delivery confirmation", () => {
-    render(<DecisionFlow execution={{ ...baseExecution, steps: [deliveredStep] }} />);
-    fireEvent.click(screen.getByRole("button", { name: "Wallet" }));
-    expect(screen.getByText(/no real wallet delivery-confirmation callback/)).toBeTruthy();
+  test("expanding a populated Delivered node shows the mocked delivery confirmation", () => {
+    render(
+      <DecisionFlow
+        execution={{ ...baseExecution, steps: [deliveredStep] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Delivered" }));
+    expect(screen.getByText(/no real delivered-confirmation callback/)).toBeTruthy();
+  });
+
+  test("expanding a Delivered node fed by both targets names both in the confirmation", () => {
+    render(
+      <DecisionFlow
+        execution={{ ...baseExecution, steps: [deliveredStep, smartResumeDeliveredStep] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Delivered" }));
+    expect(screen.getByText("LearnCard Wallet, SmartResume")).toBeTruthy();
   });
 
   test("renders today's real shape: gate populated, the rest pending", () => {
-    render(<DecisionFlow execution={{ ...baseExecution, decisions: [gateDecision] }} />);
+    render(
+      <DecisionFlow
+        execution={{ ...baseExecution, decisions: [gateDecision] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
     expect(screen.getByRole("button", { name: "gate" }).className).toContain(
       "decision-node-populated",
     );
@@ -109,6 +156,8 @@ describe("DecisionFlow", () => {
     render(
       <DecisionFlow
         execution={{ ...baseExecution, decisions: [gateDecision, deliveryTargetsDecision] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "delivery targets" }));
@@ -120,7 +169,13 @@ describe("DecisionFlow", () => {
   });
 
   test("clicking a pending node is a no-op: no aria-expanded flip, no card, no state cleared", () => {
-    render(<DecisionFlow execution={{ ...baseExecution, decisions: [gateDecision] }} />);
+    render(
+      <DecisionFlow
+        execution={{ ...baseExecution, decisions: [gateDecision] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "gate" }));
     expect(screen.getByText("gate Response")).toBeTruthy();
 
@@ -131,5 +186,47 @@ describe("DecisionFlow", () => {
     );
     // The gate's detail card is still showing — clicking a pending node didn't clear it.
     expect(screen.getByText("gate Response")).toBeTruthy();
+  });
+
+  test("renders the decision nodes in gate → delivery targets → workflow actions → field mapping order", () => {
+    render(
+      <DecisionFlow
+        execution={{ ...baseExecution, decisions: [gateDecision, deliveryTargetsDecision] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
+    const labels = screen
+      .getAllByRole("button")
+      .map((button) => button.getAttribute("aria-label"))
+      .filter((label): label is string => label != null && label !== "Event" && label !== "Delivered");
+    expect(labels).toEqual(["gate", "delivery targets", "workflow actions", "field mapping"]);
+  });
+
+  test("shows the dashed-phase legend once at least one step has run", () => {
+    render(
+      <DecisionFlow
+        execution={{ ...baseExecution, decisions: [gateDecision], steps: [deliveredStep] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
+    expect(screen.getByText(/Dashed phases run deterministically/)).toBeTruthy();
+  });
+
+  test("hides the legend for the single-pending-gate fallback (decisions empty)", () => {
+    render(<DecisionFlow execution={baseExecution} activePhase={null} onActivePhaseChange={() => {}} />);
+    expect(screen.queryByText(/Dashed phases run deterministically/)).toBeNull();
+  });
+
+  test("hides the legend for a gate-terminated run (decisions:[gate], steps:[])", () => {
+    render(
+      <DecisionFlow
+        execution={{ ...baseExecution, decisions: [gateDecision], steps: [] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
+    expect(screen.queryByText(/Dashed phases run deterministically/)).toBeNull();
   });
 });

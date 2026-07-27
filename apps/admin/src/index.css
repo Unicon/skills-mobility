@@ -203,6 +203,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   width: 100%;
   text-align: left;
   font: inherit;
@@ -215,6 +216,26 @@ button {
 }
 .step-row:hover {
   background: var(--panel-2);
+}
+.step-row.highlighted {
+  background: var(--panel-2);
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+
+.step-ai-badge {
+  color: var(--gold);
+  display: inline-flex;
+  align-items: center;
+}
+
+.step-phase-tag {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  color: var(--ink-faint);
 }
 
 .step-panel {
@@ -250,6 +271,13 @@ button {
   align-items: center;
   gap: 4px;
   flex-wrap: wrap;
+}
+
+.decision-flow-legend {
+  margin-top: 10px;
+  color: var(--ink-faint);
+  font-size: 12px;
+  font-style: italic;
 }
 
 .decision-detail-card {
