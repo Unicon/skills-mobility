@@ -15,6 +15,7 @@ _EXPECTED_ACTION_IDS = {
     "generate_wallet_payload_mapping",
     "execute_wallet_payload_translation",
     "deliver_to_learncard_wallet",
+    "deliver_to_smartresume",
 }
 
 

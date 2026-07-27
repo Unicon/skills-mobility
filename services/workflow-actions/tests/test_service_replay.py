@@ -13,6 +13,8 @@ from workflow_actions.contracts import (
 )
 from workflow_actions.plan_store import PlanStore
 
+from .conftest import SKILL_MASTERED_PLAN_BODY
+
 _REPLAY_META = LlmCallMeta(provider="replay", model_id="replay", temperature=0.0)
 
 
@@ -167,6 +169,40 @@ def test_plan_includes_all_phase1_action_ids(
         "deliver_to_learncard_wallet",
     }
     assert action_ids == expected
+
+
+def test_plan_smartresume_selection_issues_then_delivers_to_smartresume(
+    make_service: Any,
+) -> None:
+    # Finance routing: issuance still runs (LearnCard is the only issuer); the
+    # selection changes only the final delivery step — no wallet actions.
+    body = dict(SKILL_MASTERED_PLAN_BODY)
+    body["selected_targets"] = ["learncard_issuer", "smart_resume"]
+    resp = make_service().generate_plan(PlanRequest(**body))
+    assert resp.status == "succeeded"
+    assert resp.plan is not None
+    action_ids = [s.action_id for s in resp.plan.steps]
+    assert action_ids == [
+        "resolve_learncard_profile",
+        "generate_issuer_payload_mapping",
+        "generate_issuer_payload_synthesis",
+        "execute_issuer_payload_translation",
+        "issue_learncard_badge",
+        "deliver_to_smartresume",
+    ]
+
+
+def test_plan_both_final_targets_delivers_to_wallet_and_smartresume(
+    make_service: Any,
+) -> None:
+    body = dict(SKILL_MASTERED_PLAN_BODY)
+    body["selected_targets"] = ["learncard_issuer", "learncard_wallet", "smart_resume"]
+    resp = make_service().generate_plan(PlanRequest(**body))
+    assert resp.status == "succeeded"
+    assert resp.plan is not None
+    action_ids = [s.action_id for s in resp.plan.steps]
+    assert action_ids[-2:] == ["deliver_to_learncard_wallet", "deliver_to_smartresume"]
+    assert "issue_learncard_badge" in action_ids
 
 
 def test_plan_invalid_generation_stores_failed_artifact(
