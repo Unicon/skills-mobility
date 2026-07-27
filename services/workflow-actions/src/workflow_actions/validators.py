@@ -16,19 +16,6 @@ from .contracts import GateGeneration, PlanGeneration
 # decision string.
 _VALID_DECISIONS = frozenset({"continue", "terminate"})
 
-# The workflow-context keys the executor populates before the plan runs.
-# Binding resolvability for "workflow" source paths is checked against these.
-# Matches the context keys the orchestrator planner uses (planner.py _phase1_steps).
-WORKFLOW_CONTEXT_KEYS: frozenset[str] = frozenset(
-    [
-        "learner_id_value",
-        "delivery_config_ref",
-        "bundle",
-        "issuer_id",
-    ]
-)
-
-
 def validate_gate(
     generation: GateGeneration,
     *,
@@ -64,18 +51,18 @@ def validate_plan(
     plan_generation: PlanGeneration,
     *,
     registry: set[tuple[str, str]],
-    workflow_context_keys: frozenset[str] = WORKFLOW_CONTEXT_KEYS,
 ) -> list[str]:
     """Validate a plan generation (Layer-A hard gates, design §8).
 
     Checks:
       1. confidence and rationale present
       2. registry conformance: every step's (action_id, type) in registry
-      3. binding resolvability:
-         - "workflow" path in workflow_context_keys
-         - "step" step_id points to an earlier step that produces a value
 
-    Does NOT check required-step presence (Layer B, FR-WA-22).
+    Binding resolvability is NOT checked here: since #112 the LLM emits ordered
+    action_ids only (``plan_generation_from_llm_output`` always produces empty
+    inputs), so there are no bindings to resolve — the orchestrator rebuilds
+    them deterministically during re-binding (ADR-0022). Does NOT check
+    required-step presence either (Layer B, FR-WA-22).
     """
     errors: list[str] = []
 
@@ -85,11 +72,6 @@ def validate_plan(
     if not plan_generation.rationale.strip():
         errors.append("plan rationale is empty")
 
-    # Build a map of step_id -> produces for dependency resolution.
-    produces_by_step: dict[int, str | None] = {}
-    for step in plan_generation.steps:
-        produces_by_step[step.step_id] = step.produces
-
     for step in plan_generation.steps:
         pair = (step.action_id, step.type)
         if pair not in registry:
@@ -97,31 +79,5 @@ def validate_plan(
                 f"step {step.step_id}: (action_id='{step.action_id}', type='{step.type}') "
                 f"not in action registry"
             )
-
-        for binding_name, binding in step.inputs.items():
-            if binding.source == "workflow":
-                path = binding.path or ""
-                if path not in workflow_context_keys:
-                    errors.append(
-                        f"step {step.step_id} input '{binding_name}': "
-                        f"workflow path '{path}' not in workflow context contract"
-                    )
-            elif binding.source == "step":
-                ref_id = binding.step_id
-                if ref_id is None:
-                    errors.append(
-                        f"step {step.step_id} input '{binding_name}': "
-                        f"step binding missing step_id"
-                    )
-                elif ref_id >= step.step_id:
-                    errors.append(
-                        f"step {step.step_id} input '{binding_name}': "
-                        f"step_id {ref_id} does not refer to an earlier step"
-                    )
-                elif produces_by_step.get(ref_id) is None:
-                    errors.append(
-                        f"step {step.step_id} input '{binding_name}': "
-                        f"step {ref_id} does not produce a value"
-                    )
 
     return errors

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -24,8 +25,10 @@ class Settings(BaseSettings):
         env_prefix="WORKFLOW_ACTIONS_", env_file=_ENV_FILE, extra="ignore"
     )
 
+    # Local HTTP port (8140 — clear of Consul's 8300-8302/8500/8600).
+    port: int = 8140
     # LLM adapter mode: "replay" (deterministic fixtures) or "bedrock" (live).
-    mode: str = "replay"
+    mode: Literal["replay", "bedrock"] = "replay"
     # Directory for stored plan / invocation-log artifacts.
     artifact_dir: str = "artifact-output/workflow-actions"
     # Bedrock model id (inference-profile qualified).

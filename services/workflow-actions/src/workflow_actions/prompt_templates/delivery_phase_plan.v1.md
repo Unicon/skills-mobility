@@ -12,11 +12,11 @@ You may reference ONLY the following action_id and type values in your plan:
 {registry_view}
 
 Each action entry includes a description of what it does. Use these descriptions
-to determine the correct order and input bindings for your plan steps.
+to determine the correct order for your plan steps.
 
 ## Plan rules
 
-- Delivery-target selection is already complete — do NOT include a target-selection step.
+- Delivery-target selection is already complete and fixed — do not deviate from the selected targets given to you: don't omit steps for a selected target, and don't add steps for a target that wasn't selected.
 - Emit an **ordered list of `action_id` values** — the sequence, and which actions you
   skip, is your decision. You do NOT emit step ids, inputs, or produced-names: each
   action has exactly one valid input recipe, which the orchestrator rebuilds

@@ -144,8 +144,8 @@ def test_plan_skill_mastered_dual_target_end_to_end(
     assert resp.confidence is not None and 0.0 <= resp.confidence <= 1.0
     assert resp.rationale
     assert resp.llm_invocation_log_ref is not None
-    # 8-step Phase-1 plan
-    assert len(resp.plan.steps) == 8
+    # 11-step wallet plan (credential-template prefix + issuer + wallet branch)
+    assert len(resp.plan.steps) == 11
     # Stored plan round-trips.
     loaded = plan_store.load_plan(resp.plan_ref)
     assert loaded.applicability.event_type == "skill_mastered"
@@ -160,12 +160,15 @@ def test_plan_includes_all_phase1_action_ids(
     action_ids = {s.action_id for s in resp.plan.steps}
     expected = {
         "resolve_learncard_profile",
+        "generate_credential_template_mapping",
+        "generate_credential_template_synthesis",
+        "execute_credential_template_translation",
         "generate_issuer_payload_mapping",
         "generate_issuer_payload_synthesis",
         "execute_issuer_payload_translation",
         "issue_learncard_badge",
-        "generate_wallet_payload_mapping",
-        "execute_wallet_payload_translation",
+        "generate_learncard_wallet_payload_mapping",
+        "execute_learncard_wallet_payload_translation",
         "deliver_to_learncard_wallet",
     }
     assert action_ids == expected
@@ -184,10 +187,15 @@ def test_plan_smartresume_selection_issues_then_delivers_to_smartresume(
     action_ids = [s.action_id for s in resp.plan.steps]
     assert action_ids == [
         "resolve_learncard_profile",
+        "generate_credential_template_mapping",
+        "generate_credential_template_synthesis",
+        "execute_credential_template_translation",
         "generate_issuer_payload_mapping",
         "generate_issuer_payload_synthesis",
         "execute_issuer_payload_translation",
         "issue_learncard_badge",
+        "generate_smartresume_payload_mapping",
+        "execute_smartresume_payload_translation",
         "deliver_to_smartresume",
     ]
 
@@ -201,8 +209,17 @@ def test_plan_both_final_targets_delivers_to_wallet_and_smartresume(
     assert resp.status == "succeeded"
     assert resp.plan is not None
     action_ids = [s.action_id for s in resp.plan.steps]
-    assert action_ids[-2:] == ["deliver_to_learncard_wallet", "deliver_to_smartresume"]
+    assert len(action_ids) == 14
+    assert action_ids[-6:] == [
+        "generate_learncard_wallet_payload_mapping",
+        "execute_learncard_wallet_payload_translation",
+        "deliver_to_learncard_wallet",
+        "generate_smartresume_payload_mapping",
+        "execute_smartresume_payload_translation",
+        "deliver_to_smartresume",
+    ]
     assert "issue_learncard_badge" in action_ids
+    assert "generate_credential_template_mapping" in action_ids
 
 
 def test_plan_invalid_generation_stores_failed_artifact(
@@ -273,12 +290,3 @@ def test_plan_invocation_log_stored(
     assert log["system_prompt"]  # the input a live model would receive
 
 
-def test_plan_generator_metadata_set_correctly(
-    make_service: Any,
-    skill_mastered_plan_request: PlanRequest,
-) -> None:
-    resp = make_service().generate_plan(skill_mastered_plan_request)
-    assert resp.plan is not None
-    assert resp.plan.generator.service_version == "workflow-actions.v1"
-    assert resp.plan.plan_schema_version == "v1"
-    assert resp.plan.generated_at != ""

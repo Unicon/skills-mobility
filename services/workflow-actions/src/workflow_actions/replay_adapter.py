@@ -6,9 +6,10 @@ Implements the same LLMAdapter protocol as the Bedrock adapter.
 
 Gate fixtures are keyed by event_type; unsupported event types get the
 terminate fixture. Plan fixtures are keyed by the selected final delivery
-target(s): wallet selections (and the Phase-1 default) get the dual LearnCard
-fixture, SmartResume selections get the issuance + SmartResume fixture, and
-both together get the combined fixture.
+target(s): wallet selections (and the Phase-1 default) get the wallet fixture,
+SmartResume selections get the SmartResume fixture, and both together get the
+combined fixture — all three share the credential-template + issuer + issuance
+prefix (ADR-0017).
 """
 
 from __future__ import annotations
@@ -68,19 +69,20 @@ class ReplayAdapter:
     def plan(
         self, request: PlanRequest, *, registry_view: list[dict[str, str]]
     ) -> tuple[PlanGeneration, LlmCallMeta]:
-        # The fixture is keyed by the selected final delivery target(s) — issuance
-        # always runs (LearnCard is the only issuer), the targets decide only the
-        # final delivery step(s). Fixtures are the lean LLM shape (ordered
-        # action_ids); applicability + bindings are derived, not fixtured.
+        # The fixture is keyed by the selected final delivery target(s) — the shared
+        # prefix (credential template -> issuer payload -> issuance) always runs
+        # (LearnCard is the only issuer), the targets decide only the delivery
+        # branch(es). Fixtures are the lean LLM shape (ordered action_ids);
+        # applicability + bindings are derived, not fixtured.
         has_wallet = "learncard_wallet" in request.selected_targets
         has_smartresume = "smart_resume" in request.selected_targets
         if has_smartresume and has_wallet:
-            fixture_name = "plan_all_targets.json"
+            fixture_name = "plan_learncard_and_smartresume.json"
         elif has_smartresume:
             fixture_name = "plan_smartresume.json"
         else:
             # Wallet selection — or no known final target (Phase-1 default).
-            fixture_name = "plan_learncard_dual.json"
+            fixture_name = "plan_learncard_wallet.json"
         raw = json.loads((self._dir / fixture_name).read_text())
         llm_out = LlmPlanOutput(**raw)
         meta = _replay_meta(plan_system_prompt(registry_view), build_plan_user_message(request))

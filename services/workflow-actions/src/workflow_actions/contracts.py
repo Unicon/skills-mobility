@@ -94,9 +94,27 @@ class GateDecision(BaseModel):
 
 
 class GateRequest(BaseModel):
-    """§5 gate request."""
+    """§5 gate request. The example surfaces in Swagger's "Try it out" panel."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "execution_id": "exec_1",
+                "event_id": "evt_1",
+                "event_type": "skill_mastered",
+                "event": {
+                    "metadata": {"event_name": "learning_outcome_result_created"},
+                    "body": {"learning_outcome_id": "ACCY-111-OUT-1", "title": "1.0.0 Mastery"},
+                },
+                "context_bundle": {
+                    "source_data": {
+                        "outcome": {"display_name": "1.0.0 Core accounting competency"}
+                    }
+                },
+            }
+        },
+    )
 
     execution_id: str
     event_id: str
@@ -161,9 +179,23 @@ class GateGeneration(BaseModel):
 
 
 class PlanRequest(BaseModel):
-    """§5 delivery-phase plan request."""
+    """§5 delivery-phase plan request. The example surfaces in Swagger's
+    "Try it out" panel."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "execution_id": "exec_1",
+                "event_id": "evt_1",
+                "event_type": "skill_mastered",
+                "source_system": "mock_lms",
+                "event": {"metadata": {"event_name": "learning_outcome_result_created"}},
+                "context_bundle": {"source_data": {}},
+                "selected_targets": ["learncard_issuer", "learncard_wallet"],
+            }
+        },
+    )
 
     execution_id: str
     event_id: str

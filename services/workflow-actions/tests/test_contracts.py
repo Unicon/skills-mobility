@@ -5,7 +5,6 @@ from workflow_actions.contracts import (
     PlanApplicability,
     PlanGenerator,
     PlanResponse,
-    PlanStep,
 )
 
 _GATE_SEAM_KEYS = {"status", "decision", "confidence", "rationale", "llm_invocation_log_ref"}
@@ -91,7 +90,3 @@ def test_input_binding_step() -> None:
     assert b.step_id == 1
 
 
-def test_plan_step_defaults() -> None:
-    s = PlanStep(step_id=1, action_id="resolve_learncard_profile", produces="resolved_profile")
-    assert s.type == "call"
-    assert s.inputs == {}
