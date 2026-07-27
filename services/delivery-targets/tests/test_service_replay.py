@@ -134,9 +134,9 @@ def test_invalid_generation_yields_failed_status_and_stored_failed_artifact(
     assert resp.status == "failed"
     assert resp.selection_artifact_ref is None
     assert resp.llm_invocation_log_ref is not None
-    # The failed record is stored but cannot be loaded as a success.
+    # The failed record is stored under its own kind and never loads as a success.
     with pytest.raises(FailedArtifactError):
-        artifact_store.load_selection("selection:exec_1")
+        artifact_store.load_selection("selection_failed:exec_1")
 
 
 def test_exactly_one_adapter_attempt_no_hidden_repair(

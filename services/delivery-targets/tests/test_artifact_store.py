@@ -45,10 +45,19 @@ def test_store_failed_and_load_raises_failed_artifact_error(tmp_path: Path) -> N
 
     ref = store.store_failed("exec_1", "unknown target 'bogus'")
 
-    assert "failed" in ref
-    # A failed record cannot be loaded as a successful selection.
+    assert ref == "selection_failed:exec_1"
+    # The failed record loads as a failure, never as a successful selection.
     with pytest.raises(FailedArtifactError):
-        store.load_selection("selection:exec_1")
+        store.load_selection(ref)
+
+
+def test_store_failed_does_not_overwrite_previous_success(tmp_path: Path) -> None:
+    # Failures live under their own kind: a failed attempt must not destroy a
+    # previously-stored success for the same key.
+    store = ArtifactStore(tmp_path)
+    ok_ref = store.store_selection(_artifact())  # execution_id defaults to exec_1
+    store.store_failed("exec_1", "later attempt failed")
+    assert store.load_selection(ok_ref).selections
 
 
 def test_store_invocation_log_returns_ref(tmp_path: Path) -> None:
