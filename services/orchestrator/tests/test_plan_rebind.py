@@ -61,23 +61,26 @@ def _action_deps() -> tuple[ActionDeps, EnvelopeContext]:
     return deps, envelope
 
 
-_LC_ACTIONS = [
+_SHARED_PREFIX = [
     "resolve_learncard_profile",
+    "generate_credential_template_mapping",
+    "generate_credential_template_synthesis",
+    "execute_credential_template_translation",
     "generate_issuer_payload_mapping",
     "generate_issuer_payload_synthesis",
     "execute_issuer_payload_translation",
     "issue_learncard_badge",
-    "generate_wallet_payload_mapping",
-    "execute_wallet_payload_translation",
+]
+
+_LC_ACTIONS = _SHARED_PREFIX + [
+    "generate_learncard_wallet_payload_mapping",
+    "execute_learncard_wallet_payload_translation",
     "deliver_to_learncard_wallet",
 ]
 
-_SR_ACTIONS = [
-    "resolve_learncard_profile",
-    "generate_issuer_payload_mapping",
-    "generate_issuer_payload_synthesis",
-    "execute_issuer_payload_translation",
-    "issue_learncard_badge",
+_SR_ACTIONS = _SHARED_PREFIX + [
+    "generate_smartresume_payload_mapping",
+    "execute_smartresume_payload_translation",
     "deliver_to_smartresume",
 ]
 
@@ -217,16 +220,18 @@ def test_rebind_smartresume_plan_executes_successfully() -> None:
     rebound = planner.rebind_plan(llm_plan, "skill_mastered", _SR_TARGETS)
     assert rebound is not None
 
-    # deliver_to_smartresume step must exist and have its issuer_payload bound to the
-    # translation step's output
+    # deliver_to_smartresume step must exist and have its smartresume_payload bound
+    # to the SmartResume translation step's output
     deliver_step = next(
         s for s in rebound.steps if s.action_id == "deliver_to_smartresume"
     )
-    assert deliver_step.inputs["issuer_payload"].source == "step"
+    assert deliver_step.inputs["smartresume_payload"].source == "step"
     translation_step_id = next(
-        s.step_id for s in rebound.steps if s.action_id == "execute_issuer_payload_translation"
+        s.step_id
+        for s in rebound.steps
+        if s.action_id == "execute_smartresume_payload_translation"
     )
-    assert deliver_step.inputs["issuer_payload"].step_id == translation_step_id
+    assert deliver_step.inputs["smartresume_payload"].step_id == translation_step_id
 
     deps, envelope = _action_deps()
     store = ExecutionStore(":memory:")
