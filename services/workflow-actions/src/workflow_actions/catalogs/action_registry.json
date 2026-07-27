@@ -1,5 +1,5 @@
 {
-  "gating_policy_prose": "The pre-target gate should 'terminate' early (before delivery-target selection) when the incoming event clearly does not warrant credential delivery, naming the specific disqualifier in the rationale. Terminate when the event represents a sub-competency or granular skill outcome that is a component of a larger parent competency — these partial mastery signals do not individually earn a credential. Terminate when the outcome contains a failing grade, a score below a passing threshold, or an explicit failure indicator, meaning the learner did not successfully demonstrate the required competency. Terminate when the learner's profile or consent state indicates they have declined or not accepted badge issuance. When none of these disqualifiers are present, return 'continue' so the workflow proceeds to select appropriate delivery channels.",
+  "gating_policy_prose": "The pre-target gate should 'terminate' early (before delivery-target selection) when the incoming event clearly does not warrant credential delivery, naming the specific disqualifier in the rationale. Terminate when the event represents a sub-competency or granular skill outcome that is a component of a larger parent competency \u2014 these partial mastery signals do not individually earn a credential. Terminate when the outcome contains a failing grade, a score below a passing threshold, or an explicit failure indicator, meaning the learner did not successfully demonstrate the required competency. Terminate when the learner's profile or consent state indicates they have declined or not accepted badge issuance. When none of these disqualifiers are present, return 'continue' so the workflow proceeds to select appropriate delivery channels.",
   "actions": [
     {
       "action_id": "resolve_learncard_profile",
@@ -14,7 +14,7 @@
     {
       "action_id": "generate_issuer_payload_synthesis",
       "type": "call",
-      "description": "Calls the Field Synthesis LLM Decision Service to synthesize any credential fields that cannot be directly mapped from existing event data — for example, generating a human-readable achievement description or deriving metadata. Works from the mapping produced in the previous step and the original event context."
+      "description": "Calls the Field Synthesis LLM Decision Service to synthesize any credential fields that cannot be directly mapped from existing event data \u2014 for example, generating a human-readable achievement description or deriving metadata. Works from the mapping produced in the previous step and the original event context."
     },
     {
       "action_id": "execute_issuer_payload_translation",
@@ -40,6 +40,11 @@
       "action_id": "deliver_to_learncard_wallet",
       "type": "call",
       "description": "Delivers the wallet payload to the learner's LearnCard wallet using the resolved profile's wallet endpoint. This is the final delivery step for the LearnCard wallet target. Requires the wallet payload produced by execute_wallet_payload_translation."
+    },
+    {
+      "action_id": "deliver_to_smartresume",
+      "type": "call",
+      "description": "Delivers the issued credential to SmartResume, the final delivery step for Finance (FINC-*) events under the Pretend Association of Finance partnership. Reuses the issuer payload OB3 produced by execute_issuer_payload_translation directly \u2014 no separate wallet-payload mapping pass. Runs after issue_learncard_badge, since every credential is issued through LearnCard (the only issuer) before delivery."
     }
   ]
 }

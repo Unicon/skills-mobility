@@ -1,0 +1,12 @@
+{
+  "action_ids": [
+    "resolve_learncard_profile",
+    "generate_issuer_payload_mapping",
+    "generate_issuer_payload_synthesis",
+    "execute_issuer_payload_translation",
+    "issue_learncard_badge",
+    "deliver_to_smartresume"
+  ],
+  "confidence": 0.93,
+  "rationale": "Finance routing: resolve profile, generate issuer mapping and synthesis, translate and issue the badge through LearnCard (the only issuer), then deliver the credential to SmartResume."
+}

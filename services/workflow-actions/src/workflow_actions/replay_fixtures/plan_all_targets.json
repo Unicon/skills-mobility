@@ -1,0 +1,15 @@
+{
+  "action_ids": [
+    "resolve_learncard_profile",
+    "generate_issuer_payload_mapping",
+    "generate_issuer_payload_synthesis",
+    "execute_issuer_payload_translation",
+    "issue_learncard_badge",
+    "generate_wallet_payload_mapping",
+    "execute_wallet_payload_translation",
+    "deliver_to_learncard_wallet",
+    "deliver_to_smartresume"
+  ],
+  "confidence": 0.9,
+  "rationale": "Both final targets configured: issue the badge through LearnCard, deliver to the learner's wallet, and also deliver the credential to SmartResume."
+}
