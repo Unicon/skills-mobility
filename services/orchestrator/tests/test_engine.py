@@ -75,7 +75,7 @@ def test_gate_continue_runs_full_plan(sample_event):
     meta = _run(sample_event, store=ExecutionStore(":memory:"))
     assert meta.status == "completed"
     assert meta.decisions[0].kind == "gate"
-    assert meta.decisions[0].outcome == "continue_to_delivery_targets"
+    assert meta.decisions[0].outcome == "continue"
     assert meta.plan_id == "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1"
     assert len(meta.steps) == 8
 
@@ -99,7 +99,7 @@ class _FakeWorkflowActions:
 
     def pre_target_gate(self, event_type, event, context_bundle, ctx):
         return GateDecision(
-            decision="continue_to_delivery_targets", confidence=0.42, rationale="real gate call"
+            decision="continue", confidence=0.42, rationale="real gate call"
         )
 
     def delivery_phase_plan(self, event_type, source_system, targets, event, bundle, ctx):

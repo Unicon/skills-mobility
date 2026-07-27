@@ -20,7 +20,10 @@ def store() -> SqliteStore:
 
 @pytest.fixture
 def client() -> TestClient:
-    return TestClient(create_app(Settings(db_path=":memory:")))
+    # Pin orchestrator_url=None so a developer's local .env can't leak in and make
+    # tests fire real requests at a running orchestrator (CWD-safe .env loading now
+    # finds a service-dir .env regardless of where pytest runs).
+    return TestClient(create_app(Settings(db_path=":memory:", orchestrator_url=None)))
 
 
 @pytest.fixture
