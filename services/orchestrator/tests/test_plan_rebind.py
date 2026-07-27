@@ -77,6 +77,7 @@ _SR_ACTIONS = [
     "generate_issuer_payload_mapping",
     "generate_issuer_payload_synthesis",
     "execute_issuer_payload_translation",
+    "issue_learncard_badge",
     "deliver_to_smartresume",
 ]
 
@@ -255,3 +256,18 @@ def test_rebind_rejects_action_for_unselected_target() -> None:
     # LearnCard-only selection, but the LLM proposed a SmartResume delivery action.
     llm_plan = _llm_plan(_LC_ACTIONS[:4] + ["deliver_to_smartresume"])
     assert planner.rebind_plan(llm_plan, "skill_mastered", _LC_TARGETS) is None
+
+
+def test_rebind_rejects_wallet_plan_for_smartresume_selection() -> None:
+    """The inverse case (the FINC full-chain regression): Delivery Targets chose
+    [learncard_issuer, smart_resume], but the LLM proposed the wallet action
+    sequence. Wallet actions have no template for that selection, so re-binding
+    fails and the deterministic SmartResume plan runs instead of silently
+    delivering to the wallet."""
+    llm_plan = _llm_plan(_LC_ACTIONS)  # full wallet-flavored sequence
+    assert (
+        planner.rebind_plan(
+            llm_plan, "skill_mastered", ["learncard_issuer", "smart_resume"]
+        )
+        is None
+    )
