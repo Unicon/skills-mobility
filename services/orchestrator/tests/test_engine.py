@@ -16,6 +16,7 @@ from orchestrator.clients import (
 )
 from orchestrator.schemas import (
     DeliveryPhasePlan,
+    GateDecision,
     InputBinding,
     PlanApplicability,
     PlanGenerator,
@@ -73,9 +74,58 @@ def test_resolves_fixed_demo_recipient_by_profile_id(sample_event):
 def test_gate_continue_runs_full_plan(sample_event):
     meta = _run(sample_event, store=ExecutionStore(":memory:"))
     assert meta.status == "completed"
-    assert meta.gate_decision["decision"] == "continue_to_delivery_targets"
+    assert meta.decisions[0].kind == "gate"
+    assert meta.decisions[0].outcome == "continue"
     assert meta.plan_id == "phase1-skill_mastered.v1"
     assert len(meta.steps) == 8
+
+
+def test_continue_path_records_all_three_planner_decisions(sample_event):
+    # Delivery Targets and Workflow Actions are unconfigured in tests, so both
+    # fall back to the deterministic stubs (best-effort seams, #79) — the
+    # decisions[] trail should still carry all three in order.
+    meta = _run(sample_event, store=ExecutionStore(":memory:"))
+    assert [d.kind for d in meta.decisions] == ["gate", "delivery_targets", "workflow_actions_plan"]
+    targets_decision, plan_decision = meta.decisions[1], meta.decisions[2]
+    assert targets_decision.outcome == "learncard_issuer, learncard_wallet"
+    assert targets_decision.confidence is None
+    assert plan_decision.outcome == "phase1-skill_mastered.v1"
+    assert plan_decision.confidence is None
+
+
+class _FakeWorkflowActions:
+    """A configured Workflow Actions client that succeeds, so decisions[] should
+    carry ITS confidence/rationale rather than the deterministic fallback's."""
+
+    def pre_target_gate(self, event_type, event, context_bundle, ctx):
+        return GateDecision(
+            decision="continue", confidence=0.42, rationale="real gate call"
+        )
+
+    def delivery_phase_plan(self, event_type, source_system, targets, event, bundle, ctx):
+        return planner.delivery_phase_plan(event_type, targets, "2026-01-01T00:00:00Z").model_copy(
+            update={"confidence": 0.77, "rationale": "real plan call"}
+        )
+
+
+def test_configured_workflow_actions_decisions_reflect_the_real_call(sample_event):
+    meta = engine.run_workflow(
+        WorkflowStartRequest(execution_id="e1", event=sample_event),
+        store=ExecutionStore(":memory:"),
+        context_builder=StubContextBuilder(),
+        profile_resolver=StubProfileResolver(),
+        delivery_router=StubDeliveryRouter(),
+        field_mapping=StubFieldMapping(),
+        issuer_id="did:web:issuer.example",
+        delivery_config_ref="cfg",
+        recipient_profile_id="smi-demo-learner",
+        workflow_actions=_FakeWorkflowActions(),
+    )
+    gate_decision, _, plan_decision = meta.decisions
+    assert gate_decision.confidence == 0.42
+    assert gate_decision.rationale == "real gate call"
+    assert plan_decision.confidence == 0.77
+    assert plan_decision.rationale == "real plan call"
 
 
 def test_engine_logs_key_transitions(sample_event, caplog):
@@ -94,7 +144,8 @@ def test_gate_terminate_skips_delivery():
     event = {"metadata": {"event_name": "badge_awarded", "user_id": "U1"}, "body": {}}
     meta = _run(event, store=ExecutionStore(":memory:"))
     assert meta.status == "completed"
-    assert meta.gate_decision["decision"] == "terminate"
+    assert meta.decisions[0].kind == "gate"
+    assert meta.decisions[0].outcome == "terminate"
     assert meta.plan_id is None
     assert meta.steps == []
     assert meta.result["outcome"] == "terminated_before_delivery"

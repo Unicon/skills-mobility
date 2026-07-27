@@ -1,0 +1,24 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS Enrollment (Canvas-style)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "Enrollment": {
+        "type": "object",
+        "description": "A Canvas enrollment record for a learner in a course.",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "enrollment",
+        "required": ["id", "course_id", "user_id", "type", "enrollment_state"],
+        "properties": {
+          "id": { "type": "string", "description": "Enrollment id.", "examples": ["ACCY-111-ENR-WU1125875"] },
+          "course_id": { "type": "string", "description": "Course id.", "examples": ["ACCY-111"] },
+          "user_id": { "type": "string", "description": "Learner user id.", "examples": ["WU1125875"] },
+          "type": { "type": "string", "description": "Enrollment type.", "examples": ["StudentEnrollment"] },
+          "enrollment_state": { "type": "string", "description": "Canvas enrollment state.", "examples": ["active"] },
+          "current_grade": { "type": ["string", "null"], "description": "Current letter grade.", "examples": ["A-"] },
+          "current_points": { "type": ["number", "null"], "description": "Current points earned.", "examples": [92.0] }
+        }
+      }
+    }
+  }
+}

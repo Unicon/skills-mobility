@@ -1,0 +1,72 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS Issued Badge (signed OBv3 credential)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "IssuedBadge": {
+        "type": "object",
+        "description": "A signed Open Badges v3 / W3C Verifiable Credential returned by the LearnCard issuer adapter after the issuer_payload transformation phase. Passed as-is to the wallet_payload transformation phase as the primary source payload.",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "issued_badge",
+        "required": ["@context", "type", "issuer", "credentialSubject", "proof"],
+        "properties": {
+          "@context": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "JSON-LD context URLs establishing the credential vocabulary (OBv3 + W3C VC).",
+            "examples": [["https://www.w3.org/2018/credentials/v1", "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"]]
+          },
+          "type": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Credential type array; must include VerifiableCredential and OpenBadgeCredential.",
+            "examples": [["VerifiableCredential", "OpenBadgeCredential"]]
+          },
+          "issuer": {
+            "type": "string",
+            "description": "DID of the issuing institution. Matches the issuer_id from the profile_resolution source.",
+            "examples": ["did:web:issuer.example.com"]
+          },
+          "issuanceDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 date-time when the credential was issued.",
+            "examples": ["2026-07-01T12:00:00Z"]
+          },
+          "credentialSubject": {
+            "type": "object",
+            "description": "The subject of the credential (the learner) and their achievement.",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "DID of the credential recipient. Matches recipient_did from profile_resolution.",
+                "examples": ["did:web:network.learncard.com:users:learner"]
+              },
+              "achievement": {
+                "type": "object",
+                "description": "The Open Badge achievement definition embedded in the credential.",
+                "properties": {
+                  "id": { "type": "string", "description": "Unique achievement identifier URI." },
+                  "type": { "type": "string", "description": "Achievement type (e.g. Achievement)." },
+                  "name": { "type": "string", "description": "Achievement display name." },
+                  "description": { "type": "string", "description": "Achievement description text." }
+                }
+              }
+            }
+          },
+          "proof": {
+            "type": "object",
+            "description": "Cryptographic proof applied by the issuer (e.g. DataIntegrityProof).",
+            "properties": {
+              "type": { "type": "string", "description": "Proof mechanism type.", "examples": ["DataIntegrityProof"] },
+              "created": { "type": "string", "format": "date-time", "description": "When the proof was created." },
+              "proofPurpose": { "type": "string", "description": "The proof's intended purpose.", "examples": ["assertionMethod"] },
+              "verificationMethod": { "type": "string", "description": "The key or method used to create the proof." },
+              "proofValue": { "type": "string", "description": "The encoded cryptographic proof value." }
+            }
+          }
+        }
+      }
+    }
+  }
+}

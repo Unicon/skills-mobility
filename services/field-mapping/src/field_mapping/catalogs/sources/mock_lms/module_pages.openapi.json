@@ -1,0 +1,22 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS Page (Canvas-style)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "Page": {
+        "type": "object",
+        "description": "A Canvas content page referenced by a module item.",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "module_pages",
+        "required": ["course_id", "url", "title"],
+        "properties": {
+          "id": { "type": "string", "description": "Page id (may be empty).", "examples": ["PAGE1"] },
+          "course_id": { "type": "string", "description": "Course containing the page.", "examples": ["ACCY-111"] },
+          "url": { "type": "string", "description": "Page URL slug.", "examples": ["/modules/pages/intro"] },
+          "title": { "type": "string", "description": "Page title.", "examples": ["Introduction"] },
+          "body": { "type": "string", "description": "Page HTML body.", "examples": ["<p>Welcome to the course.</p>"] }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+.confidence-meter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.confidence-meter-label {
+  font-size: 11px;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+.confidence-meter-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--panel-2);
+  overflow: hidden;
+}
+.confidence-meter-fill {
+  height: 100%;
+  border-radius: 99px;
+}
+.confidence-meter[data-tier="low"] .confidence-meter-fill {
+  background: var(--danger);
+}
+.confidence-meter[data-tier="mid"] .confidence-meter-fill {
+  background: var(--gold);
+}
+.confidence-meter[data-tier="high"] .confidence-meter-fill {
+  background: var(--live);
+}
+.confidence-meter-value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-dim);
+  min-width: 32px;
+  text-align: right;
+}

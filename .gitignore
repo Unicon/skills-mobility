@@ -87,6 +87,7 @@ logs/
 # ==========================================
 audit-output/
 execution-traces/
+artifact-output/
 
 # ==========================================
 # Test Data

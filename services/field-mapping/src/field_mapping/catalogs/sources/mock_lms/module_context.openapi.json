@@ -1,0 +1,35 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS Module (Canvas-style)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "Module": {
+        "type": "object",
+        "description": "The Canvas module containing the graded assignment, with its item list.",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "module_context",
+        "required": ["id", "course_id", "name"],
+        "properties": {
+          "id": { "type": "string", "description": "Global module id.", "examples": ["MOD1"] },
+          "course_id": { "type": "string", "description": "Course containing the module.", "examples": ["ACCY-111"] },
+          "name": { "type": "string", "description": "Module title.", "examples": ["Module 1: Introduction"] },
+          "position": { "type": "integer", "description": "Display order.", "examples": [1] },
+          "items": {
+            "type": "array",
+            "description": "Module items (assignments, pages).",
+            "items": {
+              "type": "object",
+              "required": ["id", "title", "type"],
+              "properties": {
+                "id": { "type": "string", "description": "Module item id.", "examples": ["ITEM1"] },
+                "title": { "type": "string", "description": "Item title.", "examples": ["Quiz 1"] },
+                "type": { "type": "string", "description": "Item content type.", "examples": ["Assignment", "Page"] },
+                "content_id": { "type": ["string", "null"], "description": "Id of the referenced content object.", "examples": ["ASG1", "PAGE1"] }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
