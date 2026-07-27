@@ -199,6 +199,31 @@ def test_server_error_is_normalized_to_failed() -> None:
     assert body["error"]["http_status"] == 500
 
 
+def test_token_failure_is_normalized_to_failed() -> None:
+    # A failing /token call (TokenError) must normalize exactly like a
+    # /credentials failure — never leak, never 500.
+    def handle(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/api/v1/token"  # never reaches /credentials
+        return httpx.Response(401, json={"message": "bad client credentials"})
+
+    hx = httpx.Client(transport=httpx.MockTransport(handle))
+    settings = Settings(api_url=API_URL, client_id="cid", access_key="wrong")
+    resp = TestClient(create_app(settings, hx)).post(ENDPOINT, json=REQUEST)
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "failed"
+    assert body["external_reference_id"] is None
+    assert "token exchange failed with HTTP 401" in body["error"]["message"]
+    # Ids preserved on the token-failure path too (FR-SR-12).
+    assert (
+        body["workflow_id"],
+        body["execution_id"],
+        body["step_id"],
+        body["correlation_id"],
+    ) == ("wf_1", "exec_1", "step_smartresume", "corr_1")
+
+
 def test_missing_recipient_is_422() -> None:
     bad = deepcopy(REQUEST)
     del bad["payload"]["recipient"]  # type: ignore[attr-defined]

@@ -17,7 +17,8 @@ from delivery_router.schemas import (
 )
 
 # action -> (adapter, adapter endpoint path). Phase 1: issuer + wallet (design §6);
-# plus SmartResume delivery for non-credential-enabled achievements.
+# plus SmartResume delivery of the issued (signed) credential for Finance-routed
+# events — verified delivery is the primary case (smartresume-adapter reqs §1).
 ACTION_ROUTES: dict[Action, tuple[AdapterKey, str]] = {
     Action.ISSUE_LEARNCARD_BADGE: (AdapterKey.LEARNCARD_ISSUER, "/internal/issue-learncard-badge"),
     Action.DELIVER_TO_LEARNCARD_WALLET: (

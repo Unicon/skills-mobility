@@ -5,10 +5,12 @@ has already happened upstream. It takes an achievement or credential payload
 already shaped for SmartResume, acquires an OAuth2 token, and delivers it via
 `POST /api/v1/credentials` on the SmartResume CredentialConnect API.
 
-The primary POC case is a non-credential-enabled course achievement (no `proof`
-— SmartResume accepts it as an unverified skill record). An already-issued VC
-carrying a `proof` is delivered in the same shape; the `proof` is passed through
-verbatim.
+**Verified, signed delivery is the primary case**: the POC credential travels
+the full issuance pipeline (`issue_learncard_badge` signs every delivery) and
+arrives here already carrying a `proof`, which is passed through verbatim. The
+no-proof path (SmartResume accepts achievements without proof as unverified
+skill records) is retained only for a possible future case; no current POC
+course routes through it.
 
 See [design](../../docs/3_design/smartresume-adapter.md).
 

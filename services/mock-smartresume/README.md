@@ -7,8 +7,8 @@ network access.
 
 It implements only the subset the SmartResume Adapter calls:
 
-- `POST /api/v1/token` — OAuth2 `client_credentials` token endpoint (permissive
-  Basic auth; returns a fixed canned token).
+- `POST /api/v1/token` — OAuth2 `client_credentials` token endpoint (Basic auth
+  validated against the configured ClientID/AccessKey; returns a fixed canned token).
 - `POST /api/v1/credentials` — credential delivery (requires the canned Bearer
   token; minimally validates the OB3 body; returns a deterministic `redirect_url`).
 - `GET /healthz` — health check.
@@ -44,6 +44,37 @@ Smoke test:
 
 ```bash
 curl -s localhost:8930/healthz
+```
+
+### Sample requests
+
+Both authenticated endpoints, pasteable as-is against the defaults
+(`mock-client-id` / `mock-access-key`; the canned token is
+`mock-smartresume-token`). Prefer curl over Swagger's "Try it out" for these
+two if anything looks off — nullable header parameters have rendered
+unreliably there historically (the endpoints now use proper `HTTPBasic` /
+`HTTPBearer` security schemes, which give Swagger a working "Authorize"
+control).
+
+```bash
+# 1. Token exchange (Basic auth + client_credentials form)
+curl -s localhost:8930/api/v1/token \
+  -u mock-client-id:mock-access-key \
+  -d 'grant_type=client_credentials' -d 'scope=delete readonly replace'
+# -> {"access_token":"mock-smartresume-token","token_type":"Bearer","expires_in":3600}
+
+# 2. Credential delivery (canned Bearer + minimal OB3 body)
+curl -s localhost:8930/api/v1/credentials \
+  -H 'Authorization: Bearer mock-smartresume-token' \
+  -H 'content-type: application/json' \
+  -d '{
+        "recipient": {"id": "did:web:example.com:users:learner", "email": "learner@example.com"},
+        "credentials": [{
+          "id": "urn:poc:credential:demo-1",
+          "credentialSubject": {"achievement": {"id": "urn:poc:achievement:ACCY-111-OUT-1"}}
+        }]
+      }'
+# -> {"redirect_url":"https://mock.smartresume.example/createmyresume/<deterministic-16-hex>"}
 ```
 
 ## Config
