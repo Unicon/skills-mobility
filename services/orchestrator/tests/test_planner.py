@@ -32,12 +32,15 @@ def test_delivery_phase_plan_shape():
     assert all(step.type == "call" for step in plan.steps)
     assert [s.action_id for s in plan.steps] == [
         "resolve_learncard_profile",
+        "generate_credential_template_mapping",
+        "generate_credential_template_synthesis",
+        "execute_credential_template_translation",
         "generate_issuer_payload_mapping",
         "generate_issuer_payload_synthesis",
         "execute_issuer_payload_translation",
         "issue_learncard_badge",
-        "generate_wallet_payload_mapping",
-        "execute_wallet_payload_translation",
+        "generate_learncard_wallet_payload_mapping",
+        "execute_learncard_wallet_payload_translation",
         "deliver_to_learncard_wallet",
     ]
 
@@ -52,15 +55,21 @@ def test_delivery_phase_plan_finance_pairing_issuer_plus_smartresume():
     assert plan.plan_id == "phase1-skill_mastered.learncard_issuer.smart_resume.v1"
     assert [s.action_id for s in plan.steps] == [
         "resolve_learncard_profile",
+        "generate_credential_template_mapping",
+        "generate_credential_template_synthesis",
+        "execute_credential_template_translation",
         "generate_issuer_payload_mapping",
         "generate_issuer_payload_synthesis",
         "execute_issuer_payload_translation",
         "issue_learncard_badge",
+        "generate_smartresume_payload_mapping",
+        "execute_smartresume_payload_translation",
         "deliver_to_smartresume",
     ]
-    # SmartResume step is step_id 6 when no wallet branch
+    # SmartResume delivery lands at step_id 11 when there is no wallet branch
+    # (steps 9-11 are the SmartResume mapping/translation/delivery).
     sr_step = plan.steps[-1]
-    assert sr_step.step_id == 6
+    assert sr_step.step_id == 11
     assert sr_step.produces == "delivered_smartresume"
 
 
@@ -106,18 +115,23 @@ def test_delivery_phase_plan_all_targets():
     action_ids = [s.action_id for s in plan.steps]
     assert action_ids == [
         "resolve_learncard_profile",
+        "generate_credential_template_mapping",
+        "generate_credential_template_synthesis",
+        "execute_credential_template_translation",
         "generate_issuer_payload_mapping",
         "generate_issuer_payload_synthesis",
         "execute_issuer_payload_translation",
         "issue_learncard_badge",
-        "generate_wallet_payload_mapping",
-        "execute_wallet_payload_translation",
+        "generate_learncard_wallet_payload_mapping",
+        "execute_learncard_wallet_payload_translation",
         "deliver_to_learncard_wallet",
+        "generate_smartresume_payload_mapping",
+        "execute_smartresume_payload_translation",
         "deliver_to_smartresume",
     ]
-    # SmartResume is step_id 9 when LearnCard branch is present
+    # SmartResume delivery is step_id 14 when the wallet branch is present.
     sr_step = plan.steps[-1]
-    assert sr_step.step_id == 9
+    assert sr_step.step_id == 14
 
 
 def test_delivery_phase_plan_empty_targets_emits_learncard_default():

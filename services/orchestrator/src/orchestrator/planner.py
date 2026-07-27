@@ -71,10 +71,13 @@ def _step(step_id: int, action_id: str, inputs: dict[str, InputBinding], produce
 
 
 def _issuer_prefix(fetch_profile_id: str) -> list[PlanStep]:
-    """Shared issuer steps (1-4) always emitted — resolve profile, map/synthesize/
-    translate the issuer payload. Field Mapping / Field Synthesis seams are preserved
-    as explicit steps (FR-OR-14/15); the mapping steps carry the source_system +
-    fetch_profile_id + upstream data the Field Mapping service needs (#27 §4)."""
+    """Shared transformation prefix (steps 1-8), always emitted: resolve profile,
+    then the credential_template phase (ADR-0017 Phase 1 — the achievement
+    definition the issuer phase reads as a source artifact), then the
+    issuer_payload phase, then badge issuance. Field Mapping / Field Synthesis
+    seams are preserved as explicit steps (FR-OR-14/15); mapping steps carry the
+    source_system + fetch_profile_id + upstream data the Field Mapping service
+    needs (#27 §4)."""
     return [
         _step(
             1,
@@ -91,6 +94,44 @@ def _issuer_prefix(fetch_profile_id: str) -> list[PlanStep]:
         ),
         _step(
             2,
+            "generate_credential_template_mapping",
+            {
+                # credential_template is target-independent (ADR-0017 Phase 1), so
+                # no delivery_target literal is bound (the FM contract wants the
+                # field absent for this phase).
+                "transformation_type": InputBinding(source="literal", value="credential_template"),
+                "synthesis_allowed": InputBinding(source="literal", value=True),
+                "source_system": InputBinding(source="literal", value="mock_lms"),
+                "fetch_profile_id": InputBinding(source="literal", value=fetch_profile_id),
+                "bundle": InputBinding(source="workflow", path="bundle"),
+                "issuer_id": InputBinding(source="workflow", path="issuer_id"),
+                "resolved_profile": InputBinding(source="step", step_id=1),
+            },
+            "credential_template_mapping",
+        ),
+        _step(
+            3,
+            "generate_credential_template_synthesis",
+            {
+                "transformation_type": InputBinding(source="literal", value="credential_template"),
+                "mapping": InputBinding(source="step", step_id=2),
+            },
+            "credential_template_synthesis",
+        ),
+        _step(
+            4,
+            "execute_credential_template_translation",
+            {
+                "bundle": InputBinding(source="workflow", path="bundle"),
+                "issuer_id": InputBinding(source="workflow", path="issuer_id"),
+                "resolved_profile": InputBinding(source="step", step_id=1),
+                "mapping": InputBinding(source="step", step_id=2),
+                "synthesis": InputBinding(source="step", step_id=3),
+            },
+            "credential_template",
+        ),
+        _step(
+            5,
             "generate_issuer_payload_mapping",
             {
                 # transformation_type and delivery_target are independent plan
@@ -105,21 +146,24 @@ def _issuer_prefix(fetch_profile_id: str) -> list[PlanStep]:
                 "bundle": InputBinding(source="workflow", path="bundle"),
                 "issuer_id": InputBinding(source="workflow", path="issuer_id"),
                 "resolved_profile": InputBinding(source="step", step_id=1),
+                # The stored credential template is a source artifact for the
+                # issuer mapping (ADR-0017: Phase 2 reads Phase 1's output).
+                "credential_template": InputBinding(source="step", step_id=4),
             },
             "issuer_mapping",
         ),
         _step(
-            3,
+            6,
             "generate_issuer_payload_synthesis",
             {
                 "transformation_type": InputBinding(source="literal", value="issuer_payload"),
                 "delivery_target": InputBinding(source="literal", value="learncard_issuer"),
-                "mapping": InputBinding(source="step", step_id=2),
+                "mapping": InputBinding(source="step", step_id=5),
             },
             "issuer_synthesis",
         ),
         _step(
-            4,
+            7,
             "execute_issuer_payload_translation",
             {
                 "bundle": InputBinding(source="workflow", path="bundle"),
@@ -128,33 +172,27 @@ def _issuer_prefix(fetch_profile_id: str) -> list[PlanStep]:
                 # Seam bindings for the real transformation services (Phase-1 stubs
                 # ignore them, but the executor wiring must be in place — FR-OR-14).
                 "delivery_target": InputBinding(source="literal", value="learncard_issuer"),
-                "mapping": InputBinding(source="step", step_id=2),
-                "synthesis": InputBinding(source="step", step_id=3),
+                "mapping": InputBinding(source="step", step_id=5),
+                "synthesis": InputBinding(source="step", step_id=6),
             },
             "issuer_payload",
+        ),
+        _step(
+            8,
+            "issue_learncard_badge",
+            {"issuer_payload": InputBinding(source="step", step_id=7)},
+            "issued",
         ),
     ]
 
 
-def _issuance_step() -> PlanStep:
-    """LearnCard badge issuance (step 5) — always emitted: LearnCard is the only
-    issuer, so every delivery runs through it regardless of the selected final
-    target (design §5; the target decides only the final delivery step)."""
-    return _step(
-        5,
-        "issue_learncard_badge",
-        {"issuer_payload": InputBinding(source="step", step_id=4)},
-        "issued",
-    )
-
-
 def _wallet_delivery_steps(fetch_profile_id: str) -> list[PlanStep]:
-    """LearnCard wallet delivery steps (6-8), emitted when learncard_wallet is in
+    """LearnCard wallet delivery steps (9-11), emitted when learncard_wallet is in
     the selected targets."""
     return [
         _step(
-            6,
-            "generate_wallet_payload_mapping",
+            9,
+            "generate_learncard_wallet_payload_mapping",
             {
                 # The wallet phase provisions no Field Synthesis step, so the plan
                 # passes synthesis_allowed=false — a property of this plan, not a
@@ -165,63 +203,88 @@ def _wallet_delivery_steps(fetch_profile_id: str) -> list[PlanStep]:
                 # Source resolution + the issued badge for the Field Mapping request.
                 "source_system": InputBinding(source="literal", value="mock_lms"),
                 "fetch_profile_id": InputBinding(source="literal", value=fetch_profile_id),
-                "issued": InputBinding(source="step", step_id=5),
+                "issued": InputBinding(source="step", step_id=8),
                 "resolved_profile": InputBinding(source="step", step_id=1),
             },
             "wallet_mapping",
         ),
         _step(
-            7,
-            "execute_wallet_payload_translation",
+            10,
+            "execute_learncard_wallet_payload_translation",
             {
-                "issued": InputBinding(source="step", step_id=5),
+                "issued": InputBinding(source="step", step_id=8),
                 "resolved_profile": InputBinding(source="step", step_id=1),
                 # Seam bindings for the real transformation services (FR-OR-15) —
                 # wallet pass has no synthesis (per the #25 FR-OR-15 table).
                 "delivery_target": InputBinding(source="literal", value="learncard_wallet"),
-                "mapping": InputBinding(source="step", step_id=6),
+                "mapping": InputBinding(source="step", step_id=9),
             },
             "wallet_payload",
         ),
         _step(
-            8,
+            11,
             "deliver_to_learncard_wallet",
-            {"wallet_payload": InputBinding(source="step", step_id=7)},
+            {"wallet_payload": InputBinding(source="step", step_id=10)},
             "delivered",
         ),
     ]
 
 
-def _smartresume_delivery_step(step_id: int) -> PlanStep:
-    """SmartResume delivery step — runs after issuance (LearnCard issues every
-    credential first) and reuses the issuer_payload OB3 (step 4) directly, no
-    additional field mapping transformation."""
-    return _step(
-        step_id,
-        "deliver_to_smartresume",
-        {
-            "issuer_payload": InputBinding(source="step", step_id=4),
-            "resolved_profile": InputBinding(source="step", step_id=1),
-            "bundle": InputBinding(source="workflow", path="bundle"),
-        },
-        "delivered_smartresume",
-    )
+def _smartresume_delivery_steps(fetch_profile_id: str, start_id: int) -> list[PlanStep]:
+    """SmartResume delivery steps (mapping → translation → deliver), emitted when
+    smart_resume is in the selected targets. Runs after issuance (LearnCard issues
+    every credential first); the SmartResume payload is translated from the issued
+    badge (the wallet_payload-equivalent phase keyed to smart_resume)."""
+    return [
+        _step(
+            start_id,
+            "generate_smartresume_payload_mapping",
+            {
+                "transformation_type": InputBinding(source="literal", value="wallet_payload"),
+                "delivery_target": InputBinding(source="literal", value="smart_resume"),
+                "synthesis_allowed": InputBinding(source="literal", value=False),
+                "source_system": InputBinding(source="literal", value="mock_lms"),
+                "fetch_profile_id": InputBinding(source="literal", value=fetch_profile_id),
+                "issued": InputBinding(source="step", step_id=8),
+                "resolved_profile": InputBinding(source="step", step_id=1),
+            },
+            "smartresume_mapping",
+        ),
+        _step(
+            start_id + 1,
+            "execute_smartresume_payload_translation",
+            {
+                "issued": InputBinding(source="step", step_id=8),
+                "resolved_profile": InputBinding(source="step", step_id=1),
+                "bundle": InputBinding(source="workflow", path="bundle"),
+                "delivery_target": InputBinding(source="literal", value="smart_resume"),
+                "mapping": InputBinding(source="step", step_id=start_id),
+            },
+            "smartresume_payload",
+        ),
+        _step(
+            start_id + 2,
+            "deliver_to_smartresume",
+            {"smartresume_payload": InputBinding(source="step", step_id=start_id + 1)},
+            "delivered_smartresume",
+        ),
+    ]
 
 
 def _build_steps(fetch_profile_id: str, targets: frozenset[str]) -> list[PlanStep]:
     """Assemble the step list based on selected targets.
 
-    - Issuer prefix (steps 1-4) + badge issuance (step 5) are always included:
-      LearnCard is the only issuer, so every credential is issued through it and
-      the selected targets decide only the final delivery step(s) (design §5 —
-      learncard_issuer is expected in every selection).
-    - Wallet delivery (steps 6-8) when learncard_wallet is in targets, or when no
+    - The shared prefix (steps 1-8) is always included: resolve profile, the
+      credential_template phase (ADR-0017 Phase 1), the issuer_payload phase, and
+      badge issuance — LearnCard is the only issuer, so every credential is issued
+      through it and the selected targets decide only the final delivery step(s)
+      (design §5 — learncard_issuer is expected in every selection).
+    - Wallet delivery (steps 9-11) when learncard_wallet is in targets, or when no
       known delivery target is present (backward-compatible Phase-1 default).
-    - SmartResume step (step_id 9 if the wallet branch is present, else 6) when
-      smart_resume is in targets.
+    - SmartResume delivery (3 steps, starting at 12 if the wallet branch is present,
+      else 9) when smart_resume is in targets.
     """
     steps = _issuer_prefix(fetch_profile_id)
-    steps.append(_issuance_step())
 
     has_wallet = _WALLET_TARGET in targets
     has_smartresume = _SMARTRESUME_TARGET in targets
@@ -233,8 +296,8 @@ def _build_steps(fetch_profile_id: str, targets: frozenset[str]) -> list[PlanSte
         steps.extend(_wallet_delivery_steps(fetch_profile_id))
 
     if has_smartresume:
-        smartresume_step_id = 9 if emit_wallet else 6
-        steps.append(_smartresume_delivery_step(smartresume_step_id))
+        start_id = 12 if emit_wallet else 9
+        steps.extend(_smartresume_delivery_steps(fetch_profile_id, start_id))
 
     return steps
 
