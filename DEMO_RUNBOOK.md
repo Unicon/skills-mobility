@@ -52,7 +52,7 @@ curl -s -X POST http://localhost:8000/demo/courses/ACCY-111/actions \
   -d '{"action_id":"ACCY-111-grade-m1","scope":"one"}' | python3 -m json.tool
 ```
 
-Then **refresh the Admin UI** (localhost:5174) — a new execution appears with status **completed**, 8/8 steps.
+Then **refresh the Admin UI** (localhost:5174) — a new execution appears with status **completed**, 11/11 steps.
 (Optionally show the orchestrator calling the LLM services live:
 `docker compose logs orchestrator | grep -E 'gate decision|HTTP Request: POST http://(workflow-actions|delivery-targets|field)'`.)
 
@@ -64,7 +64,7 @@ Click the execution. The **DecisionFlow** renders the pipeline as a conversation
 - **delivery_targets** → the selected targets (`learncard_issuer`, `learncard_wallet`).
 - **workflow_actions_plan** → the plan (`skill_mastered.learncard_issuer.learncard_wallet.v1`), with confidence + rationale.
 
-Below it, every step (1–8) with its status. This is the explainability contract, visualized.
+Below it, every step (1–11) with its status — the plan opens with the **credential_template phase** (ADR-0017 Phase 1: mapping → synthesis → translation), then the issuer phase, issuance, and the wallet branch. This is the explainability contract, visualized.
 
 ## Beat 3 — The decision *routes*: Finance takes a different path  *(terminal + Admin UI)*
 
@@ -81,11 +81,11 @@ Refresh the UI and open the new execution:
 - **delivery_targets** → `learncard_issuer, smart_resume` — the Delivery Targets LLM
   resolved the **course subject** (FINC-*) from the context bundle and routed to
   SmartResume per the Pretend Association of Finance partnership (the rationale says so).
-- **workflow_actions_plan** → `skill_mastered.learncard_issuer.smart_resume.v1` — a
-  **6-step** plan: the badge is still issued through LearnCard (the only issuer), then
-  delivered to SmartResume. No wallet steps.
-- Steps: `resolve → issuer mapping → synthesis → translation → issue_learncard_badge →
-  deliver_to_smartresume`, 6/6 succeeded.
+- **workflow_actions_plan** → `skill_mastered.learncard_issuer.smart_resume.v1` — an
+  **11-step** plan: the same shared prefix (credential template → issuer payload →
+  issuance through LearnCard, the only issuer), then the **SmartResume branch**
+  (`generate_smartresume_payload_mapping → execute_smartresume_payload_translation →
+  deliver_to_smartresume`). No wallet steps; 11/11 succeeded.
 
 Talking point: the LLM picked the targets *and* proposed the plan, but the orchestrator
 **re-binds** the proposal against templates scoped to the selected targets — a wallet-flavored
