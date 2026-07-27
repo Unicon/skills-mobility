@@ -87,7 +87,9 @@ def test_delivery_phase_plan_wallet_targets():
 def test_delivery_phase_plan_issuer_only_falls_back_to_wallet_default():
     # learncard_issuer alone names no final delivery step, so the Phase-1
     # backward-compatible default applies: deliver to the wallet.
-    plan = planner.delivery_phase_plan("skill_mastered", ["learncard_issuer"], "2026-06-24T00:00:00Z")
+    plan = planner.delivery_phase_plan(
+        "skill_mastered", ["learncard_issuer"], "2026-06-24T00:00:00Z"
+    )
     action_ids = [s.action_id for s in plan.steps]
     assert "issue_learncard_badge" in action_ids
     assert "deliver_to_learncard_wallet" in action_ids
