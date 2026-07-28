@@ -70,15 +70,41 @@ def test_no_synthesis_required_skips_the_service() -> None:
     assert spy.called is False
 
 
-def test_requires_synthesis_returns_service_values() -> None:
+def test_requires_synthesis_returns_service_values_and_preserves_envelope() -> None:
     spy = _SpyFieldSynthesis(
-        result={"status": "succeeded", "values": {"achievement_description": "You did it."}}
+        result={
+            "status": "succeeded",
+            "values": {"achievement_description": "You did it."},
+            "confidence": 0.87,
+            "rationale": "grounded in the course description",
+            "synthesis_result_ref": "synthesis_result:sk_1",
+            "llm_invocation_log_ref": "llmcall:sk_1",
+        }
     )
     out = _generate_field_synthesis(
         {"mapping": _REQUIRES_SYNTHESIS, "transformation_type": "issuer_payload"}, _deps(spy)
     )
     assert spy.called is True
-    assert out == {"synthesized": {"achievement_description": "You did it."}}
+    assert out["synthesized"] == {"achievement_description": "You did it."}
+    # FR-FS-9 / design §12: confidence + rationale (and the artifact refs) must
+    # survive into the step output so the execution record can recover them.
+    assert out["confidence"] == 0.87
+    assert out["rationale"] == "grounded in the course description"
+    assert out["synthesis_result_ref"] == "synthesis_result:sk_1"
+    assert out["llm_invocation_log_ref"] == "llmcall:sk_1"
+
+
+def test_failed_status_response_falls_back_to_empty() -> None:
+    # The service answered at the HTTP level but reported a failed synthesis —
+    # a distinct branch from the call raising.
+    spy = _SpyFieldSynthesis(
+        result={"status": "failed", "values": None, "llm_invocation_log_ref": "llmcall:sk_2"}
+    )
+    out = _generate_field_synthesis(
+        {"mapping": _REQUIRES_SYNTHESIS, "transformation_type": "issuer_payload"}, _deps(spy)
+    )
+    assert spy.called is True
+    assert out == {"synthesized": {}}
 
 
 def test_synthesis_failure_falls_back_to_empty() -> None:
