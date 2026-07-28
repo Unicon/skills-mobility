@@ -12,7 +12,8 @@ prerequisites are in place, the backend is **one command**.
 | **Lambda execution role** `skills-mobility-dev-lambda-exec` | ✅ created by Ops (now also codified in `iam-demo.yml`) |
 | **Deploy permissions** | ✅ Ops granted the deployer **AdministratorAccess** (2026-07-28) — the planned deploy role is moot for this account; `iam-demo.yml` still carries it as the least-privilege alternative for open-source consumers |
 | Fresh SSO login | `aws sso login --profile skills` (token expires ~8h) |
-| **Anonymous Function URL invocation** | ⛔ **403s despite `AuthType: NONE` + a correct public-invoke resource policy** — suspected org-level control (RCP); raised with Ops. The function itself is healthy (direct `aws lambda invoke` → 200). Until resolved, the sync HTTP chain between services (which rides the public URLs) can't run |
+| **Anonymous Function URL invocation** | ✅ solved with Ops (2026-07-28): needs `lambda:InvokeFunction` (`lambda:InvokedViaFunctionUrl: true`) **in addition to** `lambda:InvokeFunctionUrl` — both codified in `lambda-service-demo.yml` |
+| **Live end-to-end** | ✅ **VERIFIED 2026-07-28**: full chain on Lambda + live Bedrock — gate/targets/plan decisions from real Claude (incl. a correct sub-competency **terminate**), a **re-bound live LLM plan** executing 11/11, degraded-mode audit markers working. Known rough edges: transient FM 502s under cold-start load (guardrail falls back, recorded), event-consumer's internal client can time out while the workflow completes anyway, and the /tmp dedup DB is per-instance on Lambda |
 
 All IAM for the project is now expressed as code in
 `infra/cloudformation/iam-demo.yml` (deploy with `--capabilities CAPABILITY_NAMED_IAM`;
