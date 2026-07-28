@@ -150,8 +150,8 @@ def test_rebind_returns_none_when_dependency_unmet() -> None:
         "generate_issuer_payload_mapping",
         "generate_issuer_payload_synthesis",
         "issue_learncard_badge",
-        "generate_wallet_payload_mapping",
-        "execute_wallet_payload_translation",
+        "generate_learncard_wallet_payload_mapping",
+        "execute_learncard_wallet_payload_translation",
         "deliver_to_learncard_wallet",
     ]
     llm_plan = _llm_plan(bad_order)
@@ -259,6 +259,46 @@ def test_rebind_rejects_action_for_unselected_target() -> None:
     # LearnCard-only selection, but the LLM proposed a SmartResume delivery action.
     llm_plan = _llm_plan(_LC_ACTIONS[:4] + ["deliver_to_smartresume"])
     assert planner.rebind_plan(llm_plan, "skill_mastered", _LC_TARGETS) is None
+
+
+def test_rebind_preserves_the_llms_chosen_branch_order() -> None:
+    """The LLM owns the ordering: with both final targets selected, the wallet and
+    SmartResume branches depend only on the shared prefix, so proposing SmartResume
+    BEFORE the wallet is dependency-valid — and the rebound plan must reflect that
+    order, not the deterministic default (which puts the wallet branch first)."""
+    llm_order = _SHARED_PREFIX + [
+        "generate_smartresume_payload_mapping",
+        "execute_smartresume_payload_translation",
+        "deliver_to_smartresume",
+        "generate_learncard_wallet_payload_mapping",
+        "execute_learncard_wallet_payload_translation",
+        "deliver_to_learncard_wallet",
+    ]
+    both_targets = ["learncard_issuer", "learncard_wallet", "smart_resume"]
+    llm_plan = _llm_plan(llm_order)
+
+    rebound = planner.rebind_plan(llm_plan, "skill_mastered", both_targets)
+
+    assert rebound is not None
+    assert [s.action_id for s in rebound.steps] == llm_order
+    # And it differs from the deterministic default, proving the order came from
+    # the proposal rather than being silently replaced.
+    reference = planner.delivery_phase_plan("skill_mastered", both_targets, "")
+    assert [s.action_id for s in rebound.steps] != [s.action_id for s in reference.steps]
+    # The swapped SmartResume branch still binds its dependencies correctly.
+    sr_translation = next(
+        s for s in rebound.steps if s.action_id == "execute_smartresume_payload_translation"
+    )
+    issued_step_id = next(
+        s.step_id for s in rebound.steps if s.action_id == "issue_learncard_badge"
+    )
+    assert sr_translation.inputs["issued"].step_id == issued_step_id
+
+
+def test_rebind_rejects_an_empty_proposed_plan() -> None:
+    """A zero-step proposal must fail re-binding (deterministic fallback), not
+    "complete" as a plan that issues and delivers nothing."""
+    assert planner.rebind_plan(_llm_plan([]), "skill_mastered", _LC_TARGETS) is None
 
 
 def test_rebind_rejects_wallet_plan_for_smartresume_selection() -> None:

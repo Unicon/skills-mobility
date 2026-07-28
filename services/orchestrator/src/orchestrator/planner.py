@@ -371,10 +371,13 @@ def rebind_plan(
     reference plan for the **selected** ``targets``, resolving cross-step dependencies
     by produced-name.
 
-    Returns the re-bound plan, or ``None`` if re-binding fails: an unknown action_id
-    (including an action for a target that was not selected), or an unsatisfied
-    cross-step dependency in the LLM's ordering.
+    Returns the re-bound plan, or ``None`` if re-binding fails: an empty proposed
+    plan (a zero-step plan would "complete" having issued and delivered nothing),
+    an unknown action_id (including an action for a target that was not selected),
+    or an unsatisfied cross-step dependency in the LLM's ordering.
     """
+    if not llm_plan.steps:
+        return None  # empty proposal — fall back rather than complete as a no-op
     templates = _action_templates(event_type, targets)
     produced: dict[str, int] = {}  # produced-name → new step_id
     new_steps: list[PlanStep] = []
