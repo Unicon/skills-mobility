@@ -35,7 +35,7 @@ def test_post_select_returns_seam_envelope(tmp_path: Path) -> None:
     body = resp.json()
     assert set(body.keys()) == _SEAM_KEYS
     assert body["status"] == "succeeded"
-    assert "learncard_issuer" in body["selected_targets"]
+    assert "learncard_issuer" in [t["delivery_target"] for t in body["selected_targets"]]
 
 
 def test_post_select_contract_violation_is_422(tmp_path: Path) -> None:

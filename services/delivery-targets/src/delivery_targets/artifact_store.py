@@ -4,9 +4,10 @@ Selection artifacts and invocation logs are written to local JSON files keyed by
 execution_id. This keeps local dev/test free of any running store while preserving
 the interface a cloud storage layer will back in AWS.
 
-Failed artifacts are stored too, with their validation errors attached, so the
-audit trail records rejected attempts (FR-DT-21). A failed record cannot be loaded
-as a successful selection.
+Failed artifacts are stored too, with their validation errors attached under a
+separate ``selection_failed`` kind, so the audit trail records rejected attempts
+(FR-DT-21) without a failed attempt ever overwriting a stored success. A failed
+record cannot be loaded as a successful selection.
 """
 
 from __future__ import annotations
@@ -53,16 +54,16 @@ class ArtifactStore:
         )
 
     def store_failed(self, execution_id: str, reason: str) -> str:
-        """Persist a failed-selection record; returns ``"selection:failed:<key>"``.
+        """Persist a failed-selection record; returns the loadable
+        ``"selection_failed:<key>"`` ref.
 
-        The record is written to the same path as a successful artifact so that
-        a subsequent ``load_selection`` attempt raises ``FailedArtifactError``
-        (audit trail, FR-DT-21). A separate ``"selection:failed:<key>"`` ref is
-        returned so the caller can distinguish it from a success ref.
+        Failures live under their own kind so a failed attempt never overwrites a
+        previously-stored successful selection for the same key (defensive — the
+        key is execution_id, but the store must not be able to destroy a success).
+        The rejected attempt stays auditable (FR-DT-21): loading the returned ref
+        raises ``FailedArtifactError``, not a not-found error.
         """
-        key = execution_id
-        self._write("selection", key, {"status": "failed", "reason": reason})
-        return f"selection:failed:{key}"
+        return self._write("selection_failed", execution_id, {"status": "failed", "reason": reason})
 
     def load_selection(self, ref: str) -> SelectionArtifact:
         """Load a successful selection artifact by ref."""
@@ -81,7 +82,7 @@ class ArtifactStore:
         return self._write("llmcall", key, record)
 
     def _read(self, ref: str) -> dict[str, Any]:
-        # refs look like "selection:<key>" or "llmcall:<key>"
+        # refs look like "selection:<key>", "selection_failed:<key>" or "llmcall:<key>"
         kind, key = ref.split(":", 1)
         path = self._path(kind, key)
         if not path.exists():

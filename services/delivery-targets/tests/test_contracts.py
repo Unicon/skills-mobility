@@ -21,12 +21,25 @@ def test_delivery_target_enum_values() -> None:
 def test_response_envelope_has_exact_seam_keys() -> None:
     resp = SelectionResponse.succeeded(
         selection_artifact_ref="selection:exec_1",
-        selected_targets=["learncard_issuer", "learncard_wallet"],
+        selected_targets=[
+            TargetSelection(
+                delivery_target="learncard_issuer", confidence=0.95, rationale="only issuer"
+            ),
+            TargetSelection(
+                delivery_target="learncard_wallet", confidence=0.92, rationale="accy pairing"
+            ),
+        ],
         llm_invocation_log_ref="llmcall:exec_1",
     )
     assert set(resp.model_dump().keys()) == _SEAM_KEYS
     assert resp.status == "succeeded"
-    assert resp.selected_targets == ["learncard_issuer", "learncard_wallet"]
+    # §3: selected_targets carries the rich objects — names + confidence +
+    # rationale readable without dereferencing the stored artifact.
+    assert [t.delivery_target for t in resp.selected_targets] == [
+        "learncard_issuer", "learncard_wallet",
+    ]
+    assert resp.selected_targets[0].confidence == 0.95
+    assert resp.selected_targets[1].rationale == "accy pairing"
 
 
 def test_failed_response_has_empty_selected_targets() -> None:

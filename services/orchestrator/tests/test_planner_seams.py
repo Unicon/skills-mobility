@@ -99,9 +99,11 @@ def test_gate_falls_back_when_service_raises() -> None:
 
 
 def test_targets_fall_back_when_service_raises() -> None:
-    assert _resolve_targets(_RaisingDT(), "skill_mastered", "mock_lms", {}, _CTX) == (
-        planner.select_delivery_targets()
-    )
+    decision = _resolve_targets(_RaisingDT(), "skill_mastered", "mock_lms", {}, _CTX)
+    assert decision.targets == planner.select_delivery_targets()
+    # The deterministic fallback reports no LLM confidence/rationale.
+    assert decision.confidence is None
+    assert decision.rationale is None
 
 
 def test_plan_falls_back_when_service_raises() -> None:
@@ -185,16 +187,35 @@ def test_http_client_failed_status_raises() -> None:
 
 
 def test_http_delivery_targets_returns_selected() -> None:
+    # §3 rich response: per-target confidence/rationale come back inline, and the
+    # decision surfaces the flat names + the weakest confidence + joined rationales.
     dt = HttpDeliveryTargetsClient(
         "http://x",
         client=_FakeHttp(  # type: ignore[arg-type]
-            {"status": "succeeded", "selected_targets": ["learncard_issuer", "learncard_wallet"]}
+            {
+                "status": "succeeded",
+                "selected_targets": [
+                    {
+                        "delivery_target": "learncard_issuer",
+                        "confidence": 0.95,
+                        "rationale": "only issuer",
+                    },
+                    {
+                        "delivery_target": "learncard_wallet",
+                        "confidence": 0.92,
+                        "rationale": "accounting pairing",
+                    },
+                ],
+            }
         ),
     )
-    assert dt.select_targets("skill_mastered", "mock_lms", {}, _CTX) == [
-        "learncard_issuer",
-        "learncard_wallet",
-    ]
+    decision = dt.select_targets("skill_mastered", "mock_lms", {}, _CTX)
+    assert decision.targets == ["learncard_issuer", "learncard_wallet"]
+    assert decision.confidence == 0.92  # weakest per-target score, conservative
+    assert decision.rationale == (
+        "learncard_issuer: only issuer; learncard_wallet: accounting pairing"
+    )
+
 
 def test_http_context_builder_normalizes_non_json_response() -> None:
     """An event fired during a stack update can get a non-JSON 5xx text body from
@@ -214,4 +235,3 @@ def test_http_context_builder_normalizes_non_json_response() -> None:
     out = client.build_context("exec_1", {"metadata": {}})
     assert "context_builder_error" in out
     assert out["context_builder_error"]["code"] == "unreachable"
-

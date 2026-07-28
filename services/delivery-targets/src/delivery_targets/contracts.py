@@ -50,15 +50,27 @@ class SelectionRequest(BaseModel):
     learner_context: dict[str, Any]
 
 
+class TargetSelection(BaseModel):
+    """One selected target with its confidence and rationale."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    delivery_target: str
+    confidence: float
+    rationale: str
+
+
 class SelectionResponse(BaseModel):
     """§3 response envelope. Build via succeeded / failed so the contract
-    remains self-enforcing."""
+    remains self-enforcing. ``selected_targets`` is the rich per-target list
+    (delivery_target + confidence + rationale) so the Orchestrator reads the
+    decision directly — no second round-trip to the stored artifact (§3)."""
 
     model_config = ConfigDict(extra="forbid")
 
     status: Literal["succeeded", "failed"]
     selection_artifact_ref: str | None
-    selected_targets: list[str]
+    selected_targets: list[TargetSelection]
     llm_invocation_log_ref: str | None
 
     @classmethod
@@ -66,7 +78,7 @@ class SelectionResponse(BaseModel):
         cls,
         *,
         selection_artifact_ref: str,
-        selected_targets: list[str],
+        selected_targets: list[TargetSelection],
         llm_invocation_log_ref: str,
     ) -> Self:
         return cls(
@@ -88,15 +100,6 @@ class SelectionResponse(BaseModel):
 
 # --- Structured model output ---
 
-
-class TargetSelection(BaseModel):
-    """One selected target with its confidence and rationale."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    delivery_target: str
-    confidence: float
-    rationale: str
 
 
 class SelectionGeneration(BaseModel):

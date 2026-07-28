@@ -91,15 +91,17 @@ class SelectionService:
             selections=generation.selections,
         )
         selection_ref = self._artifact_store.store_selection(artifact)
-        selected_targets = [sel.delivery_target for sel in generation.selections]
         logger.info(
             "selection stored: execution_id=%s event_id=%s selected_targets=%s "
             "selection_ref=%s log_ref=%s",
-            request.execution_id, request.event_id, selected_targets, selection_ref, log_ref,
+            request.execution_id, request.event_id,
+            [sel.delivery_target for sel in generation.selections], selection_ref, log_ref,
         )
         return SelectionResponse.succeeded(
             selection_artifact_ref=selection_ref,
-            selected_targets=selected_targets,
+            # The rich per-target list (§3): confidence + rationale inline so the
+            # Orchestrator needs no second round-trip to the stored artifact.
+            selected_targets=generation.selections,
             llm_invocation_log_ref=log_ref,
         )
 
