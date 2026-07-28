@@ -1,0 +1,135 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Skills Mobility — Mock LMS demo console static hosting (CloudFront + private
+  S3). Same 2-origin pattern as admin-ui.yml: the default behavior serves the
+  SPA from the private bucket via Origin Access Control; /api/*, /demo/* and
+  /healthz are routed to the Mock LMS Function URL (the SPA calls same-origin
+  relative paths, matching its Vite dev proxy). Gated by the SAME shared demo
+  Basic-auth Lambda@Edge function as the Admin UI (imported from the admin-ui
+  stack, so one credential covers both consoles).
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: skills-mobility
+  EnvName:
+    Type: String
+    Default: dev
+  UiBucketName:
+    Type: String
+    Description: Existing mock-lms-ui bucket (from foundation-demo.yml export).
+  MockLmsDomain:
+    Type: String
+    Description: >
+      Mock LMS Function URL host only, no scheme/path — e.g.
+      abc123.lambda-url.us-east-1.on.aws
+
+Resources:
+  Oac:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${ProjectName}-${EnvName}-mock-lms-ui-oac"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub "${ProjectName}-${EnvName} mock-lms console"
+        DefaultRootObject: index.html
+        Origins:
+          - Id: s3-spa
+            DomainName: !Sub "${UiBucketName}.s3.${AWS::Region}.amazonaws.com"
+            OriginAccessControlId: !GetAtt Oac.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+          - Id: mock-lms
+            DomainName: !Ref MockLmsDomain
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols: [TLSv1.2]
+              # The demo-action POST waits on the synchronous chain (Bedrock +
+              # cold starts); CloudFront's 30s default 504s before it finishes.
+              # 60s is the no-quota maximum and covers the warm chain.
+              OriginReadTimeout: 60
+              OriginKeepaliveTimeout: 60
+        DefaultCacheBehavior:
+          TargetOriginId: s3-spa
+          ViewerProtocolPolicy: redirect-to-https
+          # AWS managed CachingOptimized
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          LambdaFunctionAssociations:
+            - EventType: viewer-request
+              LambdaFunctionARN:
+                Fn::ImportValue: !Sub "${ProjectName}-${EnvName}-edge-auth-version-arn"
+        CacheBehaviors:
+          # POST allowed: the demo console fires events via POST /demo/.../actions.
+          - PathPattern: /demo/*
+            TargetOriginId: mock-lms
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            # AWS managed CachingDisabled + AllViewerExceptHostHeader
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+            LambdaFunctionAssociations:
+              - EventType: viewer-request
+                LambdaFunctionARN:
+                  Fn::ImportValue: !Sub "${ProjectName}-${EnvName}-edge-auth-version-arn"
+          - PathPattern: /api/*
+            TargetOriginId: mock-lms
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+            LambdaFunctionAssociations:
+              - EventType: viewer-request
+                LambdaFunctionARN:
+                  Fn::ImportValue: !Sub "${ProjectName}-${EnvName}-edge-auth-version-arn"
+          - PathPattern: /healthz
+            TargetOriginId: mock-lms
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+            LambdaFunctionAssociations:
+              - EventType: viewer-request
+                LambdaFunctionARN:
+                  Fn::ImportValue: !Sub "${ProjectName}-${EnvName}-edge-auth-version-arn"
+        CustomErrorResponses:
+          # SPA routing: send 403/404 to index.html
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+
+  # Let this distribution read the private bucket (OAC).
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref UiBucketName
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontRead
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${UiBucketName}/*"
+            Condition:
+              StringEquals:
+                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+
+Outputs:
+  DistributionDomain:
+    Value: !GetAtt Distribution.DomainName
+    Description: CloudFront domain for the Mock LMS demo console.
+  DistributionId:
+    Value: !Ref Distribution
+    Description: Use for cache invalidations after re-uploading the SPA.

@@ -180,6 +180,11 @@ Resources:
                 "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
 
 Outputs:
+  EdgeAuthVersionArn:
+    Value: !Ref EdgeAuthVersionV1
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-edge-auth-version-arn"
+    Description: Shared demo-gate Lambda@Edge version (imported by mock-lms-ui.yml).
   DistributionDomain:
     Value: !GetAtt Distribution.DomainName
     Description: CloudFront domain for the Admin UI.

@@ -97,6 +97,25 @@ aws cloudfront create-invalidation --distribution-id <id> --paths '/*' --profile
 > exercised end-to-end until the backend is deployed (it needs the orchestrator
 > Function URL domain).
 
+## Mock LMS demo console
+
+**DEPLOYED 2026-07-28**: `https://dfhmhmk3x88rp.cloudfront.net` — same 2-origin
+pattern (`infra/cloudformation/mock-lms-ui.yml`): SPA from a private bucket via
+OAC; `/api/*`, `/demo/*` (POST allowed — the console fires events) and `/healthz`
+proxy to the Mock LMS Function URL with a 60s origin timeout (the fire waits on
+the synchronous chain). Gated by the **same** shared-credential Lambda@Edge
+function as the Admin UI (imported from the admin-ui stack export), so one demo
+credential covers both consoles.
+
+```bash
+npm run build -w apps/mock-lms
+aws s3 sync apps/mock-lms/dist "s3://skills-mobility-dev-mock-lms-ui-<account>/" --profile skills --delete
+aws cloudformation deploy --template-file infra/cloudformation/mock-lms-ui.yml \
+  --stack-name skills-mobility-dev-mock-lms-ui \
+  --parameter-overrides UiBucketName=... MockLmsDomain=<mock-lms-function-url-host> \
+  --profile skills
+```
+
 ## Teardown
 
 ```bash

@@ -86,6 +86,17 @@ Resources:
       RepositoryName: !Sub "${ProjectName}/transformation-executor"
       EmptyOnDelete: true
 
+  # Mock LMS console static assets (private; fronted by CloudFront).
+  MockLmsUiBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectName}-${EnvName}-mock-lms-ui-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
   # Admin UI static assets (private; fronted by CloudFront in a later step).
   AdminUiBucket:
     Type: AWS::S3::Bucket
@@ -110,3 +121,7 @@ Outputs:
     Value: !Ref AdminUiBucket
     Export:
       Name: !Sub "${ProjectName}-${EnvName}-admin-ui-bucket"
+  MockLmsUiBucketName:
+    Value: !Ref MockLmsUiBucket
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-mock-lms-ui-bucket"
