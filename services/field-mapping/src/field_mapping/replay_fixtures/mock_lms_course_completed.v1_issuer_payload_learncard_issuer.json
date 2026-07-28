@@ -1,17 +1,19 @@
 {
-  "jsonata": "{ \"@context\": [\"https://www.w3.org/ns/credentials/v2\", \"https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json\"], \"type\": [\"VerifiableCredential\", \"OpenBadgeCredential\"], \"id\": \"urn:uuid:pipeline-injected\", \"validFrom\": \"1970-01-01T00:00:00Z\", \"issuer\": { \"id\": source_payloads.profile_resolution.issuer_id, \"type\": [\"Profile\"] }, \"credentialSubject\": { \"id\": source_payloads.profile_resolution.recipient_did, \"type\": [\"AchievementSubject\"], \"achievement\": { \"id\": \"urn:poc:achievement:course:\" & source_payloads.course.id, \"type\": [\"Achievement\"], \"name\": source_payloads.course.name, \"description\": synthesized.course_achievement_description } } }",
-  "placeholder_ids": ["course_achievement_description"],
-  "synthesis_requests": [
-    {
-      "placeholder_id": "course_achievement_description",
-      "target_path": "credentialSubject.achievement.description",
-      "source_payload_paths": [
-        "source_payloads.course.name",
-        "source_payloads.course.institution"
-      ],
-      "instruction": "Write a concise achievement description grounded only in the course name and institution, suitable for an Open Badge credential."
-    }
-  ],
-  "confidence": 0.87,
-  "rationale": "@context/type are fixed OBv3 scaffolding; issuer and recipient ids map directly from the resolved profile. The achievement name maps from the completed course name. The achievement description is synthesis-backed because it is narrative text composed from the course, not a direct copy."
+ "jsonata": "{ \"@context\": [\"https://www.w3.org/ns/credentials/v2\", \"https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json\"], \"type\": [\"VerifiableCredential\", \"OpenBadgeCredential\"], \"id\": \"urn:uuid:pipeline-injected\", \"validFrom\": \"1970-01-01T00:00:00Z\", \"issuer\": { \"id\": source_payloads.profile_resolution.issuer_id, \"type\": [\"Profile\"] }, \"credentialSubject\": { \"id\": source_payloads.profile_resolution.recipient_did, \"type\": [\"AchievementSubject\"], \"achievement\": { \"id\": \"urn:poc:achievement:course:\" & source_payloads.course.id, \"type\": [\"Achievement\"], \"name\": source_payloads.course.name, \"description\": synthesized.course_achievement_description, \"criteria\": { \"narrative\": \"Awarded for completing \" & source_payloads.course.name & \".\" } } } }",
+ "placeholder_ids": [
+  "course_achievement_description"
+ ],
+ "synthesis_requests": [
+  {
+   "placeholder_id": "course_achievement_description",
+   "target_path": "credentialSubject.achievement.description",
+   "source_payload_paths": [
+    "source_payloads.course.name",
+    "source_payloads.course.institution"
+   ],
+   "instruction": "Write a concise achievement description grounded only in the course name and institution, suitable for an Open Badge credential."
+  }
+ ],
+ "confidence": 0.87,
+ "rationale": "@context/type are fixed OBv3 scaffolding; issuer and recipient ids map directly from the resolved profile. The achievement name maps from the completed course name. The achievement description is synthesis-backed because it is narrative text composed from the course, not a direct copy."
 }
