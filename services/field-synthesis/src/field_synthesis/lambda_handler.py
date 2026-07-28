@@ -12,4 +12,7 @@ from mangum import Mangum
 
 from field_synthesis.api import create_app
 
-handler = Mangum(create_app())
+# lifespan="off": Mangum's default runs the ASGI shutdown after each event,
+# which closes long-lived clients (httpx) and breaks warm reinvocations —
+# Lambda's freeze/thaw model has no meaningful ASGI shutdown point.
+handler = Mangum(create_app(), lifespan="off")
