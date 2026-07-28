@@ -169,6 +169,11 @@ curl -s "http://localhost:8400/executions?correlation_id=<CORR_ID>" | python3 -m
   `DecisionArtifact` + a UI tweak — coordinate with Phil, owner of the admin UI).
 - **Replay ≠ live:** invocation logs read `provider: replay`; the *prompts* are real. Flip `<SERVICE>_MODE=bedrock`
   for a live model call (needs AWS creds).
+- **Degraded-mode audit (bonus beat):** best-effort seam fallbacks are now recorded on the stored step
+  (`_degraded` in the step output) instead of only process logs. In this cut two mapping steps degrade
+  by design — Field Mapping has no replay fixtures for the `credential_template` or SmartResume mapping
+  phases yet, so those steps fall back to deterministic stand-ins *and the record says so*. The issuer +
+  wallet translations run through the real Transformation Executor with full JSON-Schema validation.
 - **Routing premise (post-#77-round-2):** the LearnCard issuer is selected for *every* event — it's the only
   issuer; the course subject picks only the final delivery step (ACCY-* → wallet, FINC-* → SmartResume).
   Replay resolves the subject from the first `course_id` in the context bundle.
