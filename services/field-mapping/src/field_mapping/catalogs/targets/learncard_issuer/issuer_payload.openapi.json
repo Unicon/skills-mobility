@@ -112,6 +112,7 @@
                 "description": "Alternative identifiers for the subject (e.g. hashed email).",
                 "items": {
                   "type": "object",
+                  "required": ["type", "hashed", "identityHash", "identityType"],
                   "properties": {
                     "type": { "type": "string", "description": "Fixed to 'IdentityObject'.", "x-no-mapping-behavior": "disallowed", "examples": ["IdentityObject"] },
                     "hashed": { "type": "boolean", "description": "Whether identityHash is hashed.", "x-no-mapping-behavior": "blank", "examples": [true] },
@@ -138,6 +139,7 @@
                 "description": "Performance results for the subject.",
                 "items": {
                   "type": "object",
+                  "required": ["type"],
                   "properties": {
                     "type": { "type": "array", "items": { "type": "string" }, "description": "Must include 'Result'.", "x-no-mapping-behavior": "disallowed", "examples": [["Result"]] },
                     "achievedLevel": { "type": "string", "description": "URI of the RubricCriterionLevel achieved.", "x-no-mapping-behavior": "blank", "examples": ["urn:poc:level:mastery"] },
@@ -156,6 +158,7 @@
               "source": {
                 "type": "object",
                 "description": "Originating institution profile.",
+                "required": ["id", "type"],
                 "properties": {
                   "id": { "type": "string", "description": "Institution DID or URI.", "x-no-mapping-behavior": "blank", "examples": ["did:web:university.example.com"] },
                   "type": { "type": "array", "items": { "type": "string" }, "description": "Must include 'Profile'.", "x-no-mapping-behavior": "disallowed", "examples": [["Profile"]] },
@@ -167,6 +170,16 @@
                 "description": "Academic term when the credential was earned.",
                 "x-no-mapping-behavior": "blank",
                 "examples": ["Fall 2023"]
+              },
+              "image": {
+                "type": "object",
+                "description": "Image representing the subject's achievement display (AchievementSubject's own image \u2014 distinct from the achievement's badge image and the credential-level image).",
+                "required": ["id", "type"],
+                "properties": {
+                  "id": { "type": "string", "description": "URI or data URI for the subject image.", "x-no-mapping-behavior": "blank", "examples": ["https://example.com/subjects/learner-achievement.png"] },
+                  "type": { "type": "string", "description": "Fixed to 'Image'.", "x-no-mapping-behavior": "disallowed", "examples": ["Image"] },
+                  "caption": { "type": "string", "description": "Short caption for the subject image.", "x-no-mapping-behavior": "blank", "examples": ["Learner achievement display"] }
+                }
               },
               "achievement": {
                 "type": "object",
@@ -195,6 +208,7 @@
                     "description": "Framework alignments — used by SmartResume SkillSync to match skills to competency frameworks.",
                     "items": {
                       "type": "object",
+                      "required": ["type", "targetName", "targetUrl"],
                       "properties": {
                         "type": { "type": "array", "items": { "type": "string" }, "description": "Must include 'Alignment'.", "x-no-mapping-behavior": "disallowed", "examples": [["Alignment"]] },
                         "targetName": { "type": "string", "description": "Name of the aligned framework target.", "x-no-mapping-behavior": "blank", "examples": ["Python Programming"] },
@@ -209,6 +223,7 @@
                   "creator": {
                     "type": "object",
                     "description": "Profile of the achievement creator/author.",
+                    "required": ["id", "type"],
                     "properties": {
                       "id": { "type": "string", "description": "Creator DID or URI.", "x-no-mapping-behavior": "blank", "examples": ["did:web:university.example.com"] },
                       "type": { "type": "array", "items": { "type": "string" }, "description": "Must include 'Profile'.", "x-no-mapping-behavior": "disallowed", "examples": [["Profile"]] },
@@ -254,6 +269,7 @@
                     "description": "Alternative identifiers for the achievement.",
                     "items": {
                       "type": "object",
+                      "required": ["type", "identifier", "identifierType"],
                       "properties": {
                         "type": { "type": "string", "description": "Fixed to 'IdentifierEntry'.", "x-no-mapping-behavior": "disallowed", "examples": ["IdentifierEntry"] },
                         "identifier": { "type": "string", "description": "The identifier value.", "x-no-mapping-behavior": "blank", "examples": ["course-12345"] },
@@ -266,6 +282,7 @@
                     "description": "Related achievements (e.g. prerequisites or follow-on credentials).",
                     "items": {
                       "type": "object",
+                      "required": ["id", "type"],
                       "properties": {
                         "id": { "type": "string", "description": "URI of the related achievement.", "x-no-mapping-behavior": "blank", "examples": ["urn:poc:achievement:python-advanced"] },
                         "type": { "type": "array", "items": { "type": "string" }, "description": "Must include 'Related'.", "x-no-mapping-behavior": "disallowed", "examples": [["Related"]] },
@@ -279,6 +296,7 @@
                     "description": "Describes possible result types/rubrics for this achievement.",
                     "items": {
                       "type": "object",
+                      "required": ["id", "type", "name", "resultType"],
                       "properties": {
                         "id": { "type": "string", "description": "URI identifying this result description.", "x-no-mapping-behavior": "blank", "examples": ["urn:poc:resultdesc:score"] },
                         "type": { "type": "array", "items": { "type": "string" }, "description": "Must include 'ResultDescription'.", "x-no-mapping-behavior": "disallowed", "examples": [["ResultDescription"]] },
@@ -317,6 +335,7 @@
             "description": "Supporting documentation for the credential.",
             "items": {
               "type": "object",
+              "required": ["type"],
               "properties": {
                 "type": { "type": "array", "items": { "type": "string" }, "description": "Must include 'Evidence'.", "x-no-mapping-behavior": "disallowed", "examples": [["Evidence"]] },
                 "id": { "type": "string", "description": "URI pointing to the evidence.", "x-no-mapping-behavior": "blank", "examples": ["https://example.com/portfolio/python-project"] },
