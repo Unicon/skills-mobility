@@ -22,22 +22,28 @@ describe("StepRow", () => {
     cleanup();
   });
 
-  test.each(["generate_issuer_payload_mapping", "generate_issuer_payload_synthesis", "generate_wallet_payload_mapping"])(
-    "shows the AI marker for the AI-backed action %s",
-    (actionId) => {
-      render(<StepRow step={step({ action_id: actionId })} activePhase={null} onActiveChange={() => {}} />);
-      expect(screen.getByRole("img", { name: "AI-generated step" })).toBeTruthy();
-    },
-  );
+  test.each([
+    "generate_credential_template_mapping",
+    "generate_credential_template_synthesis",
+    "generate_issuer_payload_mapping",
+    "generate_issuer_payload_synthesis",
+    "generate_learncard_wallet_payload_mapping",
+    "generate_smartresume_payload_mapping",
+  ])("shows the AI marker for the AI-backed action %s", (actionId) => {
+    render(<StepRow step={step({ action_id: actionId })} activePhase={null} onActiveChange={() => {}} />);
+    expect(screen.getByRole("img", { name: "AI-generated step" })).toBeTruthy();
+  });
 
-  test.each(["execute_issuer_payload_translation", "execute_wallet_payload_translation"])(
-    "shows a phase tag but no AI marker for the deterministic transformation step %s",
-    (actionId) => {
-      render(<StepRow step={step({ action_id: actionId })} activePhase={null} onActiveChange={() => {}} />);
-      expect(screen.queryByRole("img", { name: "AI-generated step" })).toBeNull();
-      expect(screen.getByText("field mapping")).toBeTruthy();
-    },
-  );
+  test.each([
+    "execute_credential_template_translation",
+    "execute_issuer_payload_translation",
+    "execute_learncard_wallet_payload_translation",
+    "execute_smartresume_payload_translation",
+  ])("shows a phase tag but no AI marker for the deterministic transformation step %s", (actionId) => {
+    render(<StepRow step={step({ action_id: actionId })} activePhase={null} onActiveChange={() => {}} />);
+    expect(screen.queryByRole("img", { name: "AI-generated step" })).toBeNull();
+    expect(screen.getByText("field mapping")).toBeTruthy();
+  });
 
   test("shows the right phase label for a workflow_actions_plan step", () => {
     render(

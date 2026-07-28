@@ -76,7 +76,7 @@ describe("WorkflowDetail", () => {
     vi.clearAllMocks();
   });
 
-  test("hovering the field mapping node highlights exactly its five transformation step rows", () => {
+  test("hovering the field mapping node highlights exactly its transformation step rows", () => {
     mockedUseExecution.mockReturnValue({ execution: happyPathExecution, error: null });
     render(<WorkflowDetail executionId="exec_1" onBack={() => {}} />);
 
@@ -86,15 +86,11 @@ describe("WorkflowDetail", () => {
       .filter((s) => screen.getByText(s.action_id).closest("button")?.className.includes("highlighted"))
       .map((s) => s.action_id);
 
-    expect(highlightedActionIds.sort()).toEqual(
-      [
-        "generate_issuer_payload_mapping",
-        "generate_issuer_payload_synthesis",
-        "execute_issuer_payload_translation",
-        "generate_wallet_payload_mapping",
-        "execute_wallet_payload_translation",
-      ].sort(),
+    const expectedFieldMappingActionIds = Object.keys(STEP_PHASE).filter(
+      (actionId) => STEP_PHASE[actionId] === "field_mapping",
     );
+
+    expect(highlightedActionIds.sort()).toEqual(expectedFieldMappingActionIds.sort());
   });
 
   test("hovering a transformation step row highlights the field mapping node", () => {

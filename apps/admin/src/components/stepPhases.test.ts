@@ -5,13 +5,18 @@ import { PHASE_LABEL, STEP_PHASE, stepPhase } from "./stepPhases";
 describe("stepPhase", () => {
   test.each([
     ["resolve_learncard_profile", "workflow_actions_plan"],
+    ["generate_credential_template_mapping", "field_mapping"],
+    ["generate_credential_template_synthesis", "field_mapping"],
+    ["execute_credential_template_translation", "field_mapping"],
     ["generate_issuer_payload_mapping", "field_mapping"],
     ["generate_issuer_payload_synthesis", "field_mapping"],
     ["execute_issuer_payload_translation", "field_mapping"],
     ["issue_learncard_badge", "workflow_actions_plan"],
-    ["generate_wallet_payload_mapping", "field_mapping"],
-    ["execute_wallet_payload_translation", "field_mapping"],
+    ["generate_learncard_wallet_payload_mapping", "field_mapping"],
+    ["execute_learncard_wallet_payload_translation", "field_mapping"],
     ["deliver_to_learncard_wallet", "delivered"],
+    ["generate_smartresume_payload_mapping", "field_mapping"],
+    ["execute_smartresume_payload_translation", "field_mapping"],
     ["deliver_to_smartresume", "delivered"],
   ])("maps %s to %s", (actionId, expectedPhase) => {
     expect(stepPhase(actionId)).toBe(expectedPhase);
@@ -21,13 +26,18 @@ describe("stepPhase", () => {
     expect(stepPhase("some_future_action")).toBeNull();
   });
 
-  test("the five transformation steps all map to field_mapping", () => {
+  test("the ten transformation steps (credential_template + issuer + wallet + smartresume) all map to field_mapping", () => {
     const transformationSteps = [
+      "generate_credential_template_mapping",
+      "generate_credential_template_synthesis",
+      "execute_credential_template_translation",
       "generate_issuer_payload_mapping",
       "generate_issuer_payload_synthesis",
       "execute_issuer_payload_translation",
-      "generate_wallet_payload_mapping",
-      "execute_wallet_payload_translation",
+      "generate_learncard_wallet_payload_mapping",
+      "execute_learncard_wallet_payload_translation",
+      "generate_smartresume_payload_mapping",
+      "execute_smartresume_payload_translation",
     ];
     for (const actionId of transformationSteps) {
       expect(stepPhase(actionId)).toBe("field_mapping");
@@ -53,8 +63,8 @@ describe("stepPhase", () => {
       (actionId) => STEP_PHASE[actionId] === "field_mapping",
     );
     const aiActions = fieldMappingActions.filter(isAiBackedAction);
-    expect(aiActions.length).toBe(3);
-    expect(fieldMappingActions.length).toBe(5);
+    expect(aiActions.length).toBe(6);
+    expect(fieldMappingActions.length).toBe(10);
     for (const actionId of aiActions) {
       expect(fieldMappingActions).toContain(actionId);
     }
