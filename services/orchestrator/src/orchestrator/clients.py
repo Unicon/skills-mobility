@@ -331,8 +331,11 @@ class HttpDeliveryTargetsClient:
             targets=[s["delivery_target"] for s in selections],
             confidence=min(confidences) if confidences else None,
             rationale="; ".join(
-                f"{s['delivery_target']}: {s['rationale']}" for s in selections if s.get("rationale")
-            ) or None,
+                f"{s['delivery_target']}: {s['rationale']}"
+                for s in selections
+                if s.get("rationale")
+            )
+            or None,
         )
 
 
