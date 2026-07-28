@@ -1,0 +1,155 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Skills Mobility — IAM for the demo deploy, as code. Captures every
+  account-level permission change made for this project so an open-source
+  consumer (or a fresh AWS account) can reproduce the setup with one stack
+  instead of the ad-hoc CLI steps in infra/iam/README.md.
+
+  History note for THIS account (584569945336): the execution role below was
+  originally hand-created by Ops via `aws iam create-role` (2026-07-23) from
+  the JSON in infra/iam/, and deploy permissions were ultimately granted by
+  assigning the AdministratorAccess permission set to the deployer in IAM
+  Identity Center — an Identity Center assignment lives in the org management
+  account and cannot be expressed in a member-account template, so it is
+  documented here as prose. Deploying this stack in this account requires
+  first deleting (or importing) the hand-created role of the same name.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: skills-mobility
+  EnvName:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  CreateDeployRole:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    Description: >
+      Also create the least-privilege deploy role (PowerUserAccess + scoped
+      iam:PassRole). Unnecessary when the deployer already holds
+      AdministratorAccess (this project's eventual setup) — provided for
+      consumers who prefer not to grant admin. Trust is limited to
+      PowerUserAccess SSO sessions in this account; edit the trust condition
+      to match your identity setup.
+  GithubRepo:
+    Type: String
+    Default: ""
+    Description: >
+      Optional "org/repo" (e.g. Unicon/skills-mobility). When set together
+      with CreateDeployRole=true, the deploy role additionally trusts GitHub
+      Actions on that repo's main branch via the account's GitHub OIDC
+      provider (which must already exist:
+      token.actions.githubusercontent.com, audience sts.amazonaws.com).
+
+Conditions:
+  WantDeployRole: !Equals [!Ref CreateDeployRole, "true"]
+  WantGithubTrust:
+    !And [!Condition WantDeployRole, !Not [!Equals [!Ref GithubRepo, ""]]]
+
+Resources:
+
+  # The shared Lambda execution role every demo service runs as: CloudWatch
+  # Logs (managed basic-execution policy), CRUD on the execution-state table,
+  # and Bedrock invocation for the LLM Decision Services.
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-${EnvName}-lambda-exec"
+      Description: Shared execution role for the Skills Mobility demo Lambdas.
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: execution-state-table-crud
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ExecutionStateTableCrud
+                Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectName}-${EnvName}-execution-state"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectName}-${EnvName}-execution-state/index/*"
+        - PolicyName: bedrock-invoke
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: BedrockInvoke
+                Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                Resource:
+                  # Cross-region inference profiles resolve to foundation
+                  # models in other regions, so both ARNs are needed.
+                  - arn:aws:bedrock:*::foundation-model/*
+                  - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
+
+  # OPTIONAL least-privilege deploy identity (see CreateDeployRole above):
+  # everything PowerUserAccess allows plus the one gap — iam:PassRole on the
+  # project's roles, and only when passed to Lambda. This is the documented
+  # alternative to granting the deployer AdministratorAccess.
+  DeployRole:
+    Type: AWS::IAM::Role
+    Condition: WantDeployRole
+    Properties:
+      RoleName: !Sub "${ProjectName}-${EnvName}-deploy"
+      Description: >-
+        Assumed for Skills Mobility deploys: PowerUserAccess + iam:PassRole
+        scoped to the project's Lambda roles.
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root" }
+            Action: sts:AssumeRole
+            Condition:
+              ArnLike:
+                aws:PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_PowerUserAccess_*"
+          - !If
+            - WantGithubTrust
+            - Effect: Allow
+              Principal:
+                Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com"
+              Action: sts:AssumeRoleWithWebIdentity
+              Condition:
+                StringEquals:
+                  token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                StringLike:
+                  token.actions.githubusercontent.com:sub: !Sub "repo:${GithubRepo}:ref:refs/heads/main"
+            - !Ref AWS::NoValue
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/PowerUserAccess
+      Policies:
+        - PolicyName: passrole
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: PassProjectLambdaRoles
+                Effect: Allow
+                Action: iam:PassRole
+                Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/${ProjectName}-${EnvName}-*"
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: lambda.amazonaws.com
+
+Outputs:
+  LambdaExecutionRoleArn:
+    Value: !GetAtt LambdaExecutionRole.Arn
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-lambda-exec-arn"
+  DeployRoleArn:
+    Condition: WantDeployRole
+    Value: !GetAtt DeployRole.Arn
