@@ -6,9 +6,7 @@ already-validated mapping artifact, evaluates it against the supplied data, and
 returns a normalized result — always HTTP 200, `status: "succeeded"` or
 `status: "failed"`.  The Transformation Executor is **not** an orchestrator and
 **not** a transformation designer; it only runs what the Field Mapping service
-produced and the Orchestrator approved. See the architectural contract in AGENTS.md:
-LLM output never flows straight to delivery — this service is the deterministic
-step between the two.
+produced and the Orchestrator approved.
 
 ## Setup
 

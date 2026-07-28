@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",
     "jsonata-python>=0.5",
+    "jsonschema>=4.21",
     "pydantic>=2.7",
     "pydantic-settings>=2.4",
     "uvicorn>=0.30",

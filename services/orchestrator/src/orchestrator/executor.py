@@ -11,7 +11,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
-from orchestrator.actions import ACTIONS, ActionDeps
+from orchestrator.actions import ACTIONS, DEGRADED_KEY, ActionDeps
 from orchestrator.schemas import DeliveryPhasePlan, InputBinding, PlanStep, StepResult
 from orchestrator.store import ExecutionStoreProtocol
 
@@ -74,6 +74,11 @@ def execute_plan(
             )
             return "failed", {}
 
+        # A degraded marker means a best-effort seam fell back (review #102
+        # item 2): persist it on the stored step so the audit record shows the
+        # degradation, but strip it from the value threaded to downstream steps
+        # (delivery payloads must not carry bookkeeping keys).
+        degraded = output.pop(DEGRADED_KEY, None)
         failed = output.get("status") == "failed"
         store.save_step(
             execution_id,
@@ -81,7 +86,7 @@ def execute_plan(
                 step_id=step.step_id,
                 action_id=step.action_id,
                 status="failed" if failed else "succeeded",
-                output=output,
+                output={**output, DEGRADED_KEY: degraded} if degraded else output,
                 error=output.get("error") if failed else None,
                 started_at=started,
                 finished_at=_now(),
@@ -91,6 +96,11 @@ def execute_plan(
             "step %s: execution_id=%s action=%s status=%s",
             step.step_id, execution_id, step.action_id, "failed" if failed else "succeeded",
         )
+        if degraded:
+            logger.warning(
+                "step %s ran degraded: execution_id=%s action=%s reason=%s",
+                step.step_id, execution_id, step.action_id, degraded,
+            )
         if failed:
             return "failed", {}
         outputs[step.step_id] = output

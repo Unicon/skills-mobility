@@ -31,6 +31,7 @@ dev = [
     # DynamoDB execution store (orchestrator) + its in-process AWS fake for tests.
     "boto3>=1.35",
     "moto>=5",
+    "types-jsonschema>=4.21",
 ]
 
 [tool.ruff]
