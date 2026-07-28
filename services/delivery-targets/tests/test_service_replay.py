@@ -39,8 +39,9 @@ def test_accounting_replay_routes_issuer_plus_wallet(
     assert resp.status == "succeeded"
     assert resp.selection_artifact_ref is not None
     assert resp.llm_invocation_log_ref is not None
-    assert "learncard_issuer" in resp.selected_targets
-    assert "learncard_wallet" in resp.selected_targets
+    names = [t.delivery_target for t in resp.selected_targets]
+    assert "learncard_issuer" in names
+    assert "learncard_wallet" in names
     # The stored artifact round-trips.
     artifact = artifact_store.load_selection(resp.selection_artifact_ref)
     assert artifact.event_type == "skill_mastered"
@@ -115,7 +116,11 @@ def test_finance_replay_routes_issuer_plus_smart_resume(
     resp = make_service().select(finance_request)
 
     assert resp.status == "succeeded"
-    assert resp.selected_targets == ["learncard_issuer", "smart_resume"]
+    assert [t.delivery_target for t in resp.selected_targets] == [
+        "learncard_issuer", "smart_resume",
+    ]
+    # §3: confidence + rationale ride the response inline.
+    assert all(t.confidence is not None and t.rationale for t in resp.selected_targets)
     artifact = artifact_store.load_selection(resp.selection_artifact_ref or "")
     assert [sel.delivery_target for sel in artifact.selections] == [
         "learncard_issuer", "smart_resume",
@@ -165,8 +170,9 @@ def test_unresolvable_subject_falls_back_to_default_fixture(
     )
     resp = make_service().select(no_subject)
     assert resp.status == "succeeded"
-    assert "learncard_issuer" in resp.selected_targets
-    assert "learncard_wallet" in resp.selected_targets
+    names = [t.delivery_target for t in resp.selected_targets]
+    assert "learncard_issuer" in names
+    assert "learncard_wallet" in names
 
 
 def test_nested_course_id_resolves_subject_from_context_bundle(
@@ -188,7 +194,9 @@ def test_nested_course_id_resolves_subject_from_context_bundle(
     )
     resp = make_service().select(bundle_shaped)
     assert resp.status == "succeeded"
-    assert resp.selected_targets == ["learncard_issuer", "smart_resume"]
+    assert [t.delivery_target for t in resp.selected_targets] == [
+        "learncard_issuer", "smart_resume",
+    ]
 
 
 def test_unknown_target_in_generation_stores_failed_artifact(

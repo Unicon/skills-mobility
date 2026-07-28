@@ -59,7 +59,8 @@ curl -s localhost:8130/select-delivery-targets \
           "recipient_profile_id": "smi-demo-learner"
         }
       }'
-# -> {"status":"succeeded","selected_targets":["learncard_issuer","learncard_wallet"],...}
+# -> {"status":"succeeded","selected_targets":[{"delivery_target":"learncard_issuer",
+#      "confidence":0.95,"rationale":"..."}, {"delivery_target":"learncard_wallet",...}],...}
 # Swap course_id to FINC-106 and the selection becomes issuer + smart_resume.
 ```
 

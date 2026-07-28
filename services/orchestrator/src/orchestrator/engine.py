@@ -21,6 +21,7 @@ from orchestrator.clients import (
     EnvelopeContext,
     FieldMappingClient,
     ProfileResolverClient,
+    TargetsDecision,
     WorkflowActionsClient,
 )
 from orchestrator.executor import execute_plan
@@ -111,10 +112,18 @@ def run_workflow(
         return _metadata(store, execution_id)
 
     # Delivery target selection (best-effort; deterministic fallback).
-    targets = _resolve_targets(delivery_targets, event_type, source_system, bundle, envelope)
+    targets_decision = _resolve_targets(
+        delivery_targets, event_type, source_system, bundle, envelope
+    )
+    targets = targets_decision.targets
     store.record_decision(
         execution_id,
-        DecisionArtifact(kind="delivery_targets", outcome=", ".join(targets)),
+        DecisionArtifact(
+            kind="delivery_targets",
+            outcome=", ".join(targets),
+            confidence=targets_decision.confidence,
+            rationale=targets_decision.rationale or "",
+        ),
     )
     key = planner.applicability_key(event_type, targets)
     plan = store.get_plan_by_key(key) if reusable_plan_lookup else None
@@ -211,15 +220,15 @@ def _resolve_targets(
     source_system: str,
     bundle: dict[str, Any],
     ctx: EnvelopeContext,
-) -> list[str]:
+) -> TargetsDecision:
     """Delivery Targets selection, best-effort: fall back to the deterministic
-    fixed target set if unconfigured or the call fails."""
+    fixed target set (no confidence/rationale) if unconfigured or the call fails."""
     if dt is not None:
         try:
             return dt.select_targets(event_type, source_system, bundle, ctx)
         except Exception as err:  # noqa: BLE001 — best-effort seam
             logger.warning("delivery-targets failed (non-fatal; deterministic targets): %s", err)
-    return planner.select_delivery_targets()
+    return TargetsDecision(targets=planner.select_delivery_targets())
 
 
 def _resolve_plan(
