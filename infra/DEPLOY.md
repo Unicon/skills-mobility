@@ -8,7 +8,7 @@ prerequisites are in place, the backend is **one command**.
 | | State |
 |---|---|
 | Foundation stack (DynamoDB `pk` table + 9 ECR repos + UI bucket) | ✅ deployed (`skills-mobility-dev-foundation`) |
-| 9 service images in ECR (the full chain incl. `field-mapping, field-synthesis, transformation-executor`) @ `6053c55` (built from `demo/e2e-aligned`) | ✅ pushed (arm64, single-manifest) |
+| 9 service images in ECR (the full chain incl. `field-mapping, field-synthesis, transformation-executor`) @ `ef5320b` (built from `demo/e2e-aligned` — includes all ten review-round fixes) | ✅ pushed (arm64, single-manifest) |
 | **Lambda execution role** `skills-mobility-dev-lambda-exec` | ✅ created by Ops (now also codified in `iam-demo.yml`) |
 | **Deploy permissions** | ✅ Ops granted the deployer **AdministratorAccess** (2026-07-28) — the planned deploy role is moot for this account; `iam-demo.yml` still carries it as the least-privilege alternative for open-source consumers |
 | Fresh SSO login | `aws sso login --profile skills` (token expires ~8h) |
