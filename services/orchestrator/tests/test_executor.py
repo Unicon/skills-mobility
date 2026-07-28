@@ -183,6 +183,7 @@ def test_credential_template_translation_derives_achievement_from_outcome():
         profile_resolver=StubProfileResolver(),
         delivery_router=StubDeliveryRouter(),
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=_ENVELOPE,
     )
@@ -212,6 +213,7 @@ def test_credential_template_translation_falls_back_when_outcome_absent():
         profile_resolver=StubProfileResolver(),
         delivery_router=StubDeliveryRouter(),
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=_ENVELOPE,
     )
