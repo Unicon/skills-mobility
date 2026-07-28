@@ -22,6 +22,18 @@ class LMSClient(Protocol):
     def get(self, path: str) -> LMSResponse: ...
 
 
+def _encode_bracket_params(path: str) -> str:
+    """Percent-encode literal ``[`` / ``]`` in the query string (Canvas-style
+    ``include[]=`` / ``uuids[]=`` params). httpx passes them through verbatim —
+    valid per the URI grammar, and fine against a local uvicorn — but Lambda
+    Function URLs mishandle unencoded brackets and the request never parses
+    (found on the first live AWS run; local compose can't reproduce it)."""
+    base, sep, query = path.partition("?")
+    if not sep:
+        return path
+    return f"{base}?{query.replace('[', '%5B').replace(']', '%5D')}"
+
+
 class HttpxLMSClient:
     """Real client: GETs ``{base_url}{path}`` against the Mock LMS."""
 
@@ -29,7 +41,7 @@ class HttpxLMSClient:
         self._client = httpx.Client(base_url=base_url, timeout=timeout)
 
     def get(self, path: str) -> LMSResponse:
-        resp = self._client.get(path)
+        resp = self._client.get(_encode_bracket_params(path))
         try:
             data: Any = resp.json()
         except ValueError:

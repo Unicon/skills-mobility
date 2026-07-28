@@ -144,6 +144,17 @@ Resources:
       Principal: "*"
       FunctionUrlAuthType: NONE
 
+  # Anonymous URL invocation ALSO requires lambda:InvokeFunction, scoped to the
+  # Function-URL path (diagnosed with Ops 2026-07-28: with only the
+  # InvokeFunctionUrl statement above, AuthType NONE URLs return 403).
+  FunctionInvokeViaUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt LambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: "*"
+      InvokedViaFunctionUrl: true
+
 Outputs:
   FunctionUrl:
     Value: !GetAtt FunctionUrl.FunctionUrl
