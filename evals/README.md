@@ -61,12 +61,12 @@ Six hand-labeled scenarios for the Delivery Targets service
 - `event_type`, `source_system`, `learner_context`
 - `expected_targets` — list of target strings (e.g. `["learncard_issuer", "learncard_wallet"]`)
 
-Labels follow the resolved #75 routing — the bifurcation is by course subject via
+Labels follow the resolved routing — the bifurcation is by course subject via
 the institution's partnership associations:
 
 - Accounting (`ACCY-*`) courses → `["learncard_issuer", "learncard_wallet"]`
   (Pretend Association of Accountants / LearnCard)
-- Finance (`FINC-*`) courses → `["smart_resume"]`
+- Finance (`FINC-*`) courses → `["learncard_issuer", "smart_resume"]`
   (Pretend Association of Finance / SmartResume)
 
 `issue_learncard_badge` runs first for every credential; the selected target

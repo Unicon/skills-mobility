@@ -11,7 +11,7 @@ Confirming the decisions work takes **two** complementary views:
 | **Per-run explainability** | *What did the LLM decide for this event, and why?* | Admin UI decision pipeline (#82): each service is a node showing decision + `ConfidenceMeter` + rationale + the ADR-0010 §60 invocation log ("View raw": model, prompt, tokens, latency) | one execution |
 | **Aggregate accuracy** | *Across many labelled scenarios, how often is the decision right?* | The DeepEval harness in [`evals/`](../../evals/README.md) → a scorecard | a frozen corpus |
 
-Phil's #82 makes a single run legible; the harness makes the pattern measurable. **You need both** — a single legible run tells you the machinery ran, not that the decision was correct.
+The Admin UI makes a single run legible; the harness makes the pattern measurable. **You need both** — a single legible run tells you the machinery ran, not that the decision was correct.
 
 ## The oracle is a labelled corpus — *not* the deterministic stub
 
@@ -43,7 +43,7 @@ A minimal DeepEval harness ([`evals/`](../../evals/README.md)) covers the two cl
 ## Findings this surfaces
 
 - **The gate is reliable** on the labelled scenarios — a strong, demoable result.
-- **Delivery Targets' accuracy depends on the routing signal being present.** With an explicit credential-enablement signal in `learner_context`, DT discriminates correctly; on real Mock LMS events (which don't yet carry that signal) it routes almost everything to SmartResume. That is exactly the **open routing-use-case question from the #75 review** — the eval *quantifies* the gap instead of leaving it to eyeballing. DT's corpus labels are therefore marked **provisional** until that use case is settled.
+- **Delivery Targets' accuracy depends on the routing signal being present.** With an explicit credential-enablement signal in `learner_context`, DT discriminates correctly; on real Mock LMS events (which don't yet carry that signal) it routes almost everything to SmartResume. DT's corpus labels are therefore marked **provisional** until that use case is settled.
 
 ## Next steps
 

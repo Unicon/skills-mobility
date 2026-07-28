@@ -37,14 +37,26 @@ _SCORECARD_PATH = Path(__file__).parent / "last-scorecard.md"
 # ---------------------------------------------------------------------------
 
 
-class ExactMatchMetric(BaseMetric):
-    """Gate service: actual decision string must equal the expected label."""
+class _DeterministicMetric(BaseMetric):
+    """Shared shell for the deterministic (non-LLM-judge) metrics: pass/fail
+    threshold, sync-delegating async measure, and success bookkeeping. Subclasses
+    implement ``measure()`` only."""
 
     def __init__(self) -> None:
         self.threshold = 1.0
         self.score: float = 0.0
         self.success: bool = False
         self.reason: str = ""
+
+    async def a_measure(self, test_case: LLMTestCase, *args: Any, **kwargs: Any) -> float:
+        return self.measure(test_case, *args, **kwargs)
+
+    def is_successful(self) -> bool:
+        return bool(self.success)
+
+
+class ExactMatchMetric(_DeterministicMetric):
+    """Gate service: actual decision string must equal the expected label."""
 
     @property
     def __name__(self) -> str:  # type: ignore[override]
@@ -58,21 +70,9 @@ class ExactMatchMetric(BaseMetric):
         self.reason = "match" if self.success else f"got '{actual}', expected '{expected}'"
         return self.score
 
-    async def a_measure(self, test_case: LLMTestCase, *args: Any, **kwargs: Any) -> float:
-        return self.measure(test_case, *args, **kwargs)
 
-    def is_successful(self) -> bool:
-        return bool(self.success)
-
-
-class SetMatchMetric(BaseMetric):
+class SetMatchMetric(_DeterministicMetric):
     """Delivery-targets service: set(actual_targets) must equal set(expected_targets)."""
-
-    def __init__(self) -> None:
-        self.threshold = 1.0
-        self.score: float = 0.0
-        self.success: bool = False
-        self.reason: str = ""
 
     @property
     def __name__(self) -> str:  # type: ignore[override]
@@ -102,12 +102,6 @@ class SetMatchMetric(BaseMetric):
             self.reason = "; ".join(parts)
         return self.score
 
-    async def a_measure(self, test_case: LLMTestCase, *args: Any, **kwargs: Any) -> float:
-        return self.measure(test_case, *args, **kwargs)
-
-    def is_successful(self) -> bool:
-        return bool(self.success)
-
 
 # ---------------------------------------------------------------------------
 # Service callers
@@ -116,6 +110,21 @@ class SetMatchMetric(BaseMetric):
 
 def _fresh_ids() -> tuple[str, str]:
     return f"eval-exec-{uuid.uuid4().hex[:8]}", f"eval-evt-{uuid.uuid4().hex[:8]}"
+
+
+def _post_json(
+    client: httpx.Client, url: str, path: str, payload: dict[str, Any]
+) -> dict[str, Any]:
+    """POST a service request and return the parsed JSON body (or an error dict)."""
+    try:
+        resp = client.post(f"{url}{path}", json=payload, timeout=30.0)
+        resp.raise_for_status()
+        body: dict[str, Any] = resp.json()
+        return body
+    except httpx.HTTPStatusError as exc:
+        return {"_error": f"HTTP {exc.response.status_code}: {exc.response.text[:200]}"}
+    except Exception as exc:  # noqa: BLE001
+        return {"_error": str(exc)}
 
 
 def call_gate(client: httpx.Client, wa_url: str, scenario: dict[str, Any]) -> dict[str, Any]:
@@ -128,14 +137,7 @@ def call_gate(client: httpx.Client, wa_url: str, scenario: dict[str, Any]) -> di
         "event": scenario["event"],
         "context_bundle": scenario["context_bundle"],
     }
-    try:
-        resp = client.post(f"{wa_url}/pre-target-gate", json=payload, timeout=30.0)
-        resp.raise_for_status()
-        return resp.json()
-    except httpx.HTTPStatusError as exc:
-        return {"_error": f"HTTP {exc.response.status_code}: {exc.response.text[:200]}"}
-    except Exception as exc:  # noqa: BLE001
-        return {"_error": str(exc)}
+    return _post_json(client, wa_url, "/pre-target-gate", payload)
 
 
 def call_dt(client: httpx.Client, dt_url: str, scenario: dict[str, Any]) -> dict[str, Any]:
@@ -148,14 +150,7 @@ def call_dt(client: httpx.Client, dt_url: str, scenario: dict[str, Any]) -> dict
         "source_system": scenario["source_system"],
         "learner_context": scenario["learner_context"],
     }
-    try:
-        resp = client.post(f"{dt_url}/select-delivery-targets", json=payload, timeout=30.0)
-        resp.raise_for_status()
-        return resp.json()
-    except httpx.HTTPStatusError as exc:
-        return {"_error": f"HTTP {exc.response.status_code}: {exc.response.text[:200]}"}
-    except Exception as exc:  # noqa: BLE001
-        return {"_error": str(exc)}
+    return _post_json(client, dt_url, "/select-delivery-targets", payload)
 
 
 # ---------------------------------------------------------------------------
@@ -328,7 +323,7 @@ def render_scorecard(
         total = len(dt_results)
         pct = int(100 * passed / total) if total else 0
         lines += [
-            "## Delivery Targets (provisional labels — routing use case open, #75)",
+            "## Delivery Targets (provisional labels)",
             "",
             _dt_table(dt_results),
             "",
