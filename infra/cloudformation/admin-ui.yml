@@ -22,8 +22,81 @@ Parameters:
     Description: >
       Orchestrator Function URL host only, no scheme/path — e.g.
       abc123.lambda-url.us-east-1.on.aws
+  DemoAuthCredential:
+    Type: String
+    NoEcho: true
+    Description: >
+      base64("user:password") for the shared demo Basic-auth gate (generate:
+      printf '%s' 'user:pass' | base64). Supplied at deploy time — never
+      committed. One shared credential; rotate by redeploying with a new value
+      AND a bumped EdgeAuthVersionV* logical id (CloudFormation only publishes
+      a new Lambda version when the version resource is replaced).
 
 Resources:
+  # Shared-credential demo gate (ADR-0002: demo auth at the CloudFront layer,
+  # not Cognito). Lambda@Edge viewer-request, so EVERY request — cached SPA
+  # assets and the /executions* API alike — authenticates before CloudFront
+  # serves anything. Pattern from Phil's demo-auth gadget; implemented in
+  # Python (Lambda@Edge supports it; AGENTS.md keeps TS to UI/vendor code).
+  # Not user auth: one shared credential, encoded (not encrypted) in the
+  # function config — acceptable for a mock-data demo.
+  EdgeAuthRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: Execution role for the Skills Mobility demo edge-auth function.
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [lambda.amazonaws.com, edgelambda.amazonaws.com]
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  EdgeAuthFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${EnvName}-edge-auth"
+      Runtime: python3.12
+      Handler: index.handler
+      Role: !GetAtt EdgeAuthRole.Arn
+      MemorySize: 128
+      Timeout: 5
+      Code:
+        ZipFile: !Sub |
+          EXPECTED = "Basic ${DemoAuthCredential}"
+
+          _DENY = {
+              "status": "401",
+              "statusDescription": "Unauthorized",
+              "headers": {
+                  "www-authenticate": [{
+                      "key": "WWW-Authenticate",
+                      "value": 'Basic realm="Skills Mobility demo", charset="UTF-8"',
+                  }],
+                  "cache-control": [{"key": "Cache-Control", "value": "no-store, private"}],
+                  "content-type": [{"key": "Content-Type", "value": "text/plain; charset=utf-8"}],
+              },
+              "body": "Authentication required.",
+          }
+
+
+          def handler(event, context):
+              request = event["Records"][0]["cf"]["request"]
+              provided = request.get("headers", {}).get("authorization", [{}])[0].get("value")
+              if provided != EXPECTED:
+                  return _DENY
+              return request
+
+  # CloudFront requires a PUBLISHED numbered version ($LATEST is not allowed).
+  # Rotating the credential requires REPLACING this resource (rename the
+  # logical id, e.g. EdgeAuthVersionV2) so a fresh version is published.
+  EdgeAuthVersionV1:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref EdgeAuthFunction
+
   Oac:
     Type: AWS::CloudFront::OriginAccessControl
     Properties:
@@ -56,6 +129,9 @@ Resources:
           ViewerProtocolPolicy: redirect-to-https
           # AWS managed CachingOptimized
           CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          LambdaFunctionAssociations:
+            - EventType: viewer-request
+              LambdaFunctionARN: !Ref EdgeAuthVersionV1
         CacheBehaviors:
           - PathPattern: /executions*
             TargetOriginId: orchestrator
@@ -64,12 +140,18 @@ Resources:
             # AWS managed CachingDisabled + AllViewerExceptHostHeader
             CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
             OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+            LambdaFunctionAssociations:
+              - EventType: viewer-request
+                LambdaFunctionARN: !Ref EdgeAuthVersionV1
           - PathPattern: /healthz
             TargetOriginId: orchestrator
             ViewerProtocolPolicy: redirect-to-https
             AllowedMethods: [GET, HEAD, OPTIONS]
             CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
             OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+            LambdaFunctionAssociations:
+              - EventType: viewer-request
+                LambdaFunctionARN: !Ref EdgeAuthVersionV1
         CustomErrorResponses:
           # SPA routing: send 403/404 to index.html
           - ErrorCode: 403

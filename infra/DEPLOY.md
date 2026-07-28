@@ -68,7 +68,15 @@ Simplest, nothing to host. Point the Vite dev proxy at the orchestrator Function
 npm run dev -w apps/admin      # http://localhost:5174, reading the AWS orchestrator
 ```
 
-**Option B — static hosting on CloudFront** (`infra/cloudformation/admin-ui.yml`).
+**Option B — static hosting on CloudFront** (`infra/cloudformation/admin-ui.yml`)
+— **DEPLOYED 2026-07-28**: `https://d20uchums0tbiw.cloudfront.net`, gated by a
+shared-credential Basic-auth **Lambda@Edge viewer-request** function (ADR-0002's
+CloudFront-layer demo auth; Phil's pattern, implemented in Python). The credential
+is supplied at deploy time via the NoEcho `DemoAuthCredential` parameter
+(`printf '%s' 'user:pass' | base64`) — never committed. Rotation = redeploy with a
+new value + a bumped `EdgeAuthVersionV*` logical id. Note the gate protects the
+CloudFront entry; the underlying Function URLs remain publicly reachable
+(accepted mock-data POC posture).
 Two origins so the SPA's relative `/executions` calls work unchanged (S3 for the SPA,
 the orchestrator Function URL for `/executions*` + `/healthz`):
 
