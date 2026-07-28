@@ -9,6 +9,7 @@ from orchestrator import planner
 from orchestrator.actions import (
     ActionDeps,
     _deliver_to_smartresume,
+    _execute_credential_template_translation,
     _execute_smartresume_payload_translation,
 )
 from orchestrator.clients import (
@@ -173,6 +174,53 @@ class SpySmartResumeRouter:
     ) -> dict[str, Any]:
         self.calls.append((action, payload))
         return self._inner.dispatch(action, payload, ctx, step_id)
+
+
+def test_credential_template_translation_derives_achievement_from_outcome():
+    """Unit test for the credential-template stand-in: name/description/criteria
+    derive from the bundle's outcome data (ADR-0017 Phase 1)."""
+    deps = ActionDeps(
+        profile_resolver=StubProfileResolver(),
+        delivery_router=StubDeliveryRouter(),
+        field_mapping=StubFieldMapping(),
+        issuer_id="did:web:issuer.example",
+        envelope=_ENVELOPE,
+    )
+    inputs: dict[str, Any] = {
+        "bundle": {
+            "source_data": {
+                "outcome": {
+                    "display_name": "Demonstrate the sample competency",
+                    "description": "Demonstrates mastery of the sample competency.",
+                }
+            }
+        },
+    }
+
+    out = _execute_credential_template_translation(inputs, deps)
+
+    template = out["credential_template"]
+    assert template["name"] == "Demonstrate the sample competency"
+    assert template["description"] == "Demonstrates mastery of the sample competency."
+    assert template["criteria"] == {
+        "narrative": "Demonstrates mastery of the sample competency."
+    }
+
+
+def test_credential_template_translation_falls_back_when_outcome_absent():
+    deps = ActionDeps(
+        profile_resolver=StubProfileResolver(),
+        delivery_router=StubDeliveryRouter(),
+        field_mapping=StubFieldMapping(),
+        issuer_id="did:web:issuer.example",
+        envelope=_ENVELOPE,
+    )
+    out = _execute_credential_template_translation({"bundle": {"source_data": {}}}, deps)
+
+    template = out["credential_template"]
+    assert template["name"] == "Credential"
+    assert template["description"] == "Demonstrated mastery: Credential."
+    assert template["criteria"] == {"narrative": "Awarded for Credential."}
 
 
 def test_smartresume_translation_builds_payload_and_delivery_dispatches():

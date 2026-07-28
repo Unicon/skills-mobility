@@ -84,13 +84,57 @@ def test_delivery_phase_plan_smart_resume_only_still_issues():
     assert "deliver_to_learncard_wallet" not in action_ids
 
 
-def test_delivery_phase_plan_wallet_targets():
-    for targets in (["learncard_issuer", "learncard_wallet"], ["learncard_wallet"]):
-        plan = planner.delivery_phase_plan("skill_mastered", targets, "2026-06-24T00:00:00Z")
-        action_ids = [s.action_id for s in plan.steps]
-        assert "issue_learncard_badge" in action_ids
-        assert "deliver_to_learncard_wallet" in action_ids
-        assert "deliver_to_smartresume" not in action_ids
+def test_delivery_phase_plan_wallet_only_target():
+    # issuer+wallet is covered by test_delivery_phase_plan_shape; this covers the
+    # bare-wallet selection.
+    plan = planner.delivery_phase_plan(
+        "skill_mastered", ["learncard_wallet"], "2026-06-24T00:00:00Z"
+    )
+    action_ids = [s.action_id for s in plan.steps]
+    assert "issue_learncard_badge" in action_ids
+    assert "deliver_to_learncard_wallet" in action_ids
+    assert "deliver_to_smartresume" not in action_ids
+
+
+def test_delivery_phase_plan_wallet_plus_smartresume_without_explicit_issuer():
+    # Both final targets selected but learncard_issuer not explicitly named:
+    # both delivery branches emit, and issuance still runs (hard invariant).
+    plan = planner.delivery_phase_plan(
+        "skill_mastered", ["learncard_wallet", "smart_resume"], "2026-06-24T00:00:00Z"
+    )
+    action_ids = [s.action_id for s in plan.steps]
+    assert "issue_learncard_badge" in action_ids
+    assert "deliver_to_learncard_wallet" in action_ids
+    assert action_ids[-1] == "deliver_to_smartresume"
+    assert len(plan.steps) == 14
+    assert plan.steps[-1].step_id == 14
+
+
+def test_selection_without_issuer_logs_error_but_still_issues(caplog):
+    # Issuance is a hard invariant (the delivery branches consume the issued
+    # credential), so a non-empty selection omitting learncard_issuer still
+    # issues — but the selection/plan mismatch is recorded at failure level.
+    import logging
+
+    with caplog.at_level(logging.ERROR, logger="orchestrator.planner"):
+        plan = planner.delivery_phase_plan(
+            "skill_mastered", ["smart_resume"], "2026-06-24T00:00:00Z"
+        )
+    assert "issue_learncard_badge" in [s.action_id for s in plan.steps]
+    assert any(
+        "learncard_issuer not being selected" in r.message for r in caplog.records
+    )
+
+
+def test_routine_selections_do_not_log_the_mismatch_error(caplog):
+    import logging
+
+    with caplog.at_level(logging.ERROR, logger="orchestrator.planner"):
+        planner.delivery_phase_plan(
+            "skill_mastered", ["learncard_issuer", "learncard_wallet"], "2026-06-24T00:00:00Z"
+        )
+        planner.delivery_phase_plan("skill_mastered", [], "2026-06-24T00:00:00Z")
+    assert caplog.records == []
 
 
 def test_delivery_phase_plan_issuer_only_falls_back_to_wallet_default():
@@ -142,6 +186,23 @@ def test_delivery_phase_plan_empty_targets_emits_learncard_default():
     assert "issue_learncard_badge" in action_ids
     assert "deliver_to_learncard_wallet" in action_ids
     assert "deliver_to_smartresume" not in action_ids
+
+
+def test_unrecognized_target_falls_back_to_wallet_default(caplog):
+    # A typo / not-yet-handled target name must not silently change the plan
+    # shape: no known final target -> the Phase-1 wallet default, and the
+    # issuer-mismatch error records that the selection didn't name the issuer.
+    import logging
+
+    with caplog.at_level(logging.ERROR, logger="orchestrator.planner"):
+        plan = planner.delivery_phase_plan(
+            "skill_mastered", ["frobnicate_wallet"], "2026-06-24T00:00:00Z"
+        )
+    action_ids = [s.action_id for s in plan.steps]
+    assert "issue_learncard_badge" in action_ids
+    assert "deliver_to_learncard_wallet" in action_ids
+    assert "deliver_to_smartresume" not in action_ids
+    assert any("learncard_issuer not being selected" in r.message for r in caplog.records)
 
 
 def test_delivery_phase_plan_step_bindings_valid():
