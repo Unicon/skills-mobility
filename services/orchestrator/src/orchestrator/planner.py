@@ -8,6 +8,7 @@ Decision Services later is a planner change, not an executor change.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from orchestrator.schemas import (
@@ -18,6 +19,8 @@ from orchestrator.schemas import (
     PlanGenerator,
     PlanStep,
 )
+
+logger = logging.getLogger(__name__)
 
 # Canvas Live Event names → the logical event types Phase 1 supports (FR-OR-9).
 _EVENT_TYPE_BY_NAME = {
@@ -186,7 +189,7 @@ def _issuer_prefix(fetch_profile_id: str) -> list[PlanStep]:
     ]
 
 
-def _wallet_delivery_steps(fetch_profile_id: str) -> list[PlanStep]:
+def _learncard_wallet_delivery_steps(fetch_profile_id: str) -> list[PlanStep]:
     """LearnCard wallet delivery steps (9-11), emitted when learncard_wallet is in
     the selected targets."""
     return [
@@ -278,13 +281,28 @@ def _build_steps(fetch_profile_id: str, targets: frozenset[str]) -> list[PlanSte
       credential_template phase (ADR-0017 Phase 1), the issuer_payload phase, and
       badge issuance — LearnCard is the only issuer, so every credential is issued
       through it and the selected targets decide only the final delivery step(s)
-      (design §5 — learncard_issuer is expected in every selection).
+      (design §5 — learncard_issuer is expected in every selection). Issuance is
+      a hard invariant: a non-empty selection that omits learncard_issuer is
+      logged at error level as a selection/plan mismatch, never silently honored
+      by skipping issuance (the delivery branches consume the issued credential).
     - Wallet delivery (steps 9-11) when learncard_wallet is in targets, or when no
       known delivery target is present (backward-compatible Phase-1 default).
     - SmartResume delivery (3 steps, starting at 12 if the wallet branch is present,
       else 9) when smart_resume is in targets.
     """
     steps = _issuer_prefix(fetch_profile_id)
+
+    if targets and "learncard_issuer" not in targets:
+        # Issuance still runs — it is a hard invariant (LearnCard is the only
+        # issuer and every delivery branch consumes the issued credential) —
+        # but a non-empty selection omitting learncard_issuer contradicts the
+        # design premise (§5: the issuer is expected in every selection), so
+        # record the mismatch at failure level rather than proceeding silently.
+        logger.error(
+            "plan issues despite learncard_issuer not being selected: targets=%s "
+            "(issuance is a hard invariant; fix the selection upstream)",
+            sorted(targets),
+        )
 
     has_wallet = _WALLET_TARGET in targets
     has_smartresume = _SMARTRESUME_TARGET in targets
@@ -293,7 +311,7 @@ def _build_steps(fetch_profile_id: str, targets: frozenset[str]) -> list[PlanSte
     emit_wallet = has_wallet or not (has_wallet or has_smartresume)
 
     if emit_wallet:
-        steps.extend(_wallet_delivery_steps(fetch_profile_id))
+        steps.extend(_learncard_wallet_delivery_steps(fetch_profile_id))
 
     if has_smartresume:
         start_id = 12 if emit_wallet else 9
