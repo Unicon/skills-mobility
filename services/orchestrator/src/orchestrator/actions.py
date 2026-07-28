@@ -157,7 +157,18 @@ def _generate_field_synthesis(inputs: dict[str, Any], deps: ActionDeps) -> dict[
     if result.get("status") != "succeeded":
         logger.warning("field synthesis returned failed (non-fatal): %s", result.get("status"))
         return {"synthesized": {}}
-    return {"synthesized": result.get("values") or {}}
+    # Preserve the response envelope alongside the merged values: confidence and
+    # rationale must stay recoverable from the execution record (FR-FS-9, design
+    # §12 "inline always"), and the refs give the audit trail a pointer to the
+    # stored artifacts — parity with the mapping seam, which persists its whole
+    # envelope as the step output.
+    return {
+        "synthesized": result.get("values") or {},
+        "confidence": result.get("confidence"),
+        "rationale": result.get("rationale"),
+        "synthesis_result_ref": result.get("synthesis_result_ref"),
+        "llm_invocation_log_ref": result.get("llm_invocation_log_ref"),
+    }
 
 
 def _execute_credential_template_translation(
