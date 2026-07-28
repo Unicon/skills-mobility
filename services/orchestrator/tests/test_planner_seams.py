@@ -195,3 +195,23 @@ def test_http_delivery_targets_returns_selected() -> None:
         "learncard_issuer",
         "learncard_wallet",
     ]
+
+def test_http_context_builder_normalizes_non_json_response() -> None:
+    """An event fired during a stack update can get a non-JSON 5xx text body from
+    the Function URL; the client must normalize it to the context_builder_error
+    shape (clean failed execution) instead of raising out of the engine."""
+    import httpx
+    from orchestrator.clients import HttpContextBuilderClient
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(503, text="Service Unavailable")
+
+    client = HttpContextBuilderClient(
+        "http://cb.example", client=httpx.Client(
+            base_url="http://cb.example", transport=httpx.MockTransport(handle)
+        )
+    )
+    out = client.build_context("exec_1", {"metadata": {}})
+    assert "context_builder_error" in out
+    assert out["context_builder_error"]["code"] == "unreachable"
+

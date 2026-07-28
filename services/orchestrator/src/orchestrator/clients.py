@@ -159,10 +159,17 @@ class HttpContextBuilderClient:
         self._client = client or httpx.Client(base_url=base_url, timeout=30.0)
 
     def build_context(self, execution_id: str, event: dict[str, Any]) -> dict[str, Any]:
-        resp = self._client.post(
-            "/build-context", json={"execution_id": execution_id, "event": event}
-        )
-        body: dict[str, Any] = resp.json()
+        try:
+            resp = self._client.post(
+                "/build-context", json={"execution_id": execution_id, "event": event}
+            )
+            body: dict[str, Any] = resp.json()
+        except Exception as err:  # transport error or a non-JSON (5xx text) body
+            # Seen live: an event fired during a stack update got a non-JSON 5xx
+            # from the Function URL, and the raised JSONDecodeError left the
+            # execution stuck in 'planning'. Normalize to the failure shape the
+            # engine already handles, so the execution fails cleanly instead.
+            return {"context_builder_error": {"code": "unreachable", "message": str(err)}}
         return body
 
 

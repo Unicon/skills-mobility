@@ -24,7 +24,7 @@ PROJECT=${PROJECT:-skills-mobility}
 ENV=${ENV:-dev}
 REGION=${REGION:-us-east-1}
 ACCOUNT=${ACCOUNT:-584569945336}
-IMAGE_TAG=${IMAGE_TAG:-ef5320b}
+IMAGE_TAG=${IMAGE_TAG:-8a3ee14}
 EXEC_ROLE_ARN=${EXEC_ROLE_ARN:-arn:aws:iam::${ACCOUNT}:role/${PROJECT}-${ENV}-lambda-exec}
 TABLE=${TABLE:-${PROJECT}-${ENV}-execution-state}
 REG="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
@@ -75,9 +75,13 @@ echo "  images present, exec role present"
 echo "== pass 1: create functions + Function URLs =="
 for svc in "${SERVICES[@]}"; do
   case "$svc" in
-    orchestrator)      deploy_service "$svc" DynamoTable="$TABLE" TimeoutSeconds=60 ;;
+    # Timeouts: the chain is synchronous — mock-lms waits on event-consumer,
+    # which waits on the orchestrator's whole workflow (Bedrock calls + cold
+    # starts routinely exceed the 30s Lambda default).
+    orchestrator)      deploy_service "$svc" DynamoTable="$TABLE" TimeoutSeconds=120 ;;
+    mock-lms|event-consumer) deploy_service "$svc" TimeoutSeconds=150 ;;
     delivery-targets|workflow-actions|field-mapping|field-synthesis) \
-                       deploy_service "$svc" LlmMode=bedrock ;;
+                       deploy_service "$svc" LlmMode=bedrock TimeoutSeconds=60 ;;
     *)                 deploy_service "$svc" ;;
   esac
 done
@@ -97,10 +101,10 @@ printf "  orchestrator: %s\n  mock-lms: %s\n" "$ORCHESTRATOR_URL" "$MOCK_LMS_URL
 
 # --- Pass 2: wire the chain (feed URLs back into the consumers) ------------
 echo "== pass 2: wire the chain =="
-deploy_service mock-lms        EventConsumerUrl="$EVENT_CONSUMER_URL"
-deploy_service event-consumer  OrchestratorUrl="$ORCHESTRATOR_URL"
+deploy_service mock-lms        TimeoutSeconds=150 EventConsumerUrl="$EVENT_CONSUMER_URL"
+deploy_service event-consumer  TimeoutSeconds=150 OrchestratorUrl="$ORCHESTRATOR_URL"
 deploy_service context-builder LmsBaseUrl="$MOCK_LMS_URL"
-deploy_service orchestrator    DynamoTable="$TABLE" TimeoutSeconds=60 \
+deploy_service orchestrator    DynamoTable="$TABLE" TimeoutSeconds=120 \
   ContextBuilderUrl="$CONTEXT_BUILDER_URL" \
   DeliveryTargetsUrl="$DELIVERY_TARGETS_URL" \
   WorkflowActionsUrl="$WORKFLOW_ACTIONS_URL" \
