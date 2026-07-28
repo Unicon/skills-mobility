@@ -121,3 +121,62 @@ def test_transformation_type_preserved_on_all_paths() -> None:
 
     req3 = _req(transformation_type=ttype, mapping='{ "k": 1 }')
     assert run(req3).transformation_type == ttype
+
+def test_eval_error_returns_failed() -> None:
+    # Parses fine; raises at evaluation time ($number on a non-numeric string).
+    req = _req(
+        mapping='{ "x": $number(source_payloads.c.name) }',
+        source_payloads={"c": {"name": "not-a-number"}},
+    )
+    resp = run(req)
+    assert resp.status == "failed"
+    assert resp.error is not None
+    assert resp.error.error_type == "eval_error"
+    assert resp.result is None
+
+
+def test_target_schema_type_mismatch_returns_failed() -> None:
+    # FR-TE-6/9: schema validation checks types, not just key presence.
+    req = _req(
+        mapping='{ "name": source_payloads.c.name }',
+        target_schema={
+            "type": "object",
+            "required": ["name"],
+            "properties": {"name": {"type": "number"}},
+        },
+    )
+    resp = run(req)
+    assert resp.status == "failed"
+    assert resp.error is not None
+    assert resp.error.error_type == "malformed_output"
+    assert "name" in resp.error.message
+
+
+def test_target_schema_nested_shape_validated() -> None:
+    req = _req(
+        mapping='{ "credential": { "id": source_payloads.c.name } }',
+        target_schema={
+            "type": "object",
+            "required": ["credential"],
+            "properties": {
+                "credential": {
+                    "type": "object",
+                    "required": ["id", "issuer"],
+                }
+            },
+        },
+    )
+    resp = run(req)
+    assert resp.status == "failed"
+    assert resp.error is not None
+    assert resp.error.error_type == "malformed_output"
+    assert "issuer" in resp.error.message
+
+
+def test_invalid_target_schema_is_malformed_output_not_crash() -> None:
+    req = _req(target_schema={"type": "not-a-real-type"})
+    resp = run(req)
+    assert resp.status == "failed"
+    assert resp.error is not None
+    assert resp.error.error_type == "malformed_output"
+
