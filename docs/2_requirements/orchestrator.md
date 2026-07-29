@@ -108,6 +108,7 @@ Phase 1 does not require the final LLM-backed decision services or the full targ
 - **FR-OR-22** Step result envelopes SHALL use typed envelope fields and allow step-specific opaque JSON payloads or artifact references rather than requiring fully modeled Pydantic objects for every step result.
 - **FR-OR-23** For the target POC, when probabilistic planning or transformation services are in use, the Orchestrator SHALL submit their outputs to deterministic policy validation before executing downstream side effects.
 - **FR-OR-24** For Phase 1, a standalone Policy Rules runtime is not required for the happy path because the planning, routing, and transformation artifacts are deterministic stubs rather than live probabilistic outputs.
+- **FR-OR-34** Each recorded decision (gate, delivery targets, delivery-phase plan) SHALL indicate its provenance: whether it came from the configured LLM decision seam or from the deterministic fallback (seam unconfigured, seam failure, or a proposed plan rejected by re-binding). Confidence values alone SHALL NOT be relied on to distinguish the two, since fallback stubs report fixed confidences. The delivery-targets decision record SHALL additionally flag when a non-empty selection omits `learncard_issuer` (the design §5 issuance premise), independent of provenance.
 
 ## 7. Local vs AWS Requirements
 

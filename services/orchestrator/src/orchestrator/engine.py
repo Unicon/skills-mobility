@@ -29,6 +29,7 @@ from orchestrator.schemas import (
     DeliveryPhasePlan,
     ExecutionMetadata,
     GateDecision,
+    PlanSource,
     WorkflowStartRequest,
 )
 from orchestrator.store import ExecutionStore
@@ -88,11 +89,15 @@ def run_workflow(
     source_system = str(metadata.get("source_system") or "mock_lms")
 
     # Pre-target gate — Workflow Actions Stage 1 (best-effort; deterministic fallback).
-    gate = _resolve_gate(workflow_actions, event_type, request.event, bundle, envelope)
+    gate, gate_source = _resolve_gate(workflow_actions, event_type, request.event, bundle, envelope)
     store.record_decision(
         execution_id,
         DecisionArtifact(
-            kind="gate", confidence=gate.confidence, rationale=gate.rationale, outcome=gate.decision
+            kind="gate",
+            confidence=gate.confidence,
+            rationale=gate.rationale,
+            outcome=gate.decision,
+            plan_source=gate_source,
         ),
     )
     logger.info(
@@ -111,10 +116,22 @@ def run_workflow(
         return _metadata(store, execution_id)
 
     # Delivery target selection (best-effort; deterministic fallback).
-    targets = _resolve_targets(delivery_targets, event_type, source_system, bundle, envelope)
+    targets, targets_source = _resolve_targets(
+        delivery_targets, event_type, source_system, bundle, envelope
+    )
+    # Premise check (§5): learncard_issuer is expected in every non-empty
+    # selection. Recorded as its own fact — orthogonal to plan_source (an LLM
+    # plan can succeed over a violating selection, and a fallback can fire over
+    # a fine one). planner._build_steps logs the same condition at error level.
+    issuer_omitted = bool(targets) and "learncard_issuer" not in targets
     store.record_decision(
         execution_id,
-        DecisionArtifact(kind="delivery_targets", outcome=", ".join(targets)),
+        DecisionArtifact(
+            kind="delivery_targets",
+            outcome=", ".join(targets),
+            plan_source=targets_source,
+            issuer_omitted_from_selection=issuer_omitted,
+        ),
     )
     key = planner.applicability_key(event_type, targets)
     plan = store.get_plan_by_key(key) if reusable_plan_lookup else None
@@ -122,7 +139,7 @@ def run_workflow(
         # Delivery-phase plan — Workflow Actions Stage 2 (best-effort; deterministic fallback).
         generated_at = datetime.now(UTC).isoformat()
         reference = planner.delivery_phase_plan(event_type, targets, generated_at)
-        proposed = _resolve_plan(
+        proposed, proposed_source = _resolve_plan(
             workflow_actions, event_type, source_system, targets, request.event, bundle,
             generated_at, envelope,
         )
@@ -131,23 +148,31 @@ def run_workflow(
         # If re-binding fails (unknown action or unmet dependency), fall back to the
         # deterministic reference plan. LLM output never flows straight to delivery
         # (ADR-0007); re-binding only guarantees executability (ADR-0022).
-        rebound = planner.rebind_plan(proposed, event_type, targets)
+        rebound = (
+            planner.rebind_plan(proposed, event_type, targets)
+            if proposed_source == "llm"
+            else None
+        )
+        plan_source: PlanSource
         if rebound is not None:
-            plan = rebound
+            plan, plan_source = rebound, "llm"
             logger.info(
                 "workflow-actions plan accepted (re-bound to executor bindings): "
                 "execution_id=%s event_type=%s targets=%s plan_id=%s",
                 execution_id, event_type, targets, rebound.plan_id,
             )
         else:
-            logger.warning(
-                "workflow-actions plan not re-bindable (unknown action or unmet dependency); "
-                "executing deterministic plan: "
-                "execution_id=%s event_type=%s targets=%s "
-                "proposed_plan_id=%s reference_plan_id=%s",
-                execution_id, event_type, targets, proposed.plan_id, reference.plan_id,
-            )
-            plan = reference
+            if proposed_source == "llm":
+                logger.warning(
+                    "workflow-actions plan not re-bindable (unknown action or unmet dependency); "
+                    "executing deterministic plan: "
+                    "execution_id=%s event_type=%s targets=%s "
+                    "proposed_plan_id=%s reference_plan_id=%s",
+                    execution_id, event_type, targets, proposed.plan_id, reference.plan_id,
+                )
+            plan, plan_source = reference, "deterministic_fallback"
+        # Stamp provenance on the plan artifact so it and the decision record agree.
+        plan = plan.model_copy(update={"plan_source": plan_source})
         store.record_decision(
             execution_id,
             DecisionArtifact(
@@ -155,6 +180,7 @@ def run_workflow(
                 confidence=plan.confidence,
                 rationale=plan.rationale,
                 outcome=plan.plan_id,
+                plan_source=plan_source,
             ),
         )
         store.save_plan(plan, key)
@@ -201,15 +227,15 @@ def _resolve_gate(
     event: dict[str, Any],
     bundle: dict[str, Any],
     ctx: EnvelopeContext,
-) -> GateDecision:
+) -> tuple[GateDecision, PlanSource]:
     """Workflow Actions pre-target gate, best-effort: fall back to the deterministic
     gate if the service is unconfigured or the call fails (keeps the workflow running)."""
     if wa is not None:
         try:
-            return wa.pre_target_gate(event_type, event, bundle, ctx)
+            return wa.pre_target_gate(event_type, event, bundle, ctx), "llm"
         except Exception as err:  # noqa: BLE001 — best-effort seam
             logger.warning("workflow-actions gate failed (non-fatal; deterministic gate): %s", err)
-    return planner.pre_target_gate(event_type)
+    return planner.pre_target_gate(event_type), "deterministic_fallback"
 
 
 def _resolve_targets(
@@ -218,15 +244,15 @@ def _resolve_targets(
     source_system: str,
     bundle: dict[str, Any],
     ctx: EnvelopeContext,
-) -> list[str]:
+) -> tuple[list[str], PlanSource]:
     """Delivery Targets selection, best-effort: fall back to the deterministic
     fixed target set if unconfigured or the call fails."""
     if dt is not None:
         try:
-            return dt.select_targets(event_type, source_system, bundle, ctx)
+            return dt.select_targets(event_type, source_system, bundle, ctx), "llm"
         except Exception as err:  # noqa: BLE001 — best-effort seam
             logger.warning("delivery-targets failed (non-fatal; deterministic targets): %s", err)
-    return planner.select_delivery_targets()
+    return planner.select_delivery_targets(), "deterministic_fallback"
 
 
 def _resolve_plan(
@@ -238,15 +264,18 @@ def _resolve_plan(
     bundle: dict[str, Any],
     generated_at: str,
     ctx: EnvelopeContext,
-) -> DeliveryPhasePlan:
+) -> tuple[DeliveryPhasePlan, PlanSource]:
     """Workflow Actions delivery-phase plan, best-effort: fall back to the
     deterministic plan if unconfigured or the call fails/returns an invalid plan."""
     if wa is not None:
         try:
-            return wa.delivery_phase_plan(event_type, source_system, targets, event, bundle, ctx)
+            return (
+                wa.delivery_phase_plan(event_type, source_system, targets, event, bundle, ctx),
+                "llm",
+            )
         except Exception as err:  # noqa: BLE001 — best-effort seam
             logger.warning("workflow-actions plan failed (non-fatal; deterministic plan): %s", err)
-    return planner.delivery_phase_plan(event_type, targets, generated_at)
+    return planner.delivery_phase_plan(event_type, targets, generated_at), "deterministic_fallback"
 
 
 def _metadata(store: ExecutionStore, execution_id: str) -> ExecutionMetadata:
