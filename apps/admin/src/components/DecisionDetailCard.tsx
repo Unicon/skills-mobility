@@ -5,6 +5,10 @@ import { KIND_LABEL } from "./decisionKinds";
 import { buildMockInput, goalFor } from "./mockDecisionInput";
 
 function buildResponseText(decision: DecisionArtifact): string {
+  if (decision.plan_source === "deterministic_fallback") {
+    const rationale = decision.rationale ? ` ${decision.rationale}` : "";
+    return `The orchestrator's deterministic fallback produced this decision, not the LLM. Outcome: ${decision.outcome.replace(/_/g, " ")}.${rationale}`;
+  }
   const pct = decision.confidence != null ? Math.round(decision.confidence * 100) : null;
   const choice = decision.outcome.replace(/_/g, " ");
   const confidenceClause = pct != null ? `, and am ${pct}% confident that this is the correct choice` : "";
@@ -34,6 +38,12 @@ export function DecisionDetailCard({
 
   return (
     <div className="decision-detail-card">
+      {decision.issuer_omitted_from_selection ? (
+        <p className="decision-alert">
+          This target selection omitted the LearnCard issuer, though every non-empty selection is
+          expected to include it.
+        </p>
+      ) : null}
       <div className="decision-conversation-bubble">
         <header className="decision-conversation-header">Instructions</header>
         <ClampedBlock>
@@ -44,7 +54,12 @@ export function DecisionDetailCard({
         </ClampedBlock>
       </div>
       <div className="decision-conversation-bubble decision-conversation-bubble-response">
-        <header className="decision-conversation-header">{KIND_LABEL[decision.kind]} Response</header>
+        <header className="decision-conversation-header">
+          {KIND_LABEL[decision.kind]} Response
+          {decision.plan_source === "deterministic_fallback" ? (
+            <span className="decision-source-badge">deterministic fallback</span>
+          ) : null}
+        </header>
         <ClampedBlock>
           <p className="decision-conversation-text">{buildResponseText(decision)}</p>
         </ClampedBlock>

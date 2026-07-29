@@ -40,6 +40,8 @@ const happyPathExecution: ExecutionMetadata = {
       candidates: [],
       artifact_ref: null,
       invocation_log_ref: null,
+      plan_source: "llm",
+      issuer_omitted_from_selection: false,
       created_at: "2026-07-09T00:00:00Z",
     },
     {
@@ -50,6 +52,8 @@ const happyPathExecution: ExecutionMetadata = {
       candidates: [],
       artifact_ref: null,
       invocation_log_ref: null,
+      plan_source: "llm",
+      issuer_omitted_from_selection: false,
       created_at: "2026-07-09T00:00:00Z",
     },
     {
@@ -60,6 +64,8 @@ const happyPathExecution: ExecutionMetadata = {
       candidates: [],
       artifact_ref: null,
       invocation_log_ref: null,
+      plan_source: "llm",
+      issuer_omitted_from_selection: false,
       created_at: "2026-07-09T00:00:00Z",
     },
   ],
