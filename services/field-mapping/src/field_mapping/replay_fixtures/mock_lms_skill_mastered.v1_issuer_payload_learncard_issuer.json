@@ -1,17 +1,19 @@
 {
-  "jsonata": "{ \"@context\": [\"https://www.w3.org/ns/credentials/v2\", \"https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json\"], \"type\": [\"VerifiableCredential\", \"OpenBadgeCredential\"], \"issuer\": { \"id\": source_payloads.profile_resolution.issuer_id, \"type\": [\"Profile\"] }, \"credentialSubject\": { \"id\": source_payloads.profile_resolution.recipient_did, \"type\": [\"AchievementSubject\"], \"achievement\": { \"id\": \"urn:poc:achievement:\" & source_payloads.outcome.code, \"type\": [\"Achievement\"], \"name\": source_payloads.outcome.display_name, \"description\": synthesized.achievement_description } } }",
-  "placeholder_ids": ["achievement_description"],
-  "synthesis_requests": [
-    {
-      "placeholder_id": "achievement_description",
-      "target_path": "credentialSubject.achievement.description",
-      "source_payload_paths": [
-        "source_payloads.outcome.description",
-        "source_payloads.outcome.display_name"
-      ],
-      "instruction": "Write a concise achievement description grounded only in the outcome's description and display name."
-    }
-  ],
-  "confidence": 0.86,
-  "rationale": "@context/type are fixed OBv3 scaffolding; issuer and recipient ids and the achievement name map directly from the resolved profile and outcome. The achievement description is synthesis-backed because it is narrative text composed from the outcome, not a direct copy."
+ "jsonata": "{ \"@context\": [\"https://www.w3.org/ns/credentials/v2\", \"https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json\"], \"type\": [\"VerifiableCredential\", \"OpenBadgeCredential\"], \"id\": \"urn:uuid:pipeline-injected\", \"validFrom\": \"1970-01-01T00:00:00Z\", \"issuer\": { \"id\": source_payloads.profile_resolution.issuer_id, \"type\": [\"Profile\"] }, \"credentialSubject\": { \"id\": source_payloads.profile_resolution.recipient_did, \"type\": [\"AchievementSubject\"], \"achievement\": { \"id\": \"urn:poc:achievement:\" & source_payloads.outcome.code, \"type\": [\"Achievement\"], \"name\": source_payloads.outcome.display_name, \"description\": synthesized.achievement_description, \"criteria\": { \"narrative\": source_payloads.outcome.description } } } }",
+ "placeholder_ids": [
+  "achievement_description"
+ ],
+ "synthesis_requests": [
+  {
+   "placeholder_id": "achievement_description",
+   "target_path": "credentialSubject.achievement.description",
+   "source_payload_paths": [
+    "source_payloads.outcome.description",
+    "source_payloads.outcome.display_name"
+   ],
+   "instruction": "Write a concise achievement description grounded only in the outcome's description and display name."
+  }
+ ],
+ "confidence": 0.86,
+ "rationale": "@context/type are fixed OBv3 scaffolding; issuer and recipient ids and the achievement name map directly from the resolved profile and outcome. The achievement description is synthesis-backed because it is narrative text composed from the outcome, not a direct copy."
 }

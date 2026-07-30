@@ -21,10 +21,12 @@ from orchestrator.clients import (
     DeliveryRouterClient,
     DeliveryTargetsClient,
     FieldMappingClient,
+    FieldSynthesisClient,
     HttpContextBuilderClient,
     HttpDeliveryRouterClient,
     HttpDeliveryTargetsClient,
     HttpFieldMappingClient,
+    HttpFieldSynthesisClient,
     HttpProfileResolverClient,
     HttpTransformationExecutorClient,
     HttpWorkflowActionsClient,
@@ -32,6 +34,7 @@ from orchestrator.clients import (
     StubContextBuilder,
     StubDeliveryRouter,
     StubFieldMapping,
+    StubFieldSynthesis,
     StubProfileResolver,
     TransformationExecutorClient,
     WorkflowActionsClient,
@@ -73,15 +76,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if settings.delivery_router_url
         else StubDeliveryRouter()
     )
-    # Field Mapping (#27): real HTTP client when its URL is set, else the stub.
+    # Field Mapping (#27) + Field Synthesis (#85): real HTTP clients when their URLs
+    # are set, else the Phase-1 stubs.
     field_mapping: FieldMappingClient = (
         HttpFieldMappingClient(settings.field_mapping_url)
         if settings.field_mapping_url
         else StubFieldMapping()
     )
+    field_synthesis: FieldSynthesisClient = (
+        HttpFieldSynthesisClient(settings.field_synthesis_url)
+        if settings.field_synthesis_url
+        else StubFieldSynthesis()
+    )
     app.state.profile_resolver = profile_resolver
     app.state.delivery_router = delivery_router
     app.state.field_mapping = field_mapping
+    app.state.field_synthesis = field_synthesis
     # Transformation Executor (#98): real HTTP client when its URL is set, else
     # None → the translation actions fall back to the deterministic obv3 stand-in.
     transformation_executor: TransformationExecutorClient | None = (
@@ -116,6 +126,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             profile_resolver=app.state.profile_resolver,
             delivery_router=app.state.delivery_router,
             field_mapping=app.state.field_mapping,
+            field_synthesis=app.state.field_synthesis,
             issuer_id=settings.issuer_id,
             delivery_config_ref=settings.delivery_config_ref,
             recipient_profile_id=settings.demo_recipient_profile_id,

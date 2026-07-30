@@ -1,0 +1,5 @@
+{
+  "decision": "terminate",
+  "confidence": 1.0,
+  "rationale": "Event type is not supported in Phase 1; terminating workflow before delivery-target selection."
+}

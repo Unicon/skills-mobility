@@ -17,7 +17,12 @@ from orchestrator.actions import (
     _execute_issuer_payload_translation,
     _execute_wallet_payload_translation,
 )
-from orchestrator.clients import EnvelopeContext, StubDeliveryRouter, StubProfileResolver
+from orchestrator.clients import (
+    EnvelopeContext,
+    StubDeliveryRouter,
+    StubFieldSynthesis,
+    StubProfileResolver,
+)
 
 _ENV = EnvelopeContext(
     workflow_id="e1", execution_id="e1", correlation_id="c1", delivery_config_ref="cfg"
@@ -128,6 +133,7 @@ def _deps(executor: Any = None) -> ActionDeps:
         profile_resolver=StubProfileResolver(),
         delivery_router=StubDeliveryRouter(),
         field_mapping=StubDeliveryRouter(),  # not used in translation actions
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=_ENV,
         transformation_executor=executor,
@@ -355,6 +361,7 @@ def test_wallet_executor_gets_issued_badge_when_driven_by_the_real_plan() -> Non
         profile_resolver=StubProfileResolver(),
         delivery_router=StubDeliveryRouter(),
         field_mapping=_PlanFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=_ENV,
         transformation_executor=executor,
@@ -410,6 +417,7 @@ def test_degraded_fallback_is_persisted_but_not_delivered() -> None:
         profile_resolver=StubProfileResolver(),
         delivery_router=router,
         field_mapping=_JsonataFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=_ENV,
         transformation_executor=_SpyExecutor(raise_exc=True),  # every TE call fails
@@ -436,7 +444,7 @@ def test_degraded_fallback_is_persisted_but_not_delivered() -> None:
     # Both translation steps fell back — and the record says so.
     assert {s.action_id for s in degraded_steps} >= {
         "execute_issuer_payload_translation",
-        "execute_wallet_payload_translation",
+        "execute_learncard_wallet_payload_translation",
     }
     # The dispatched wallet payload carries no bookkeeping key.
     wallet_dispatches = [p for a, p in router.payloads if a == "deliver_to_learncard_wallet"]
