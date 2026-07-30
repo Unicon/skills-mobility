@@ -138,7 +138,9 @@ def _generate_field_synthesis(inputs: dict[str, Any], deps: ActionDeps) -> dict[
 
     Best-effort: no synthesis required, a missing client, or a failed call all
     yield empty synthesized values rather than failing the workflow (the obv3
-    stand-in still delivers)."""
+    stand-in still delivers). Runtime failures (the call raising, or a failed
+    response) additionally set the ``_degraded`` marker so the fallback is
+    audit-visible on the stored step (#102's convention)."""
     mapping = inputs.get("mapping") or {}
     if not mapping.get("requires_synthesis"):
         return {"synthesized": {}}
@@ -153,10 +155,10 @@ def _generate_field_synthesis(inputs: dict[str, Any], deps: ActionDeps) -> dict[
         )
     except Exception as err:
         logger.warning("field synthesis call failed (non-fatal; no synthesized values): %s", err)
-        return {"synthesized": {}}
+        return {"synthesized": {}, DEGRADED_KEY: f"field-synthesis failed: {err}"}
     if result.get("status") != "succeeded":
         logger.warning("field synthesis returned failed (non-fatal): %s", result.get("status"))
-        return {"synthesized": {}}
+        return {"synthesized": {}, DEGRADED_KEY: f"field-synthesis returned {result.get('status')}"}
     # Preserve the response envelope alongside the merged values: confidence and
     # rationale must stay recoverable from the execution record (FR-FS-9, design
     # §12 "inline always"), and the refs give the audit trail a pointer to the
