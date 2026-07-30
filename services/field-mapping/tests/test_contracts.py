@@ -9,13 +9,16 @@ from field_mapping.contracts import (
 )
 from pydantic import ValidationError
 
-# The exact envelope the Orchestrator mapping seam reads (actions.py).
+# The exact envelope the Orchestrator mapping seam reads (actions.py) plus the
+# inline JSONata and target_schema the Transformation Executor seam uses (ADR-#101).
 _SEAM_KEYS = {
     "status",
     "mapping_artifact_ref",
     "synthesis_request_ref",
     "requires_synthesis",
     "llm_invocation_log_ref",
+    "mapping",
+    "target_schema",
     "synthesis_request",
 }
 
@@ -70,9 +73,11 @@ def test_response_envelope_has_exact_seam_keys() -> None:
         llm_invocation_log_ref="llmcall:1",
         synthesis_allowed=True,
         placeholder_ids=["achievement_description"],
+        mapping='{"id": source_payloads.profile_resolution.recipient_did}',
     )
     assert set(resp.model_dump().keys()) == _SEAM_KEYS
     assert resp.requires_synthesis is True
+    assert resp.mapping == '{"id": source_payloads.profile_resolution.recipient_did}'
 
 
 def test_requires_synthesis_derived_never_true_when_synthesis_forbidden() -> None:

@@ -10,6 +10,7 @@ from orchestrator.clients import (
     EnvelopeContext,
     StubDeliveryRouter,
     StubFieldMapping,
+    StubFieldSynthesis,
     StubProfileResolver,
 )
 from orchestrator.executor import execute_plan
@@ -53,6 +54,7 @@ def _action_deps() -> tuple[ActionDeps, EnvelopeContext]:
         profile_resolver=StubProfileResolver(),
         delivery_router=StubDeliveryRouter(),
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=envelope,
     )

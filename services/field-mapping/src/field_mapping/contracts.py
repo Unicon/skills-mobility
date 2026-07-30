@@ -83,7 +83,10 @@ class MappingRequest(BaseModel):
 
 
 class MappingResponse(BaseModel):
-    """§10 response envelope — exactly the five keys the Orchestrator seam reads.
+    """§10 response envelope — the Orchestrator seam reads the five core keys;
+    ``mapping`` carries the generated JSONata inline so the Transformation Executor
+    can run it without a second artifact-store fetch; ``target_schema`` flows with
+    it so the Transformation Executor can validate its own output (ADR-#101).
     ``requires_synthesis`` is derived, never set independently; build via
     ``succeeded`` / ``failed`` so the §6 permission gate stays self-enforcing."""
 
@@ -94,6 +97,8 @@ class MappingResponse(BaseModel):
     synthesis_request_ref: str | None
     requires_synthesis: bool
     llm_invocation_log_ref: str | None
+    mapping: str | None = None
+    target_schema: dict[str, Any] | None = None
     # The synthesis-request artifact inline (serialized), so the Orchestrator can
     # hand it straight to the Field Synthesis service — the two services keep
     # separate artifact stores, so a bare ref does not resolve across the boundary.
@@ -109,6 +114,8 @@ class MappingResponse(BaseModel):
         llm_invocation_log_ref: str,
         synthesis_allowed: bool,
         placeholder_ids: list[str],
+        mapping: str | None = None,
+        target_schema: dict[str, Any] | None = None,
         synthesis_request: dict[str, Any] | None = None,
     ) -> Self:
         # §10 derivation — can never be true when the request forbade synthesis,
@@ -122,6 +129,8 @@ class MappingResponse(BaseModel):
             synthesis_request_ref=synthesis_request_ref,
             requires_synthesis=requires_synthesis,
             llm_invocation_log_ref=llm_invocation_log_ref,
+            mapping=mapping,
+            target_schema=target_schema,
             synthesis_request=synthesis_request if requires_synthesis else None,
         )
 

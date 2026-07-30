@@ -24,6 +24,7 @@ from orchestrator.clients import (
     FieldMappingClient,
     FieldSynthesisClient,
     ProfileResolverClient,
+    TransformationExecutorClient,
 )
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,7 @@ class ActionDeps:
     field_synthesis: FieldSynthesisClient
     issuer_id: str
     envelope: EnvelopeContext
+    transformation_executor: TransformationExecutorClient | None = None
 
 
 def _resolve_learncard_profile(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
@@ -48,6 +50,12 @@ def _resolve_learncard_profile(inputs: dict[str, Any], deps: ActionDeps) -> dict
     )
 
 
+# Reserved output key marking a best-effort seam that fell back (review #102
+# item 2): the executor strips it from the value threaded to downstream steps
+# but persists it on the stored StepResult, so a degraded-mode execution is
+# distinguishable from a clean one in the audit record, not just process logs.
+DEGRADED_KEY = "_degraded"
+
 _DEGRADED_MAPPING = {
     "status": "succeeded",
     "mapping_artifact_ref": None,
@@ -55,6 +63,10 @@ _DEGRADED_MAPPING = {
     "requires_synthesis": False,
     "llm_invocation_log_ref": None,
 }
+
+
+def _degraded_mapping(reason: str) -> dict[str, Any]:
+    return {**_DEGRADED_MAPPING, DEGRADED_KEY: reason}
 
 
 def _mapping_source_payloads(inputs: dict[str, Any]) -> dict[str, Any]:
@@ -109,10 +121,10 @@ def _generate_payload_mapping(inputs: dict[str, Any], deps: ActionDeps) -> dict[
         result = deps.field_mapping.map(request, deps.envelope, "generate_payload_mapping")
     except Exception as err:
         logger.warning("field mapping call failed (non-fatal; obv3 stand-in delivers): %s", err)
-        return dict(_DEGRADED_MAPPING)
+        return _degraded_mapping(f"field-mapping call failed: {err}")
     if result.get("status") != "succeeded":
         logger.warning("field mapping returned failed (non-fatal): %s", result.get("status"))
-        return dict(_DEGRADED_MAPPING)
+        return _degraded_mapping(f"field-mapping returned {result.get('status')}")
     return result
 
 
@@ -179,15 +191,72 @@ def _execute_credential_template_translation(
     }
 
 
+def _call_transformation_executor(
+    inputs: dict[str, Any],
+    deps: ActionDeps,
+    *,
+    transformation_type: str,
+    synthesized: dict[str, Any],
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Shared Translation Executor seam for the translation actions.
+
+    ``transformation_type`` is an explicit parameter — never read off the shared
+    ``inputs`` dict — so payload-source resolution cannot silently diverge from
+    the calling phase (review #102 item 1: a missing plan binding made the wallet
+    pass resolve issuer-shaped payloads and fall back undetected).
+
+    Returns ``(result, None)`` on success; ``(None, reason)`` when the executor
+    call failed (degraded — the caller falls back and records the reason); and
+    ``(None, None)`` when unconfigured or the mapping carries no inline JSONata
+    (the normal Phase-1 stand-in path, not a degradation).
+    """
+    mapping_env = inputs.get("mapping") or {}
+    jsonata = mapping_env.get("mapping") if isinstance(mapping_env, dict) else None
+    if deps.transformation_executor is None or not jsonata:
+        return None, None
+    source_payloads = _mapping_source_payloads(
+        {**inputs, "transformation_type": transformation_type}
+    )
+    target_schema: dict[str, Any] = mapping_env.get("target_schema") or {}
+    try:
+        result = deps.transformation_executor.execute(
+            transformation_type=transformation_type,
+            delivery_target=inputs.get("delivery_target"),
+            mapping=jsonata,
+            source_payloads=source_payloads,
+            synthesized=synthesized,
+            ctx=deps.envelope,
+            target_schema=target_schema,
+        )
+        return result, None
+    except Exception as err:  # noqa: BLE001 — best-effort seam
+        logger.warning(
+            "transformation-executor failed for %s (non-fatal; deterministic stand-in): %s",
+            transformation_type, err,
+        )
+        return None, f"transformation-executor failed: {err}"
+
+
 def _execute_issuer_payload_translation(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
-    """Issuer-side Translation Executor (FR-OR-16). The real executor dereferences
-    the mapping's ``mapping_artifact_ref`` → JSONata and runs it over the merged
-    ``source_payloads.*`` + ``synthesized.*`` context (#27 §2). The Phase-1 stub's
-    mapping carries null refs, so it builds the minimum unsigned OBv3 directly,
-    embedding the resolved DID in credentialSubject.id."""
+    """Issuer-side Translation Executor (FR-OR-16). When the Transformation Executor
+    is configured and the mapping step produced inline JSONata, delegates to it and
+    returns its result. Best-effort: on exception or when unconfigured/no JSONata,
+    falls back to the deterministic obv3 stand-in."""
+    result, degraded = _call_transformation_executor(
+        inputs, deps,
+        transformation_type="issuer_payload",
+        synthesized=(inputs.get("synthesis") or {}).get("synthesized", {}),
+    )
+    if result is not None:
+        return {"unsigned_vc": result}
+    # Deterministic obv3 stand-in: builds the minimum unsigned OBv3 directly,
+    # embedding the resolved DID in credentialSubject.id.
     recipient_did = inputs["resolved_profile"]["did"]
     unsigned_vc = obv3.build_unsigned_obv3(inputs["bundle"], recipient_did, inputs["issuer_id"])
-    return {"unsigned_vc": unsigned_vc}
+    output: dict[str, Any] = {"unsigned_vc": unsigned_vc}
+    if degraded:
+        output[DEGRADED_KEY] = degraded
+    return output
 
 
 def _issue_learncard_badge(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
@@ -201,13 +270,23 @@ def _issue_learncard_badge(inputs: dict[str, Any], deps: ActionDeps) -> dict[str
 
 
 def _execute_wallet_payload_translation(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
-    """Wallet-side Translation Executor (FR-OR-17). Same deref/merge contract as
-    the issuer side, minus synthesis (the wallet schema accepts OBv3 directly —
-    #27 FR-OR-15). Phase-1 stub builds the wallet payload from the issued badge +
-    resolved profileId."""
+    """Wallet-side Translation Executor (FR-OR-17). When the Transformation Executor
+    is configured and the mapping step produced inline JSONata, delegates to it and
+    returns its result directly (the executor already produces the correct wallet
+    payload shape). Best-effort: on exception or when unconfigured/no JSONata, falls
+    back to the deterministic prepare_wallet_input stand-in."""
+    result, degraded = _call_transformation_executor(
+        inputs, deps, transformation_type="wallet_payload", synthesized={}
+    )
+    if result is not None:
+        return result
+    # Deterministic stand-in: build the wallet payload from the issued badge + profileId.
     signed_credential = inputs["issued"]["result"]["issued_credential"]
     profile_id = inputs["resolved_profile"]["profile_id"]
-    return obv3.prepare_wallet_input(signed_credential, profile_id)
+    output = obv3.prepare_wallet_input(signed_credential, profile_id)
+    if degraded:
+        output[DEGRADED_KEY] = degraded
+    return output
 
 
 def _deliver_to_learncard_wallet(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:

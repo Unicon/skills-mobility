@@ -183,6 +183,7 @@ def test_credential_template_translation_derives_achievement_from_outcome():
         profile_resolver=StubProfileResolver(),
         delivery_router=StubDeliveryRouter(),
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=_ENVELOPE,
     )
@@ -212,6 +213,7 @@ def test_credential_template_translation_falls_back_when_outcome_absent():
         profile_resolver=StubProfileResolver(),
         delivery_router=StubDeliveryRouter(),
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=_ENVELOPE,
     )
@@ -232,6 +234,7 @@ def test_smartresume_translation_builds_payload_and_delivery_dispatches():
         profile_resolver=StubProfileResolver(),
         delivery_router=router,
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=_ENVELOPE,
     )
@@ -276,6 +279,7 @@ def test_smartresume_translation_falls_back_to_email_when_no_did():
         profile_resolver=StubProfileResolver(),
         delivery_router=SpySmartResumeRouter(),
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=_ENVELOPE,
     )
@@ -303,6 +307,7 @@ def test_smartresume_plan_executes_end_to_end(sample_event):
         profile_resolver=StubProfileResolver(),
         delivery_router=router,
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=_ENVELOPE,
     )
