@@ -59,6 +59,16 @@ def test_no_matching_fixture_returns_404(tmp_path: Path) -> None:
     assert resp.json()["detail"] == "no replay fixture for this request"
 
 
+def test_uncataloged_target_returns_404_not_500(tmp_path: Path) -> None:
+    # smart_resume is a valid DeliveryTarget but has no target catalog yet — the
+    # CatalogNotFoundError must surface as an addressable 404, not an opaque 500
+    # (hit live by the orchestrator's smartresume mapping step).
+    bogus = {**WALLET_BODY, "delivery_target": "smart_resume"}
+    resp = _client(tmp_path).post("/map", json=bogus)
+    assert resp.status_code == 404
+    assert "smart_resume" in resp.json()["detail"]
+
+
 def test_swagger_example_body_returns_200(tmp_path: Path) -> None:
     # The Swagger example (ISSUER_BODY) must produce a successful mapping, not 500.
     resp = _client(tmp_path).post("/map", json=ISSUER_BODY)

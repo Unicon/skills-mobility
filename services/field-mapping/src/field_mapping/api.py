@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 
 from .artifact_store import ArtifactStore
 from .bedrock_adapter import BedrockAdapter, BedrockResponseError
-from .catalog_store import CatalogStore
+from .catalog_store import CatalogNotFoundError, CatalogStore
 from .config import Settings, get_settings
 from .contracts import MappingRequest, MappingResponse
 from .llm_adapter import LLMAdapter
@@ -50,6 +50,13 @@ def create_app(service: MappingService | None = None) -> FastAPI:
         return JSONResponse(
             status_code=404, content={"detail": "no replay fixture for this request"}
         )
+
+    @app.exception_handler(CatalogNotFoundError)
+    async def _catalog_not_found(_req: Request, exc: CatalogNotFoundError) -> JSONResponse:
+        # An uncataloged (transformation_type, delivery_target) or fetch profile is a
+        # coverage gap the caller can act on, not a server fault (was an opaque 500 —
+        # hit live by smart_resume mapping requests before its target catalog existed).
+        return JSONResponse(status_code=404, content={"detail": str(exc)})
 
     @app.exception_handler(BedrockResponseError)
     async def _bedrock_response_error(
