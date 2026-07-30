@@ -1,0 +1,14 @@
+{
+  "selections": [
+    {
+      "delivery_target": "learncard_issuer",
+      "confidence": 0.90,
+      "rationale": "Default Phase 1 selection: route to the LearnCard issuer for credential issuance."
+    },
+    {
+      "delivery_target": "learncard_wallet",
+      "confidence": 0.90,
+      "rationale": "Default Phase 1 selection: deliver the issued credential to the learner's LearnCard wallet."
+    }
+  ]
+}

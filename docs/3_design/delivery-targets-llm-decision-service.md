@@ -146,15 +146,15 @@ The admin-voice framing matters for evaluation: the LLM's routing performance is
 [
   {
     "target_id": "learncard_issuer",
-    "description": "LearnCard badge issuer — used for Accounting courses (ACCY-*). The Pretend Association of Accountants partners with LearnCard; issued badges reach their employer members."
+    "description": "LearnCard badge issuer — our only issuer, so every credential we send out runs through here first, regardless of course subject. Only the final delivery step varies by subject."
   },
   {
     "target_id": "learncard_wallet",
-    "description": "LearnCard learner wallet — used alongside learncard_issuer to deliver the issued badge directly to the learner's wallet."
+    "description": "LearnCard learner wallet — used alongside learncard_issuer for Accounting courses (ACCY-*). The Pretend Association of Accountants partners with LearnCard, so these badges reach their employer members in the learner's wallet."
   },
   {
     "target_id": "smart_resume",
-    "description": "SmartResume — used for Finance courses (FINC-*). The Pretend Association of Finance partners with SmartResume for credential delivery to their members."
+    "description": "SmartResume — the final delivery step for Finance courses (FINC-*), after issuance through learncard_issuer. The Pretend Association of Finance partners with SmartResume for credential delivery to their members."
   }
 ]
 ```
