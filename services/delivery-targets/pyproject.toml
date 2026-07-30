@@ -1,0 +1,32 @@
+[project]
+name = "delivery-targets"
+version = "0.1.0"
+description = "Delivery Targets LLM Decision Service — selects downstream delivery targets (Skills Mobility POC)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.4",
+    "uvicorn>=0.30",
+    "boto3>=1.35",
+]
+
+[project.scripts]
+delivery-targets = "delivery_targets.api:run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/delivery_targets"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "httpx>=0.27",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "coverage>=7",
+    "boto3-stubs[bedrock-runtime]>=1.35",
+]

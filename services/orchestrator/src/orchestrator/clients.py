@@ -10,7 +10,7 @@ here over HTTP when their service URLs are configured (see app.py).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, NamedTuple, Protocol
 
 import httpx
 
@@ -261,6 +261,17 @@ class HttpFieldMappingClient:
 # workflow (the deterministic plan still runs).
 
 
+class TargetsDecision(NamedTuple):
+    """The Delivery Targets outcome the engine records: the flat target list the
+    planner consumes, plus the decision-level confidence/rationale from the
+    service's rich response (design #77 §3 — readable without a second
+    round-trip to the stored artifact)."""
+
+    targets: list[str]
+    confidence: float | None = None
+    rationale: str | None = None
+
+
 class DeliveryTargetsClient(Protocol):
     def select_targets(
         self,
@@ -268,7 +279,7 @@ class DeliveryTargetsClient(Protocol):
         source_system: str,
         learner_context: dict[str, Any],
         ctx: EnvelopeContext,
-    ) -> list[str]: ...
+    ) -> TargetsDecision: ...
 
 
 class WorkflowActionsClient(Protocol):
@@ -293,7 +304,10 @@ class WorkflowActionsClient(Protocol):
 
 class HttpDeliveryTargetsClient:
     """Real Delivery Targets LLM Decision Service (#77) — POSTs to
-    /select-delivery-targets and returns the flat selected-targets list."""
+    /select-delivery-targets. The response's ``selected_targets`` is the rich
+    per-target list (§3: delivery_target + confidence + rationale); this returns
+    the flat names plus a decision-level confidence (the weakest per-target
+    score, conservative for the audit record) and the joined rationales."""
 
     def __init__(self, base_url: str, client: httpx.Client | None = None) -> None:
         self._client = client or httpx.Client(base_url=base_url, timeout=60.0)
@@ -304,7 +318,7 @@ class HttpDeliveryTargetsClient:
         source_system: str,
         learner_context: dict[str, Any],
         ctx: EnvelopeContext,
-    ) -> list[str]:
+    ) -> TargetsDecision:
         resp = self._client.post(
             "/select-delivery-targets",
             json={
@@ -319,8 +333,18 @@ class HttpDeliveryTargetsClient:
         body: dict[str, Any] = resp.json()
         if body.get("status") != "succeeded":
             raise RuntimeError(f"delivery-targets returned {body.get('status')}")
-        targets: list[str] = list(body["selected_targets"])
-        return targets
+        selections: list[dict[str, Any]] = list(body["selected_targets"])
+        confidences = [s["confidence"] for s in selections if s.get("confidence") is not None]
+        return TargetsDecision(
+            targets=[s["delivery_target"] for s in selections],
+            confidence=min(confidences) if confidences else None,
+            rationale="; ".join(
+                f"{s['delivery_target']}: {s['rationale']}"
+                for s in selections
+                if s.get("rationale")
+            )
+            or None,
+        )
 
 
 class HttpWorkflowActionsClient:
