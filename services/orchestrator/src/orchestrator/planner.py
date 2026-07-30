@@ -320,6 +320,94 @@ def _build_steps(fetch_profile_id: str, targets: frozenset[str]) -> list[PlanSte
     return steps
 
 
+def _action_templates(
+    event_type: str, targets: list[str]
+) -> dict[str, tuple[dict[str, tuple[str, ...]], str]]:
+    """Derive per-action binding templates from the deterministic planner.
+
+    Builds the deterministic reference plan for the **selected** delivery targets
+    — not a superset of every known target — and indexes it by action_id. So an
+    LLM-proposed action belonging to a target that was not selected (e.g. a
+    ``smart_resume`` action when Delivery Targets chose against SmartResume) finds
+    no template and forces a fallback: the Delivery Targets decision is honored
+    during re-binding, not bypassed (ADR-0022, #93). Each entry is
+    ``(input_template, produces)`` where ``input_template`` maps each input name to
+    a spec tuple:
+
+    - ``("step", <produces-name>)`` — resolved from the step that produces that name
+    - ``("literal", value)`` — a plan literal
+    - ``("workflow", path)`` — a workflow-context path
+
+    Returns ``dict[action_id, (input_template, produces)]``.
+    """
+    reference_plan = delivery_phase_plan(event_type, targets, "")
+    # Build step_id → produces map so step-source bindings can be resolved by name.
+    id_to_produces = {s.step_id: s.produces for s in reference_plan.steps if s.produces}
+
+    templates: dict[str, tuple[dict[str, tuple[str, ...]], str]] = {}
+    for step in reference_plan.steps:
+        input_template: dict[str, tuple[str, ...]] = {}
+        for name, binding in step.inputs.items():
+            if binding.source == "step":
+                dep_produces = id_to_produces.get(binding.step_id or -1, "")
+                input_template[name] = ("step", dep_produces)
+            elif binding.source == "literal":
+                input_template[name] = ("literal", binding.value)
+            else:  # workflow
+                input_template[name] = ("workflow", binding.path or "")
+        templates[step.action_id] = (input_template, step.produces or "")
+    return templates
+
+
+def rebind_plan(
+    llm_plan: DeliveryPhasePlan, event_type: str, targets: list[str]
+) -> DeliveryPhasePlan | None:
+    """Re-bind the LLM's action sequence to executor-compatible step_id bindings.
+
+    The LLM owns action selection, order, and which steps to skip — this reads only
+    each step's ``action_id`` and rebuilds every input from a static per-action
+    template, so the LLM's own ``inputs``/``step_id`` values (if any) are ignored,
+    not corrected. The orchestrator owns the bindings, derived from the deterministic
+    reference plan for the **selected** ``targets``, resolving cross-step dependencies
+    by produced-name.
+
+    Returns the re-bound plan, or ``None`` if re-binding fails: an empty proposed
+    plan (a zero-step plan would "complete" having issued and delivered nothing),
+    an unknown action_id (including an action for a target that was not selected),
+    or an unsatisfied cross-step dependency in the LLM's ordering.
+    """
+    if not llm_plan.steps:
+        return None  # empty proposal — fall back rather than complete as a no-op
+    templates = _action_templates(event_type, targets)
+    produced: dict[str, int] = {}  # produced-name → new step_id
+    new_steps: list[PlanStep] = []
+
+    for i, step in enumerate(llm_plan.steps, start=1):
+        tmpl = templates.get(step.action_id)
+        if tmpl is None:
+            return None  # unknown action
+        input_template, tmpl_produces = tmpl
+
+        inputs: dict[str, InputBinding] = {}
+        for name, spec in input_template.items():
+            if spec[0] == "step":
+                dep_name = spec[1]
+                if dep_name not in produced:
+                    return None  # dependency not yet satisfied
+                inputs[name] = InputBinding(source="step", step_id=produced[dep_name])
+            elif spec[0] == "literal":
+                inputs[name] = InputBinding(source="literal", value=spec[1])
+            else:  # workflow
+                inputs[name] = InputBinding(source="workflow", path=spec[1])
+
+        new_steps.append(
+            PlanStep(step_id=i, action_id=step.action_id, inputs=inputs, produces=tmpl_produces)
+        )
+        produced[tmpl_produces] = i
+
+    return llm_plan.model_copy(update={"steps": new_steps})
+
+
 def delivery_phase_plan(
     event_type: str, targets: list[str], generated_at: str
 ) -> DeliveryPhasePlan:

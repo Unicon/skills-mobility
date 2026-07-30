@@ -52,6 +52,9 @@ def test_run_workflow_completes_and_persists(client, sample_event):
         "candidates": [],
         "artifact_ref": None,
         "invocation_log_ref": None,
+        # Unconfigured seam -> the stub is the deterministic fallback, and the
+        # record says so explicitly (provenance, ADR-0022).
+        "decision_source": "deterministic_fallback",
         "created_at": gate_decision["created_at"],
     }
     # Neither Delivery Targets nor Workflow Actions is configured in tests, so both
@@ -64,6 +67,7 @@ def test_run_workflow_completes_and_persists(client, sample_event):
         "candidates": [],
         "artifact_ref": None,
         "invocation_log_ref": None,
+        "decision_source": "deterministic_fallback",
         "created_at": targets_decision["created_at"],
     }
     assert plan_decision == {
@@ -74,6 +78,7 @@ def test_run_workflow_completes_and_persists(client, sample_event):
         "candidates": [],
         "artifact_ref": None,
         "invocation_log_ref": None,
+        "decision_source": "deterministic_fallback",
         "created_at": plan_decision["created_at"],
     }
     assert body["plan_id"] == "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1"
@@ -106,6 +111,7 @@ def test_run_workflow_terminate_gate_persists_decision(client):
             "candidates": [],
             "artifact_ref": None,
             "invocation_log_ref": None,
+            "decision_source": "deterministic_fallback",
             "created_at": body["decisions"][0]["created_at"],
         }
     ]
