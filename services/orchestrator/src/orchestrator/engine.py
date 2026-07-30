@@ -145,9 +145,10 @@ def run_workflow(
             plan = proposed
         else:
             logger.warning(
-                "workflow-actions plan not executor-conformant (execution_id=%s "
-                "proposed_plan_id=%s); executing deterministic plan %s",
-                execution_id, proposed.plan_id, reference.plan_id,
+                "workflow-actions plan not executor-conformant "
+                "(execution_id=%s event_type=%s targets=%s "
+                "proposed_plan_id=%s reference_plan_id=%s); executing deterministic plan",
+                execution_id, event_type, targets, proposed.plan_id, reference.plan_id,
             )
             plan = reference
         store.record_decision(
