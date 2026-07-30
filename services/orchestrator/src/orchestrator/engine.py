@@ -26,10 +26,10 @@ from orchestrator.clients import (
 from orchestrator.executor import execute_plan
 from orchestrator.schemas import (
     DecisionArtifact,
+    DecisionSource,
     DeliveryPhasePlan,
     ExecutionMetadata,
     GateDecision,
-    PlanSource,
     WorkflowStartRequest,
 )
 from orchestrator.store import ExecutionStore
@@ -97,7 +97,7 @@ def run_workflow(
             confidence=gate.confidence,
             rationale=gate.rationale,
             outcome=gate.decision,
-            plan_source=gate_source,
+            decision_source=gate_source,
         ),
     )
     logger.info(
@@ -119,18 +119,12 @@ def run_workflow(
     targets, targets_source = _resolve_targets(
         delivery_targets, event_type, source_system, bundle, envelope
     )
-    # Premise check (§5): learncard_issuer is expected in every non-empty
-    # selection. Recorded as its own fact — orthogonal to plan_source (an LLM
-    # plan can succeed over a violating selection, and a fallback can fire over
-    # a fine one). planner._build_steps logs the same condition at error level.
-    issuer_omitted = bool(targets) and "learncard_issuer" not in targets
     store.record_decision(
         execution_id,
         DecisionArtifact(
             kind="delivery_targets",
             outcome=", ".join(targets),
-            plan_source=targets_source,
-            issuer_omitted_from_selection=issuer_omitted,
+            decision_source=targets_source,
         ),
     )
     key = planner.applicability_key(event_type, targets)
@@ -153,9 +147,9 @@ def run_workflow(
             if proposed_source == "llm"
             else None
         )
-        plan_source: PlanSource
+        decision_source: DecisionSource
         if rebound is not None:
-            plan, plan_source = rebound, "llm"
+            plan, decision_source = rebound, "llm"
             logger.info(
                 "workflow-actions plan accepted (re-bound to executor bindings): "
                 "execution_id=%s event_type=%s targets=%s plan_id=%s",
@@ -170,9 +164,9 @@ def run_workflow(
                     "proposed_plan_id=%s reference_plan_id=%s",
                     execution_id, event_type, targets, proposed.plan_id, reference.plan_id,
                 )
-            plan, plan_source = reference, "deterministic_fallback"
+            plan, decision_source = reference, "deterministic_fallback"
         # Stamp provenance on the plan artifact so it and the decision record agree.
-        plan = plan.model_copy(update={"plan_source": plan_source})
+        plan = plan.model_copy(update={"decision_source": decision_source})
         store.record_decision(
             execution_id,
             DecisionArtifact(
@@ -180,7 +174,7 @@ def run_workflow(
                 confidence=plan.confidence,
                 rationale=plan.rationale,
                 outcome=plan.plan_id,
-                plan_source=plan_source,
+                decision_source=decision_source,
             ),
         )
         store.save_plan(plan, key)
@@ -227,7 +221,7 @@ def _resolve_gate(
     event: dict[str, Any],
     bundle: dict[str, Any],
     ctx: EnvelopeContext,
-) -> tuple[GateDecision, PlanSource]:
+) -> tuple[GateDecision, DecisionSource]:
     """Workflow Actions pre-target gate, best-effort: fall back to the deterministic
     gate if the service is unconfigured or the call fails (keeps the workflow running)."""
     if wa is not None:
@@ -244,7 +238,7 @@ def _resolve_targets(
     source_system: str,
     bundle: dict[str, Any],
     ctx: EnvelopeContext,
-) -> tuple[list[str], PlanSource]:
+) -> tuple[list[str], DecisionSource]:
     """Delivery Targets selection, best-effort: fall back to the deterministic
     fixed target set if unconfigured or the call fails."""
     if dt is not None:
@@ -264,7 +258,7 @@ def _resolve_plan(
     bundle: dict[str, Any],
     generated_at: str,
     ctx: EnvelopeContext,
-) -> tuple[DeliveryPhasePlan, PlanSource]:
+) -> tuple[DeliveryPhasePlan, DecisionSource]:
     """Workflow Actions delivery-phase plan, best-effort: fall back to the
     deterministic plan if unconfigured or the call fails/returns an invalid plan."""
     if wa is not None:

@@ -158,7 +158,7 @@ export interface DecisionCandidate {
 }
 
 /** Provenance of a decision (ADR-0022): real LLM seam output vs deterministic fallback. */
-export type PlanSource = "llm" | "deterministic_fallback";
+export type DecisionSource = "llm" | "deterministic_fallback";
 
 export interface DecisionArtifact {
   kind: DecisionKind;
@@ -168,9 +168,7 @@ export interface DecisionArtifact {
   candidates: DecisionCandidate[];
   artifact_ref: string | null;
   invocation_log_ref: string | null;
-  plan_source: PlanSource | null;
-  /** delivery_targets kind only: non-empty selection omitted learncard_issuer (design §5 premise). */
-  issuer_omitted_from_selection: boolean;
+  decision_source: DecisionSource | null;
   created_at: string;
 }
 

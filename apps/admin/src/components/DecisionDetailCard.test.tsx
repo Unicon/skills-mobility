@@ -24,8 +24,7 @@ const gateDecision: DecisionArtifact = {
   candidates: [],
   artifact_ref: null,
   invocation_log_ref: null,
-  plan_source: null,
-  issuer_omitted_from_selection: false,
+  decision_source: null,
   created_at: "2026-07-09T00:00:00Z",
 };
 
@@ -40,8 +39,7 @@ const deliveryTargetsDecision: DecisionArtifact = {
   ],
   artifact_ref: "s3://artifacts/delivery-targets/1",
   invocation_log_ref: "log://invocations/1",
-  plan_source: null,
-  issuer_omitted_from_selection: false,
+  decision_source: null,
   created_at: "2026-07-09T00:00:01Z",
 };
 
