@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     port: int = 8400
     # Execution-state store (ADR-0014: SQLite locally). ":memory:" for ephemeral runs.
     db_path: str = "orchestrator.db"
+    # When set, the execution store is DynamoDB instead of SQLite — required on
+    # Lambda, whose per-instance /tmp can't be shared across invocations (the
+    # Admin UI polls a possibly-different instance than the one that ran the
+    # workflow). Names the single state table (ADR-0014 §9; infra #107 foundation).
+    dynamo_table: str | None = None
+    # Region for the DynamoDB client; None → boto3 default (AWS_REGION on Lambda).
+    aws_region: str | None = None
     # Issuer identity stamped into the stubbed OBv3 credential.
     issuer_id: str = "did:web:poc.skills-mobility.example"
     # Shared LearnCard delivery config (resolver + router), so it carries the
@@ -46,14 +53,14 @@ class Settings(BaseSettings):
     # (best-effort — the deterministic obv3 stand-in still produces the payload);
     # else the Phase-1 stub returns null refs.
     field_mapping_url: str | None = None
-    # #85 Field Synthesis service. When set, the synthesis step calls it for real
-    # (best-effort — empty synthesized values otherwise) with the synthesis-request
-    # the mapping response carries inline; else the Phase-1 stub returns no values.
-    field_synthesis_url: str | None = None
     # #98 Transformation Executor. When set, the translation actions call it for real
     # (best-effort — the deterministic obv3 stand-in still produces the payload on
     # failure or when the mapping step returned no JSONata); else None → stub only.
     transformation_executor_url: str | None = None
+    # #85 Field Synthesis service. When set, the synthesis step calls it for real
+    # (best-effort — empty synthesized values otherwise) with the synthesis-request
+    # the mapping response carries inline; else the Phase-1 stub returns no values.
+    field_synthesis_url: str | None = None
     # #27/ADR-0007 LLM Decision Service planner seams. When set, the planner path
     # calls these for real (best-effort — a failure falls back to the deterministic
     # gate/targets/plan stubs); else the stubs are used.
