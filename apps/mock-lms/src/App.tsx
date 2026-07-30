@@ -21,8 +21,13 @@ export default function App() {
 
   useEffect(() => {
     api.courses().then((cs) => {
-      setCourses(cs);
-      setActiveId((cur) => cur ?? cs[0]?.id ?? null);
+      // Hide digital-credential courses (badge_awarded) from the demo console —
+      // that event path is out of scope for this POC and isn't wired end to end,
+      // so it must not be firable here (phase-2 slice §4). The courses stay in the
+      // catalog/API; this is a demo-surface filter only.
+      const shown = cs.filter((c) => c.kind !== "digital_credential");
+      setCourses(shown);
+      setActiveId((cur) => cur ?? shown[0]?.id ?? null);
     });
   }, []);
 

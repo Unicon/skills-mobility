@@ -146,15 +146,15 @@ The admin-voice framing matters for evaluation: the LLM's routing performance is
 [
   {
     "target_id": "learncard_issuer",
-    "description": "LearnCard badge issuer — used for Accounting courses (ACCY-*). The Pretend Association of Accountants partners with LearnCard; issued badges reach their employer members."
+    "description": "LearnCard badge issuer — our only issuer, so every credential we send out runs through here first, regardless of course subject. Only the final delivery step varies by subject."
   },
   {
     "target_id": "learncard_wallet",
-    "description": "LearnCard learner wallet — used alongside learncard_issuer to deliver the issued badge directly to the learner's wallet."
+    "description": "LearnCard learner wallet — used alongside learncard_issuer for Accounting courses (ACCY-*). The Pretend Association of Accountants partners with LearnCard, so these badges reach their employer members in the learner's wallet."
   },
   {
     "target_id": "smart_resume",
-    "description": "SmartResume — used for Finance courses (FINC-*). The Pretend Association of Finance partners with SmartResume for credential delivery to their members."
+    "description": "SmartResume — the final delivery step for Finance courses (FINC-*), after issuance through learncard_issuer. The Pretend Association of Finance partners with SmartResume for credential delivery to their members."
   }
 ]
 ```
@@ -319,7 +319,7 @@ The service should store enough data for the team to evaluate routing quality, c
 - whether repair retry mode was enabled and whether it was used
 - `corpus_scenario_id`, present only for invocations run against the frozen ADR-0013 evaluation corpus (absent for live production invocations), formatted as `{event_type}.{scenario_slug}.v{version}` per [ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md) §8
 
-This data supports comparing prompt versions, model choices, routing-accuracy behavior, retry behavior, and cost/latency tradeoffs. This is the same per-invocation metadata contract ADR-0010 §60 requires of every LLM Decision Service.
+This data supports comparing prompt versions, model choices, routing-accuracy behavior, retry behavior, and cost/latency tradeoffs. This is the same per-invocation metadata contract ADR-0010 requires of every LLM Decision Service.
 
 ## 13. Suggested Module Layout
 

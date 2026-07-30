@@ -13,7 +13,7 @@ def test_list_executions_total_is_plan_step_count_not_attempted() -> None:
     plan = planner.delivery_phase_plan(
         "skill_mastered", ["learncard_issuer", "learncard_wallet"], "2026-01-01T00:00:00Z"
     )
-    assert len(plan.steps) == 8  # guard: the Phase-1 plan is 8 steps
+    assert len(plan.steps) == 11  # guard: the Phase-1 wallet plan is 11 steps
 
     store.save_plan(plan, "skill_mastered|learncard_issuer,learncard_wallet")
     store.create_execution("exec_fail", "evt", "corr", "skill_mastered")
@@ -32,7 +32,7 @@ def test_list_executions_total_is_plan_step_count_not_attempted() -> None:
 
     (row,) = store.list_executions()
     assert row.step_progress.completed == 0
-    assert row.step_progress.total == 8  # from the plan, not the single attempted row
+    assert row.step_progress.total == 11  # from the plan, not the single attempted row
 
 
 def test_list_executions_total_falls_back_when_no_plan() -> None:
@@ -52,7 +52,7 @@ def test_record_decision_round_trips_gate_kind() -> None:
     store.record_decision(
         "exec_1",
         DecisionArtifact(
-            kind="gate", confidence=1.0, rationale="ok", outcome="continue_to_delivery_targets"
+            kind="gate", confidence=1.0, rationale="ok", outcome="continue"
         ),
     )
     meta = store.get_execution_metadata("exec_1")
@@ -62,7 +62,7 @@ def test_record_decision_round_trips_gate_kind() -> None:
     assert decision.kind == "gate"
     assert decision.confidence == 1.0
     assert decision.rationale == "ok"
-    assert decision.outcome == "continue_to_delivery_targets"
+    assert decision.outcome == "continue"
     assert decision.candidates == []
 
 
@@ -70,7 +70,7 @@ def test_record_decision_preserves_insertion_order() -> None:
     store = ExecutionStore(":memory:")
     store.create_execution("exec_1", "evt", "corr", "skill_mastered")
     store.record_decision(
-        "exec_1", DecisionArtifact(kind="gate", outcome="continue_to_delivery_targets")
+        "exec_1", DecisionArtifact(kind="gate", outcome="continue")
     )
     store.record_decision(
         "exec_1", DecisionArtifact(kind="delivery_targets", outcome="learncard_wallet")

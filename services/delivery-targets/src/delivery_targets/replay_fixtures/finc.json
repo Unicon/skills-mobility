@@ -1,0 +1,14 @@
+{
+  "selections": [
+    {
+      "delivery_target": "learncard_issuer",
+      "confidence": 0.95,
+      "rationale": "Every credential runs through the LearnCard issuer first \u2014 it is the only issuer \u2014 so a Finance (FINC-*) event is issued as an Open Badge here before delivery."
+    },
+    {
+      "delivery_target": "smart_resume",
+      "confidence": 0.9,
+      "rationale": "Finance (FINC-*) credentials are delivered to SmartResume after issuance, under the Pretend Association of Finance / SmartResume partnership."
+    }
+  ]
+}
