@@ -24,6 +24,7 @@ function decisionOf(kind: DecisionArtifact["kind"]): DecisionArtifact {
     candidates: [],
     artifact_ref: null,
     invocation_log_ref: null,
+    decision_source: null,
     created_at: "",
   };
 }

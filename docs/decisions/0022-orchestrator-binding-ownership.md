@@ -95,6 +95,11 @@ execute. That correctness check is handled by:
 - the deterministic fallback and complete audit trail, which together make a mis-sequenced plan
   visible and recoverable.
 
+For that audit trail to do its job, provenance must be explicit: every recorded decision and
+executed plan MUST indicate whether it originated from the LLM seam or from the deterministic
+fallback (FR-OR-34), and the Admin UI should render the two distinctly — otherwise a fallback
+(whose stubs report fixed, high confidences) is indistinguishable from a genuine LLM decision.
+
 ## Consequences
 
 ### Positive

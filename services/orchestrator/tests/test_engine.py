@@ -12,6 +12,7 @@ from orchestrator.clients import (
     StubContextBuilder,
     StubDeliveryRouter,
     StubFieldMapping,
+    StubFieldSynthesis,
     StubProfileResolver,
 )
 from orchestrator.schemas import (
@@ -34,6 +35,7 @@ def _run(event, *, store, reusable=False, execution_id="e1", context_builder=Non
         profile_resolver=StubProfileResolver(),
         delivery_router=StubDeliveryRouter(),
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         delivery_config_ref="cfg",
         recipient_profile_id="smi-demo-learner",
@@ -64,6 +66,7 @@ def test_resolves_fixed_demo_recipient_by_profile_id(sample_event):
         profile_resolver=resolver,
         delivery_router=StubDeliveryRouter(),
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         delivery_config_ref="cfg",
         recipient_profile_id="smi-demo-learner",
@@ -76,8 +79,8 @@ def test_gate_continue_runs_full_plan(sample_event):
     assert meta.status == "completed"
     assert meta.decisions[0].kind == "gate"
     assert meta.decisions[0].outcome == "continue"
-    assert meta.plan_id == "phase1-skill_mastered.v1"
-    assert len(meta.steps) == 8
+    assert meta.plan_id == "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1"
+    assert len(meta.steps) == 11
 
 
 def test_continue_path_records_all_three_planner_decisions(sample_event):
@@ -89,7 +92,7 @@ def test_continue_path_records_all_three_planner_decisions(sample_event):
     targets_decision, plan_decision = meta.decisions[1], meta.decisions[2]
     assert targets_decision.outcome == "learncard_issuer, learncard_wallet"
     assert targets_decision.confidence is None
-    assert plan_decision.outcome == "phase1-skill_mastered.v1"
+    assert plan_decision.outcome == "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1"
     assert plan_decision.confidence is None
 
 
@@ -116,6 +119,7 @@ def test_configured_workflow_actions_decisions_reflect_the_real_call(sample_even
         profile_resolver=StubProfileResolver(),
         delivery_router=StubDeliveryRouter(),
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         delivery_config_ref="cfg",
         recipient_profile_id="smi-demo-learner",
@@ -126,6 +130,59 @@ def test_configured_workflow_actions_decisions_reflect_the_real_call(sample_even
     assert gate_decision.rationale == "real gate call"
     assert plan_decision.confidence == 0.77
     assert plan_decision.rationale == "real plan call"
+
+
+def test_llm_backed_decisions_are_labeled_llm(sample_event):
+    """Provenance (ADR-0022): decisions from configured, succeeding seams carry
+    decision_source="llm", and the accepted (re-bound) plan is labeled on both the
+    decision record and the plan artifact."""
+    meta = engine.run_workflow(
+        WorkflowStartRequest(execution_id="e1", event=sample_event),
+        store=ExecutionStore(":memory:"),
+        context_builder=StubContextBuilder(),
+        profile_resolver=StubProfileResolver(),
+        delivery_router=StubDeliveryRouter(),
+        field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
+        issuer_id="did:web:issuer.example",
+        delivery_config_ref="cfg",
+        recipient_profile_id="smi-demo-learner",
+        workflow_actions=_FakeWorkflowActions(),
+    )
+    gate_decision, targets_decision, plan_decision = meta.decisions
+    assert gate_decision.decision_source == "llm"
+    # Delivery Targets is unconfigured here -> its stub fallback stays labeled.
+    assert targets_decision.decision_source == "deterministic_fallback"
+    assert plan_decision.decision_source == "llm"
+
+
+def test_unbindable_llm_plan_is_labeled_deterministic_fallback(sample_event):
+    """When re-binding rejects the LLM proposal, the executed plan's decision
+    record says deterministic_fallback — indistinguishable no more."""
+
+    class _GarbagePlanWA(_FakeWorkflowActions):
+        def delivery_phase_plan(self, event_type, source_system, targets, event, bundle, ctx):
+            plan = planner.delivery_phase_plan(event_type, targets, "2026-01-01T00:00:00Z")
+            garbage = plan.steps[0].model_copy(update={"action_id": "not_a_real_action"})
+            return plan.model_copy(update={"steps": [garbage], "rationale": "garbage"})
+
+    meta = engine.run_workflow(
+        WorkflowStartRequest(execution_id="e1", event=sample_event),
+        store=ExecutionStore(":memory:"),
+        context_builder=StubContextBuilder(),
+        profile_resolver=StubProfileResolver(),
+        delivery_router=StubDeliveryRouter(),
+        field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
+        issuer_id="did:web:issuer.example",
+        delivery_config_ref="cfg",
+        recipient_profile_id="smi-demo-learner",
+        workflow_actions=_GarbagePlanWA(),
+    )
+    plan_decision = meta.decisions[2]
+    assert plan_decision.kind == "workflow_actions_plan"
+    assert plan_decision.decision_source == "deterministic_fallback"
+    assert meta.status == "completed"  # the fallback plan still executes
 
 
 def test_engine_logs_key_transitions(sample_event, caplog):
@@ -194,8 +251,8 @@ def test_plan_lookup_disabled_ignores_stored_plan(sample_event):
     _seed_stored_plan(store)
     meta = _run(sample_event, store=store, reusable=False)
     # Lookup off → the stored plan is ignored; a fresh Phase-1 plan is generated.
-    assert meta.plan_id == "phase1-skill_mastered.v1"
-    assert len(meta.steps) == 8
+    assert meta.plan_id == "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1"
+    assert len(meta.steps) == 11
 
 
 def test_plan_lookup_enabled_uses_stored_plan(sample_event):

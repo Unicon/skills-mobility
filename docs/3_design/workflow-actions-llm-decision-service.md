@@ -87,18 +87,21 @@ The service returns the full plan artifact inline in the synchronous response an
 
 ### Expected Phase-1 plans (evaluation reference)
 
-These are the plans the LLM is expected to produce for each target combination in Phase 1. They serve as the evaluation reference (Layer B, ADR-0013) — what we want the LLM to produce, not a guaranteed output.
+These are the plans the LLM is expected to produce for each target combination in Phase 1. They serve as the evaluation reference (Layer B, ADR-0013) — what we want the LLM to produce, not a guaranteed output. Every plan opens with the credential_template phase (ADR-0017 Phase 1): the issuer-payload mapping reads the stored credential template as a source artifact, so the template steps precede any issuer-payload step regardless of the selected targets.
 
 **LearnCard wallet only** (`selected_targets: [learncard_issuer, learncard_wallet]`):
 
 ```
 resolve_learncard_profile
+→ generate_credential_template_mapping
+→ generate_credential_template_synthesis
+→ execute_credential_template_translation
 → generate_issuer_payload_mapping
-→ generate_field_synthesis
+→ generate_issuer_payload_synthesis
 → execute_issuer_payload_translation
 → issue_learncard_badge
-→ generate_wallet_payload_mapping
-→ execute_wallet_payload_translation
+→ generate_learncard_wallet_payload_mapping
+→ execute_learncard_wallet_payload_translation
 → deliver_to_learncard_wallet
 ```
 
@@ -106,8 +109,11 @@ resolve_learncard_profile
 
 ```
 resolve_learncard_profile
+→ generate_credential_template_mapping
+→ generate_credential_template_synthesis
+→ execute_credential_template_translation
 → generate_issuer_payload_mapping
-→ generate_field_synthesis
+→ generate_issuer_payload_synthesis
 → execute_issuer_payload_translation
 → issue_learncard_badge
 → generate_smartresume_payload_mapping
@@ -121,11 +127,14 @@ Shared prefix (through issuance), then two parallel branches — one per target:
 
 ```
 resolve_learncard_profile
+→ generate_credential_template_mapping
+→ generate_credential_template_synthesis
+→ execute_credential_template_translation
 → generate_issuer_payload_mapping
-→ generate_field_synthesis
+→ generate_issuer_payload_synthesis
 → execute_issuer_payload_translation
 → issue_learncard_badge
-→ [LearnCard wallet branch] generate_wallet_payload_mapping → execute_wallet_payload_translation → deliver_to_learncard_wallet
+→ [LearnCard wallet branch] generate_learncard_wallet_payload_mapping → execute_learncard_wallet_payload_translation → deliver_to_learncard_wallet
 → [SmartResume branch]      generate_smartresume_payload_mapping → execute_smartresume_payload_translation → deliver_to_smartresume
 ```
 

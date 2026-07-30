@@ -55,6 +55,13 @@ class DecisionCandidate(BaseModel):
     selected: bool = False
 
 
+# Where a decision/plan came from: the LLM seam, or the deterministic
+# stub/fallback the engine swaps in when the seam is unconfigured, fails, or
+# (for plans) the proposal isn't re-bindable. None only on records stored
+# before this field existed.
+DecisionSource = Literal["llm", "deterministic_fallback"]
+
+
 class DecisionArtifact(BaseModel):
     """Generic audit/read-model projection of an LLM Decision Service's output
     (ADR-0007) — the explainability record shown in the Admin UI, not the
@@ -68,6 +75,10 @@ class DecisionArtifact(BaseModel):
     candidates: list[DecisionCandidate] = []
     artifact_ref: str | None = None
     invocation_log_ref: str | None = None
+    # Provenance (ADR-0022): a fallback decision must be distinguishable from a
+    # real LLM decision in the audit record — confidence alone can't tell them
+    # apart (the deterministic gate stub reports 1.0).
+    decision_source: DecisionSource | None = None
     created_at: str = ""
 
 
@@ -115,6 +126,10 @@ class DeliveryPhasePlan(BaseModel):
     applicability: PlanApplicability
     confidence: float | None = None  # None = no LLM confidence supplied (vs a real value)
     rationale: str = ""
+    # Provenance: whether this plan is the re-bound LLM proposal or the
+    # deterministic reference (mirrors DecisionArtifact.decision_source so the plan
+    # artifact and its decision record agree).
+    decision_source: DecisionSource | None = None
     steps: list[PlanStep] = []
 
 

@@ -157,6 +157,9 @@ export interface DecisionCandidate {
   selected: boolean;
 }
 
+/** Provenance of a decision (ADR-0022): real LLM seam output vs deterministic fallback. */
+export type DecisionSource = "llm" | "deterministic_fallback";
+
 export interface DecisionArtifact {
   kind: DecisionKind;
   confidence: number | null;
@@ -165,6 +168,7 @@ export interface DecisionArtifact {
   candidates: DecisionCandidate[];
   artifact_ref: string | null;
   invocation_log_ref: string | null;
+  decision_source: DecisionSource | null;
   created_at: string;
 }
 
