@@ -59,14 +59,24 @@ def test_no_matching_fixture_returns_404(tmp_path: Path) -> None:
     assert resp.json()["detail"] == "no replay fixture for this request"
 
 
-def test_uncataloged_target_returns_404_not_500(tmp_path: Path) -> None:
-    # smart_resume is a valid DeliveryTarget but has no target catalog yet — the
-    # CatalogNotFoundError must surface as an addressable 404, not an opaque 500
-    # (hit live by the orchestrator's smartresume mapping step).
-    bogus = {**WALLET_BODY, "delivery_target": "smart_resume"}
+def test_uncataloged_fetch_profile_returns_404_not_500(tmp_path: Path) -> None:
+    # A fetch_profile_id that will never exist must surface as an addressable 404
+    # via CatalogNotFoundError, not an opaque 500. (A missing-target example like
+    # smart_resume would expire once its catalog lands, #138.)
+    bogus = {
+        "execution_id": "exec_1",
+        "event_id": "evt_1",
+        "transformation_type": "credential_template",
+        "source_system": "mock_lms",
+        "fetch_profile_id": "nonexistent_profile_for_testing.v1",
+        "synthesis_allowed": False,
+        "source_payloads": {
+            "outcome": {"code": "1.0.0", "display_name": "X", "description": "Y"},
+        },
+    }
     resp = _client(tmp_path).post("/map", json=bogus)
     assert resp.status_code == 404
-    assert "smart_resume" in resp.json()["detail"]
+    assert "nonexistent_profile_for_testing.v1" in resp.json()["detail"]
 
 
 def test_swagger_example_body_returns_200(tmp_path: Path) -> None:
