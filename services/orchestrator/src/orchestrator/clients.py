@@ -44,6 +44,12 @@ class FieldMappingClient(Protocol):
     ) -> dict[str, Any]: ...
 
 
+class FieldSynthesisClient(Protocol):
+    def synthesize(
+        self, transformation_type: str, synthesis_request: dict[str, Any], ctx: EnvelopeContext
+    ) -> dict[str, Any]: ...
+
+
 class DeliveryRouterClient(Protocol):
     def dispatch(
         self, action: str, payload: dict[str, Any], ctx: EnvelopeContext, step_id: str
@@ -96,6 +102,16 @@ class StubFieldMapping:
             "requires_synthesis": False,
             "llm_invocation_log_ref": None,
         }
+
+
+class StubFieldSynthesis:
+    """Phase-1 Field Synthesis stub: no synthesized values (the stub mapping
+    requires no synthesis). Used when no field_synthesis_url is configured."""
+
+    def synthesize(
+        self, transformation_type: str, synthesis_request: dict[str, Any], ctx: EnvelopeContext
+    ) -> dict[str, Any]:
+        return {"status": "succeeded", "values": {}}
 
 
 class StubDeliveryRouter:
@@ -247,6 +263,34 @@ class HttpFieldMappingClient:
                 "execution_id": ctx.execution_id,
                 "event_id": ctx.correlation_id,
                 **request,
+            },
+        )
+        resp.raise_for_status()
+        body: dict[str, Any] = resp.json()
+        return body
+
+
+class HttpFieldSynthesisClient:
+    """Real Field Synthesis client (#85) — POSTs to /synthesize-fields with the
+    synthesis-request artifact inline (the two services keep separate artifact
+    stores, so a ref would not resolve) and returns the response envelope, which
+    carries the generated ``values`` inline. Best-effort: the caller falls back to
+    empty synthesized values on failure, so a Field Synthesis outage does not fail
+    the workflow (the obv3 stand-in still delivers)."""
+
+    def __init__(self, base_url: str, client: httpx.Client | None = None) -> None:
+        self._client = client or httpx.Client(base_url=base_url, timeout=60.0)
+
+    def synthesize(
+        self, transformation_type: str, synthesis_request: dict[str, Any], ctx: EnvelopeContext
+    ) -> dict[str, Any]:
+        resp = self._client.post(
+            "/synthesize-fields",
+            json={
+                "execution_id": ctx.execution_id,
+                "event_id": ctx.correlation_id,
+                "transformation_type": transformation_type,
+                "synthesis_request": synthesis_request,
             },
         )
         resp.raise_for_status()

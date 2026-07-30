@@ -22,6 +22,7 @@ from orchestrator.clients import (
     DeliveryRouterClient,
     EnvelopeContext,
     FieldMappingClient,
+    FieldSynthesisClient,
     ProfileResolverClient,
 )
 
@@ -33,6 +34,7 @@ class ActionDeps:
     profile_resolver: ProfileResolverClient
     delivery_router: DeliveryRouterClient
     field_mapping: FieldMappingClient
+    field_synthesis: FieldSynthesisClient
     issuer_id: str
     envelope: EnvelopeContext
 
@@ -115,13 +117,46 @@ def _generate_payload_mapping(inputs: dict[str, Any], deps: ActionDeps) -> dict[
 
 
 def _generate_field_synthesis(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:
-    """Field Synthesis seam (#27). Returns the flat synthesized-values map the
-    Translation Executor merges under ``synthesized.*``. Phase-1: the mapping
-    requires no synthesis, so there are no values.
+    """Field Synthesis seam (#27/#85). When the Field Mapping result marked fields
+    for synthesis, call the Field Synthesis service with the synthesis-request
+    artifact the mapping response carries inline (the two services keep separate
+    artifact stores, so the orchestrator passes it inline rather than by ref) and
+    return the produced values for the Translation Executor to merge under
+    ``synthesized.*``.
 
-    TODO(#27): when ``requires_synthesis`` is true, call Field Synthesis with the
-    mapping's ``synthesis_request_ref`` and return the produced values."""
-    return {"synthesized": {}}
+    Best-effort: no synthesis required, a missing client, or a failed call all
+    yield empty synthesized values rather than failing the workflow (the obv3
+    stand-in still delivers)."""
+    mapping = inputs.get("mapping") or {}
+    if not mapping.get("requires_synthesis"):
+        return {"synthesized": {}}
+    synthesis_request = mapping.get("synthesis_request")
+    if not synthesis_request:
+        logger.warning("field mapping required synthesis but returned no inline request")
+        return {"synthesized": {}}
+    transformation_type = str(inputs.get("transformation_type") or "issuer_payload")
+    try:
+        result = deps.field_synthesis.synthesize(
+            transformation_type, synthesis_request, deps.envelope
+        )
+    except Exception as err:
+        logger.warning("field synthesis call failed (non-fatal; no synthesized values): %s", err)
+        return {"synthesized": {}}
+    if result.get("status") != "succeeded":
+        logger.warning("field synthesis returned failed (non-fatal): %s", result.get("status"))
+        return {"synthesized": {}}
+    # Preserve the response envelope alongside the merged values: confidence and
+    # rationale must stay recoverable from the execution record (FR-FS-9, design
+    # §12 "inline always"), and the refs give the audit trail a pointer to the
+    # stored artifacts — parity with the mapping seam, which persists its whole
+    # envelope as the step output.
+    return {
+        "synthesized": result.get("values") or {},
+        "confidence": result.get("confidence"),
+        "rationale": result.get("rationale"),
+        "synthesis_result_ref": result.get("synthesis_result_ref"),
+        "llm_invocation_log_ref": result.get("llm_invocation_log_ref"),
+    }
 
 
 def _execute_credential_template_translation(

@@ -17,6 +17,7 @@ from orchestrator.clients import (
     StubContextBuilder,
     StubDeliveryRouter,
     StubFieldMapping,
+    StubFieldSynthesis,
     StubProfileResolver,
 )
 from orchestrator.executor import execute_plan
@@ -78,6 +79,7 @@ def test_executes_steps_in_order_and_threads_data(sample_event):
         profile_resolver=profile,
         delivery_router=router,
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=_ENVELOPE,
     )
@@ -141,6 +143,7 @@ def test_issuer_failure_short_circuits_before_wallet(sample_event):
         profile_resolver=StubProfileResolver(),
         delivery_router=_FailingIssuer(),
         field_mapping=StubFieldMapping(),
+        field_synthesis=StubFieldSynthesis(),
         issuer_id="did:web:issuer.example",
         envelope=_ENVELOPE,
     )
