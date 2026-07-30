@@ -138,7 +138,9 @@ def _generate_field_synthesis(inputs: dict[str, Any], deps: ActionDeps) -> dict[
 
     Best-effort: no synthesis required, a missing client, or a failed call all
     yield empty synthesized values rather than failing the workflow (the obv3
-    stand-in still delivers)."""
+    stand-in still delivers). Runtime failures (the call raising, or a failed
+    response) additionally set the ``_degraded`` marker so the fallback is
+    audit-visible on the stored step (#102's convention)."""
     mapping = inputs.get("mapping") or {}
     if not mapping.get("requires_synthesis"):
         return {"synthesized": {}}
@@ -153,10 +155,10 @@ def _generate_field_synthesis(inputs: dict[str, Any], deps: ActionDeps) -> dict[
         )
     except Exception as err:
         logger.warning("field synthesis call failed (non-fatal; no synthesized values): %s", err)
-        return {"synthesized": {}}
+        return {"synthesized": {}, DEGRADED_KEY: f"field-synthesis failed: {err}"}
     if result.get("status") != "succeeded":
         logger.warning("field synthesis returned failed (non-fatal): %s", result.get("status"))
-        return {"synthesized": {}}
+        return {"synthesized": {}, DEGRADED_KEY: f"field-synthesis returned {result.get('status')}"}
     # Preserve the response envelope alongside the merged values: confidence and
     # rationale must stay recoverable from the execution record (FR-FS-9, design
     # §12 "inline always"), and the refs give the audit trail a pointer to the
@@ -174,21 +176,34 @@ def _generate_field_synthesis(inputs: dict[str, Any], deps: ActionDeps) -> dict[
 def _execute_credential_template_translation(
     inputs: dict[str, Any], deps: ActionDeps
 ) -> dict[str, Any]:
-    """Credential-template Translation Executor (ADR-0017 Phase 1). The Phase-1
-    stand-in derives the achievement definition (name / description / criteria)
-    deterministically from the context bundle; the issuer phase reads it as a
-    source artifact (via _mapping_source_payloads)."""
+    """Credential-template Translation Executor (ADR-0017 Phase 1). When the
+    Transformation Executor is configured and the mapping step produced inline
+    JSONata, delegates to it (with the phase's synthesized values) and stores its
+    result as the template. Best-effort: otherwise the stand-in derives the
+    achievement definition (name / description / criteria) deterministically from
+    the context bundle. Either way the issuer phase reads the output as a source
+    artifact (via _mapping_source_payloads)."""
+    result, degraded = _call_transformation_executor(
+        inputs, deps,
+        transformation_type="credential_template",
+        synthesized=(inputs.get("synthesis") or {}).get("synthesized", {}),
+    )
+    if result is not None:
+        return {"credential_template": result}
     source = (inputs.get("bundle") or {}).get("source_data", {})
     outcome = source.get("outcome") or {}
     name = outcome.get("display_name") or outcome.get("title") or "Credential"
     description = outcome.get("description") or f"Demonstrated mastery: {name}."
-    return {
+    output: dict[str, Any] = {
         "credential_template": {
             "name": name,
             "description": description,
             "criteria": {"narrative": outcome.get("description") or f"Awarded for {name}."},
         }
     }
+    if degraded:
+        output[DEGRADED_KEY] = degraded
+    return output
 
 
 def _call_transformation_executor(
@@ -302,9 +317,18 @@ def _execute_smartresume_payload_translation(
     inputs: dict[str, Any], deps: ActionDeps
 ) -> dict[str, Any]:
     """SmartResume-side Translation Executor — the wallet_payload-equivalent phase
-    keyed to smart_resume (ADR-0017 / phase-2 §2). The Phase-1 stand-in builds the
-    CredentialConnect payload from the ISSUED credential (LearnCard issues every
-    credential first) + the resolved profile + learner contact from the bundle."""
+    keyed to smart_resume (ADR-0017 / phase-2 §2). When the Transformation Executor
+    is configured and the mapping step produced inline JSONata, delegates to it and
+    returns its result directly (the executor produces the CredentialConnect payload
+    shape; source resolution follows the wallet branch — the issued credential).
+    Best-effort: otherwise the stand-in builds the CredentialConnect payload from
+    the ISSUED credential (LearnCard issues every credential first) + the resolved
+    profile + learner contact from the bundle."""
+    result, degraded = _call_transformation_executor(
+        inputs, deps, transformation_type="wallet_payload", synthesized={}
+    )
+    if result is not None:
+        return result
     issued = (inputs.get("issued", {}).get("result") or {}).get("issued_credential") or {}
     ob3 = dict(issued)
     # SmartResume requires a top-level credential id; stamp a deterministic one
@@ -321,7 +345,10 @@ def _execute_smartresume_payload_translation(
         recipient["givenName"] = learner["givenName"]
     if learner.get("familyName"):
         recipient["familyName"] = learner["familyName"]
-    return {"recipient": recipient, "credentials": [ob3]}
+    output: dict[str, Any] = {"recipient": recipient, "credentials": [ob3]}
+    if degraded:
+        output[DEGRADED_KEY] = degraded
+    return output
 
 
 def _deliver_to_smartresume(inputs: dict[str, Any], deps: ActionDeps) -> dict[str, Any]:

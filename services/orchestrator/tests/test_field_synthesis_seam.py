@@ -4,7 +4,7 @@ request all fall back to empty synthesized values (the obv3 stand-in still deliv
 
 from typing import Any
 
-from orchestrator.actions import ActionDeps, _generate_field_synthesis
+from orchestrator.actions import DEGRADED_KEY, ActionDeps, _generate_field_synthesis
 from orchestrator.clients import (
     EnvelopeContext,
     StubDeliveryRouter,
@@ -104,7 +104,8 @@ def test_failed_status_response_falls_back_to_empty() -> None:
         {"mapping": _REQUIRES_SYNTHESIS, "transformation_type": "issuer_payload"}, _deps(spy)
     )
     assert spy.called is True
-    assert out == {"synthesized": {}}
+    # #131: a real, attempted call that failed is audit-visible via the marker.
+    assert out == {"synthesized": {}, DEGRADED_KEY: "field-synthesis returned failed"}
 
 
 def test_synthesis_failure_falls_back_to_empty() -> None:
@@ -113,7 +114,8 @@ def test_synthesis_failure_falls_back_to_empty() -> None:
         {"mapping": _REQUIRES_SYNTHESIS, "transformation_type": "issuer_payload"}, _deps(spy)
     )
     assert spy.called is True
-    assert out == {"synthesized": {}}
+    assert out["synthesized"] == {}
+    assert out[DEGRADED_KEY].startswith("field-synthesis failed:")
 
 
 def test_requires_synthesis_but_no_inline_request_falls_back() -> None:
@@ -122,5 +124,5 @@ def test_requires_synthesis_but_no_inline_request_falls_back() -> None:
         {"mapping": {"requires_synthesis": True}, "transformation_type": "issuer_payload"},
         _deps(spy),
     )
-    assert out == {"synthesized": {}}
+    assert out == {"synthesized": {}}  # no marker: nothing was attempted
     assert spy.called is False
