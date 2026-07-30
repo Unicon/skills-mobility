@@ -127,9 +127,28 @@ def test_coverage_failure_yields_failed_status_and_stored_failed_artifact(
     assert resp.status == "failed"
     assert resp.synthesis_result_ref is None
     assert resp.llm_invocation_log_ref is not None
-    # The failed record is stored but cannot be loaded as a success.
+    # The failed record is stored under its own kind and cannot load as a success.
     with pytest.raises(FailedArtifactError):
-        artifact_store.load_synthesis_result("synthesis_result:exec_1")
+        artifact_store.load_synthesis_result("synthesis_result_failed:exec_1")
+
+
+def test_failed_attempt_does_not_overwrite_previous_success(
+    make_service: Any,
+    artifact_store: ArtifactStore,
+    open_badge_request: SynthesisRequest,
+) -> None:
+    # Results are reusable (FR-FS-21): a later failed attempt for the same key
+    # must not destroy the previously-succeeded artifact.
+    ok = make_service().synthesize(open_badge_request)
+    assert ok.status == "succeeded" and ok.synthesis_result_ref is not None
+
+    bad = SynthesisGeneration(values={"wrong_key": "text"}, confidence=0.8, rationale="bad")
+    failed = make_service(adapter=_CountingAdapter(bad)).synthesize(open_badge_request)
+    assert failed.status == "failed"
+
+    # The earlier success is still intact and loadable.
+    artifact = artifact_store.load_synthesis_result(ok.synthesis_result_ref)
+    assert artifact.values
 
 
 def test_exactly_one_adapter_attempt_no_hidden_repair(

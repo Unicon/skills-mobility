@@ -183,7 +183,7 @@ Common commands:
 uv sync --all-packages          # create env + install all members
 uv run pytest                   # run the whole suite
 uv run ruff check .             # lint
-uv run mypy libs/*/src services/*/src   # type-check
+uv run mypy libs/*/src $(ls -d services/*/src | grep -v learncard-issuer-adapter)   # type-check (skip the Node service)
 uv run mock-lms                 # run the service locally
 ```
 

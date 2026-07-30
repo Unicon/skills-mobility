@@ -58,5 +58,5 @@ def run() -> None:
     import uvicorn
 
     settings = get_settings()
-    logging.basicConfig(level=settings.log_level)
-    uvicorn.run(create_app(), host="0.0.0.0", port=8150)
+    logging.basicConfig(level=settings.log_level.upper())
+    uvicorn.run(create_app(), host="0.0.0.0", port=settings.port)

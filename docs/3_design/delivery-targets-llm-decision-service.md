@@ -319,7 +319,7 @@ The service should store enough data for the team to evaluate routing quality, c
 - whether repair retry mode was enabled and whether it was used
 - `corpus_scenario_id`, present only for invocations run against the frozen ADR-0013 evaluation corpus (absent for live production invocations), formatted as `{event_type}.{scenario_slug}.v{version}` per [ADR-0013](../decisions/0013-llm-decision-service-testing-approach.md) §8
 
-This data supports comparing prompt versions, model choices, routing-accuracy behavior, retry behavior, and cost/latency tradeoffs. This is the same per-invocation metadata contract ADR-0010 §60 requires of every LLM Decision Service.
+This data supports comparing prompt versions, model choices, routing-accuracy behavior, retry behavior, and cost/latency tradeoffs. This is the same per-invocation metadata contract ADR-0010 requires of every LLM Decision Service.
 
 ## 13. Suggested Module Layout
 

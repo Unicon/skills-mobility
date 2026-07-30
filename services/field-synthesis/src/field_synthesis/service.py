@@ -57,7 +57,18 @@ class SynthesisService:
 
         # Exactly one attempt (FR-FS-14); no hidden repair retry.
         generation, meta = self._adapter.generate(request, briefs=briefs)
+        logger.info(
+            "synthesis generated: execution_id=%s event_id=%s transformation_type=%s "
+            "provider=%s placeholder_ids=%s",
+            request.execution_id, request.event_id, request.transformation_type,
+            meta.provider, sorted(generation.values),
+        )
         errors = validate_generation(generation, requested_ids=requested_ids)
+        logger.info(
+            "validation decision: execution_id=%s event_id=%s status=%s errors=%s",
+            request.execution_id, request.event_id,
+            "failed" if errors else "succeeded", errors,
+        )
 
         # All three artifact kinds (mapping, synthesis-request, synthesis-result)
         # are co-located under Field Mapping's stable_key (design §16).
@@ -69,7 +80,11 @@ class SynthesisService:
         )
 
         if errors:
-            self._artifact_store.store_failed(key, "; ".join(errors))
+            failed_ref = self._artifact_store.store_failed(key, "; ".join(errors))
+            logger.info(
+                "failed artifact stored: execution_id=%s event_id=%s ref=%s log_ref=%s",
+                request.execution_id, request.event_id, failed_ref, log_ref,
+            )
             return SynthesisResponse.failed(llm_invocation_log_ref=log_ref)
 
         artifact = SynthesisResultArtifact(
@@ -80,6 +95,10 @@ class SynthesisService:
             rationale=generation.rationale,
         )
         result_ref = self._artifact_store.store_synthesis_result(artifact, key=key)
+        logger.info(
+            "synthesis result stored: execution_id=%s event_id=%s result_ref=%s log_ref=%s",
+            request.execution_id, request.event_id, result_ref, log_ref,
+        )
         return SynthesisResponse.succeeded(
             synthesis_result_ref=result_ref,
             llm_invocation_log_ref=log_ref,

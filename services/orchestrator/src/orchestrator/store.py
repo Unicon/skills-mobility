@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS workflow_decision (
     candidates_json    TEXT,
     artifact_ref       TEXT,
     invocation_log_ref TEXT,
+    decision_source    TEXT,
     created_at         TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_workflow_decision_execution ON workflow_decision(execution_id);
@@ -144,7 +145,8 @@ class ExecutionStore:
         self._conn.execute(
             "INSERT INTO workflow_decision "
             "(execution_id, kind, confidence, rationale, outcome, candidates_json, "
-            "artifact_ref, invocation_log_ref, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "artifact_ref, invocation_log_ref, decision_source, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 execution_id,
                 decision.kind,
@@ -154,6 +156,7 @@ class ExecutionStore:
                 candidates_json,
                 decision.artifact_ref,
                 decision.invocation_log_ref,
+                decision.decision_source,
                 decision.created_at or _now(),
             ),
         )
@@ -261,6 +264,7 @@ class ExecutionStore:
                 ),
                 artifact_ref=d["artifact_ref"],
                 invocation_log_ref=d["invocation_log_ref"],
+                decision_source=d["decision_source"],
                 created_at=d["created_at"],
             )
             for d in decision_rows

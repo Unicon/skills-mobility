@@ -10,9 +10,11 @@ while preserving the interface a cloud storage layer will back in AWS.
 The store also supports loading synthesis-request artifacts (Field Mapping's output)
 so the service can resolve by-ref requests without a live source-system call.
 
-Failed artifacts are stored with their validation errors attached, so the audit trail
-records rejected attempts (FR-FS-10). A failed record cannot be loaded as a
-successful synthesis result.
+Failed artifacts are stored with their validation errors attached under a separate
+``synthesis_result_failed`` kind, so the audit trail records rejected attempts
+(FR-FS-10) without a failed attempt overwriting a previously-succeeded (reusable,
+FR-FS-21) result for the same key. A failed record cannot be loaded as a successful
+synthesis result.
 """
 
 from __future__ import annotations
@@ -62,14 +64,18 @@ class ArtifactStore:
 
     def store_failed(self, key: str, reason: str) -> str:
         """Persist a failed-synthesis record under ``key``; returns the loadable
-        ``"synthesis_result:<key>"`` ref.
+        ``"synthesis_result_failed:<key>"`` ref.
 
-        The record is written to the same path as a successful artifact so that
-        a subsequent ``load_synthesis_result`` attempt raises ``FailedArtifactError``
-        (audit trail, FR-FS-10). The returned ref resolves via ``_read`` — loading
-        it raises FailedArtifactError, not a not-found error.
+        Failures live under their own kind so a failed attempt never overwrites a
+        previously-succeeded result for the same stable_key — results are reusable
+        (FR-FS-21), and a later failure must not destroy a good cached artifact.
+        The failure is still auditable (FR-FS-10): this record + the invocation
+        log record the rejected attempt, and loading the returned ref raises
+        ``FailedArtifactError``, not a not-found error.
         """
-        return self._write("synthesis_result", key, {"status": "failed", "reason": reason})
+        return self._write(
+            "synthesis_result_failed", key, {"status": "failed", "reason": reason}
+        )
 
     def load_synthesis_result(self, ref: str) -> SynthesisResultArtifact:
         """Load a successful synthesis result artifact by ref."""
@@ -96,8 +102,8 @@ class ArtifactStore:
         return self._write("llmcall", key, record)
 
     def _read(self, ref: str) -> dict[str, Any]:
-        # refs: "synthesis_result:<key>", "synthesis_request:<key>", "llmcall:<key>"
-        # "synthesis_result:failed:<key>" → kind="synthesis_result", key="failed:<key>"
+        # refs: "synthesis_result:<key>", "synthesis_result_failed:<key>",
+        # "synthesis_request:<key>", "llmcall:<key>".
         # Split on first ":" only; remainder is the key (may itself contain colons).
         parts = ref.split(":", 1)
         kind = parts[0]

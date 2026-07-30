@@ -51,9 +51,38 @@ class SynthesisRequestArtifact(BaseModel):
 
 class SynthesisRequest(BaseModel):
     """§4 request. Context is passed inline by default (ADR-0007) or by ref for
-    production-shaped orchestration flows (``synthesis_request_ref``)."""
+    production-shaped orchestration flows (``synthesis_request_ref``). The example
+    surfaces in Swagger's "Try it out" panel."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "execution_id": "exec_1",
+                "event_id": "evt_1",
+                "transformation_type": "issuer_payload",
+                "synthesis_request": {
+                    "synthesis_request_schema_version": "v1",
+                    "transformation_type": "issuer_payload",
+                    "requests": [
+                        {
+                            "placeholder_id": "badge_description",
+                            "target_path": "badge.description",
+                            "source_payload_paths": [
+                                "source_payloads.learner_context.course.description"
+                            ],
+                            "source_payloads": {
+                                "learner_context": {
+                                    "course": {"description": "Core accounting skills course."}
+                                }
+                            },
+                            "instruction": "Write a concise badge description.",
+                        }
+                    ],
+                },
+            }
+        },
+    )
 
     execution_id: str
     event_id: str

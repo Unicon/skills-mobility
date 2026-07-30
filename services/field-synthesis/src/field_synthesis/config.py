@@ -25,6 +25,8 @@ class Settings(BaseSettings):
         env_prefix="FIELD_SYNTHESIS_", env_file=_ENV_FILE, extra="ignore"
     )
 
+    # Local HTTP port (8150 — clear of Consul's 8300-8302/8500/8600).
+    port: int = 8150
     # LLM adapter mode: "replay" (deterministic fixtures) or "bedrock" (live).
     mode: str = "replay"
     # Directory for stored synthesis result / invocation-log artifacts.
