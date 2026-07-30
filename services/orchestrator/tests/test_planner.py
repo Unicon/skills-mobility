@@ -239,3 +239,18 @@ def test_plan_id_is_target_aware():
 def test_applicability_key_includes_event_and_targets():
     key = planner.applicability_key("skill_mastered", ["learncard_wallet", "learncard_issuer"])
     assert key == "skill_mastered|learncard_issuer,learncard_wallet"
+
+
+def test_every_planned_action_id_has_a_registered_implementation():
+    # #124 guarded: a plan action_id with no ACTIONS entry silently never connects
+    # to its wiring (the #89 wallet rename briefly created exactly that gap).
+    from orchestrator.actions import ACTIONS
+
+    for targets in (
+        ["learncard_issuer", "learncard_wallet"],
+        ["learncard_issuer", "smart_resume"],
+        ["learncard_issuer", "learncard_wallet", "smart_resume"],
+    ):
+        plan = planner.delivery_phase_plan("skill_mastered", targets, "2026-06-24T00:00:00Z")
+        missing = [s.action_id for s in plan.steps if s.action_id not in ACTIONS]
+        assert missing == [], f"unregistered action ids for {targets}: {missing}"

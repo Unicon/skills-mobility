@@ -13,8 +13,11 @@ from typing import Any
 
 import pytest
 from orchestrator.actions import (
+    DEGRADED_KEY,
     ActionDeps,
+    _execute_credential_template_translation,
     _execute_issuer_payload_translation,
+    _execute_smartresume_payload_translation,
     _execute_wallet_payload_translation,
 )
 from orchestrator.clients import (
@@ -141,6 +144,117 @@ def _deps(executor: Any = None) -> ActionDeps:
 
 
 # --- Issuer payload translation ---
+
+
+_CT_BASE = {
+    # credential_template is target-independent: no delivery_target bound (#124).
+    "transformation_type": "credential_template",
+    "bundle": _ISSUER_BASE["bundle"],
+    "issuer_id": "did:web:issuer.example",
+    "resolved_profile": _PROFILE,
+    "synthesis": {"synthesized": {"criteria_narrative": "synthesized narrative"}},
+}
+
+_SMARTRESUME_BASE = {
+    "delivery_target": "smart_resume",
+    "issued": _WALLET_BASE["issued"],
+    "resolved_profile": _PROFILE,
+    "bundle": _ISSUER_BASE["bundle"],
+}
+
+
+def test_credential_template_executor_called_when_configured_with_jsonata() -> None:
+    executor_result = {"name": "Sample Competency", "description": "A sample description."}
+    spy = _SpyExecutor(result=executor_result)
+    inputs = {**_CT_BASE, "mapping": _MAPPING_WITH_JSONATA}
+
+    out = _execute_credential_template_translation(inputs, _deps(spy))
+
+    assert len(spy.calls) == 1
+    call = spy.calls[0]
+    assert call["transformation_type"] == "credential_template"
+    assert call["delivery_target"] is None  # target-independent phase
+    assert call["mapping"] == _MAPPING_WITH_JSONATA["mapping"]
+    # The ct phase HAS a synthesis step - its values must reach the executor.
+    assert call["synthesized"] == {"criteria_narrative": "synthesized narrative"}
+    # Source resolution follows the non-wallet branch: bundle source_data present.
+    assert "outcome" in call["source_payloads"]
+    # The executor result is stored under the produced name the issuer phase reads.
+    assert out == {"credential_template": executor_result}
+
+
+def test_credential_template_executor_not_called_when_none() -> None:
+    inputs = {**_CT_BASE, "mapping": _MAPPING_WITH_JSONATA}
+    out = _execute_credential_template_translation(inputs, _deps(None))
+    # Deterministic stand-in, no marker: unconfigured is not a degradation.
+    assert out["credential_template"]["name"] == "Demonstrate the sample competency"
+    assert DEGRADED_KEY not in out
+
+
+def test_credential_template_falls_back_when_no_jsonata() -> None:
+    spy = _SpyExecutor(result={"unused": True})
+    inputs = {**_CT_BASE, "mapping": _MAPPING_NO_JSONATA}
+    out = _execute_credential_template_translation(inputs, _deps(spy))
+    assert spy.calls == []
+    assert out["credential_template"]["name"] == "Demonstrate the sample competency"
+    assert DEGRADED_KEY not in out
+
+
+def test_credential_template_falls_back_on_executor_exception() -> None:
+    spy = _SpyExecutor(raise_exc=True)
+    inputs = {**_CT_BASE, "mapping": _MAPPING_WITH_JSONATA}
+    out = _execute_credential_template_translation(inputs, _deps(spy))
+    assert len(spy.calls) == 1
+    assert out["credential_template"]["name"] == "Demonstrate the sample competency"
+    assert out[DEGRADED_KEY].startswith("transformation-executor failed")
+
+
+def test_smartresume_executor_called_when_configured_with_jsonata() -> None:
+    executor_result = {
+        "recipient": {"id": "did:web:x", "email": "learner@example.com"},
+        "credentials": [{"id": "urn:vc:1"}],
+    }
+    spy = _SpyExecutor(result=executor_result)
+    inputs = {**_SMARTRESUME_BASE, "mapping": _MAPPING_WITH_JSONATA}
+
+    out = _execute_smartresume_payload_translation(inputs, _deps(spy))
+
+    assert len(spy.calls) == 1
+    call = spy.calls[0]
+    # The SR phase is the wallet_payload transformation keyed to smart_resume.
+    assert call["transformation_type"] == "wallet_payload"
+    assert call["delivery_target"] == "smart_resume"
+    assert call["synthesized"] == {}
+    # Wallet-branch source resolution: the ISSUED credential, not raw source data.
+    assert "issued_badge" in call["source_payloads"]
+    # The executor already produces the CredentialConnect shape - returned directly.
+    assert out == executor_result
+
+
+def test_smartresume_executor_not_called_when_none() -> None:
+    inputs = {**_SMARTRESUME_BASE, "mapping": _MAPPING_WITH_JSONATA}
+    out = _execute_smartresume_payload_translation(inputs, _deps(None))
+    assert out["recipient"]["email"] == "learner@example.com"
+    assert len(out["credentials"]) == 1
+    assert DEGRADED_KEY not in out
+
+
+def test_smartresume_falls_back_when_no_jsonata() -> None:
+    spy = _SpyExecutor(result={"unused": True})
+    inputs = {**_SMARTRESUME_BASE, "mapping": _MAPPING_NO_JSONATA}
+    out = _execute_smartresume_payload_translation(inputs, _deps(spy))
+    assert spy.calls == []
+    assert out["recipient"]["email"] == "learner@example.com"
+    assert DEGRADED_KEY not in out
+
+
+def test_smartresume_falls_back_on_executor_exception() -> None:
+    spy = _SpyExecutor(raise_exc=True)
+    inputs = {**_SMARTRESUME_BASE, "mapping": _MAPPING_WITH_JSONATA}
+    out = _execute_smartresume_payload_translation(inputs, _deps(spy))
+    assert len(spy.calls) == 1
+    assert out["recipient"]["email"] == "learner@example.com"
+    assert out[DEGRADED_KEY].startswith("transformation-executor failed")
 
 
 def test_issuer_executor_called_when_configured_with_jsonata() -> None:
