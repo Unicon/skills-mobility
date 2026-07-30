@@ -52,9 +52,15 @@ describe("DecisionDetailCard", () => {
 
   test("renders the Instructions bubble with the goal and a JSON block of the mock input", () => {
     render(<DecisionDetailCard decision={gateDecision} execution={execution} />);
-    expect(screen.getByText("Instructions")).toBeTruthy();
+    expect(screen.getByText(/Instructions/)).toBeTruthy();
     expect(screen.getByText(/proceed to delivery-target selection/)).toBeTruthy();
     expect(screen.getByText(/execution_id/)).toBeTruthy();
+  });
+
+  test("Instructions bubble discloses it's reconstructed, not real backend data", () => {
+    render(<DecisionDetailCard decision={gateDecision} execution={execution} />);
+    expect(screen.getByText("reconstructed")).toBeTruthy();
+    expect(screen.getByText(/doesn.t persist the real input/)).toBeTruthy();
   });
 
   test("renders the Response bubble narrating outcome, confidence, and rationale, with no candidate list", () => {

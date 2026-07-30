@@ -86,6 +86,32 @@ describe("StepRow", () => {
     );
   });
 
+  test("adds .selected only when selectedPhase matches the row's phase, independent of .highlighted", () => {
+    const { rerender } = render(
+      <StepRow
+        step={step({ action_id: "resolve_learncard_profile" })}
+        activePhase={null}
+        onActiveChange={() => {}}
+        selectedPhase={null}
+      />,
+    );
+    expect(screen.getByText("resolve_learncard_profile").closest("button")?.className).not.toContain(
+      "selected",
+    );
+
+    rerender(
+      <StepRow
+        step={step({ action_id: "resolve_learncard_profile" })}
+        activePhase={null}
+        onActiveChange={() => {}}
+        selectedPhase="workflow_actions_plan"
+      />,
+    );
+    const button = screen.getByText("resolve_learncard_profile").closest("button");
+    expect(button?.className).toContain("selected");
+    expect(button?.className).not.toContain("highlighted");
+  });
+
   test("fires onActiveChange with the step's phase on hover/focus, and null on leave/blur", () => {
     const onActiveChange = vi.fn();
     render(

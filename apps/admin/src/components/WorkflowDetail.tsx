@@ -8,9 +8,13 @@ import { StepRow } from "./StepRow";
 export function WorkflowDetail({ executionId, onBack }: { executionId: string; onBack: () => void }) {
   const { execution, error } = useExecution(executionId);
   const [activePhase, setActivePhase] = useState<Phase | null>(null);
+  const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
 
   useEffect(() => {
-    if (error || !execution) setActivePhase(null);
+    if (error || !execution) {
+      setActivePhase(null);
+      setSelectedPhase(null);
+    }
   }, [error, execution]);
 
   return (
@@ -48,6 +52,8 @@ export function WorkflowDetail({ executionId, onBack }: { executionId: string; o
                 execution={execution}
                 activePhase={activePhase}
                 onActivePhaseChange={setActivePhase}
+                selectedPhase={selectedPhase}
+                onSelectedPhaseChange={setSelectedPhase}
               />
             </div>
           </div>
@@ -65,6 +71,7 @@ export function WorkflowDetail({ executionId, onBack }: { executionId: string; o
                   step={step}
                   activePhase={activePhase}
                   onActiveChange={setActivePhase}
+                  selectedPhase={selectedPhase}
                 />
               ))
             )}

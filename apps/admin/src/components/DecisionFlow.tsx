@@ -1,6 +1,8 @@
+import { InfoCircledIcon } from "@radix-ui/react-icons";
 import type { ExecutionMetadata } from "@skills-mobility/contracts";
 import { DecisionNode, FlowConnector, PipelineInfoNode } from "@skills-mobility/ui";
-import { Fragment, useState } from "react";
+import { Fragment } from "react";
+import { BadgeViewer } from "./BadgeViewer";
 import { KIND_LABEL, KIND_ORDER } from "./decisionKinds";
 import { DecisionDetailCard } from "./DecisionDetailCard";
 import { DeliveredDetailCard } from "./DeliveredDetailCard";
@@ -51,22 +53,34 @@ export function DecisionFlow({
   execution,
   activePhase,
   onActivePhaseChange,
+  selectedPhase,
+  onSelectedPhaseChange,
 }: {
   execution: ExecutionMetadata;
   activePhase: Phase | null;
   onActivePhaseChange: (phase: Phase | null) => void;
+  selectedPhase: Phase | null;
+  onSelectedPhaseChange: (phase: Phase | null) => void;
 }) {
-  const [expandedKey, setExpandedKey] = useState<Phase | null>(null);
+  const expandedKey = selectedPhase;
   const byKind = new Map(execution.decisions.map((d) => [d.kind, d]));
   // Any successful delivery — LearnCard Wallet today, and/or SmartResume once PR
   // #89 (unmerged) lands; FR-P2-7 allows both to succeed in one execution.
   const delivered = execution.steps.some((s) => stepPhase(s.action_id) === "delivered" && s.status === "succeeded");
   const activeChange = (key: Phase) => (on: boolean) => onActivePhaseChange(on ? key : null);
 
-  const toggle = (key: Phase) => setExpandedKey(expandedKey === key ? null : key);
+  const toggle = (key: Phase) => onSelectedPhaseChange(expandedKey === key ? null : key);
 
   return (
     <div className="decision-flow">
+      {execution.steps.length > 0 ? (
+        <p className="decision-flow-info">
+          <InfoCircledIcon aria-hidden="true" />
+          Dashed phases run deterministically and record no separate AI decision to open — their
+          steps still run. Hover or focus any phase to highlight the steps it governs; open a
+          phase to pin that highlight while its details are showing.
+        </p>
+      ) : null}
       <div className="decision-flow-row">
         <PipelineInfoNode
           icon={<EventIcon />}
@@ -120,14 +134,13 @@ export function DecisionFlow({
           onActiveChange={activeChange("delivered")}
         />
       </div>
-      {execution.steps.length > 0 ? (
-        <p className="decision-flow-legend">
-          Dashed phases run deterministically and record no separate AI decision to open — their
-          steps still run. Hover or focus any phase to highlight the steps it governs.
-        </p>
-      ) : null}
       {expandedKey === "event" ? <EventDetailCard execution={execution} /> : null}
-      {expandedKey === "delivered" && delivered ? <DeliveredDetailCard execution={execution} /> : null}
+      {expandedKey === "delivered" && delivered ? (
+        <>
+          <BadgeViewer execution={execution} />
+          <DeliveredDetailCard execution={execution} />
+        </>
+      ) : null}
       {expandedKey !== "event" && expandedKey !== "delivered" && expandedKey && byKind.get(expandedKey) ? (
         <DecisionDetailCard decision={byKind.get(expandedKey)!} execution={execution} />
       ) : null}

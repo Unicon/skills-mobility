@@ -45,10 +45,18 @@ export function DecisionDetailCard({
         </p>
       ) : null}
       <div className="decision-conversation-bubble">
-        <header className="decision-conversation-header">Instructions</header>
+        <header className="decision-conversation-header">
+          Instructions
+          <span className="decision-source-badge">reconstructed</span>
+        </header>
         <ClampedBlock>
           <p className="decision-conversation-text">
             Your goal is to take this data and {goalFor(decision.kind)}. Here&rsquo;s the data:
+          </p>
+          <p className="placeholder">
+            Reconstructed for display — the Orchestrator doesn&rsquo;t persist the real input any
+            LLM Decision Service received yet (FR-AU-18a). Some fields below are illustrative, not
+            the actual data sent.
           </p>
           <pre className="mono" dangerouslySetInnerHTML={{ __html: highlightJson(mockInput) }} />
         </ClampedBlock>

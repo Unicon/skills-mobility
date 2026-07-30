@@ -82,11 +82,14 @@ describe("WorkflowDetail", () => {
     vi.clearAllMocks();
   });
 
-  test("hovering the field mapping node highlights exactly its transformation step rows", () => {
+  test("hovering a transformation step row highlights every step row sharing its phase", () => {
+    // field_mapping has no pipeline node (decisionKinds.ts — it's never a real
+    // DecisionArtifact today, and the real steps run in two separate windows
+    // anyway), so this cross-highlight now only ever happens row-to-row.
     mockedUseExecution.mockReturnValue({ execution: happyPathExecution, error: null });
     render(<WorkflowDetail executionId="exec_1" onBack={() => {}} />);
 
-    fireEvent.mouseEnter(screen.getByRole("button", { name: "field mapping" }));
+    fireEvent.mouseEnter(screen.getByText("generate_issuer_payload_mapping").closest("button")!);
 
     const highlightedActionIds = happyPathExecution.steps
       .filter((s) => screen.getByText(s.action_id).closest("button")?.className.includes("highlighted"))
@@ -99,17 +102,58 @@ describe("WorkflowDetail", () => {
     expect(highlightedActionIds.sort()).toEqual(expectedFieldMappingActionIds.sort());
   });
 
-  test("hovering a transformation step row highlights the field mapping node", () => {
+  test("clicking the (populated) workflow actions node marks its steps 'selected' and persists after the mouse leaves", () => {
     mockedUseExecution.mockReturnValue({ execution: happyPathExecution, error: null });
     render(<WorkflowDetail executionId="exec_1" onBack={() => {}} />);
 
-    fireEvent.mouseEnter(
-      screen.getByText("generate_issuer_payload_mapping").closest("button")!,
+    const node = screen.getByRole("button", { name: "workflow actions" });
+    fireEvent.mouseEnter(node);
+    fireEvent.click(node);
+    fireEvent.mouseLeave(node);
+
+    const selectedActionIds = happyPathExecution.steps
+      .filter((s) => screen.getByText(s.action_id).closest("button")?.className.includes("selected"))
+      .map((s) => s.action_id);
+    const expectedWorkflowActionsActionIds = Object.keys(STEP_PHASE).filter(
+      (actionId) => STEP_PHASE[actionId] === "workflow_actions_plan",
     );
 
-    expect(screen.getByRole("button", { name: "field mapping" }).className).toContain(
-      "decision-node-highlighted",
+    expect(selectedActionIds.sort()).toEqual(expectedWorkflowActionsActionIds.sort());
+    // Hover already left, so none of those rows should also read as "highlighted".
+    const anyHighlighted = happyPathExecution.steps.some((s) =>
+      screen.getByText(s.action_id).closest("button")?.className.includes("highlighted"),
     );
+    expect(anyHighlighted).toBe(false);
+  });
+
+  test("hovering a step row of a different phase while a node is selected shows both distinctly", () => {
+    mockedUseExecution.mockReturnValue({ execution: happyPathExecution, error: null });
+    render(<WorkflowDetail executionId="exec_1" onBack={() => {}} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "workflow actions" }));
+    fireEvent.mouseEnter(screen.getByText("generate_issuer_payload_mapping").closest("button")!);
+
+    const workflowActionsStep = screen.getByText("resolve_learncard_profile").closest("button");
+    const fieldMappingStep = screen.getByText("generate_issuer_payload_mapping").closest("button");
+
+    expect(workflowActionsStep?.className).toContain("selected");
+    expect(workflowActionsStep?.className).not.toContain("highlighted");
+    expect(fieldMappingStep?.className).toContain("highlighted");
+    expect(fieldMappingStep?.className).not.toContain("selected");
+  });
+
+  test("collapsing the selected node clears 'selected' from its steps", () => {
+    mockedUseExecution.mockReturnValue({ execution: happyPathExecution, error: null });
+    render(<WorkflowDetail executionId="exec_1" onBack={() => {}} />);
+
+    const node = screen.getByRole("button", { name: "workflow actions" });
+    fireEvent.click(node);
+    fireEvent.click(node); // collapse
+
+    const anySelected = happyPathExecution.steps.some((s) =>
+      screen.getByText(s.action_id).closest("button")?.className.includes("selected"),
+    );
+    expect(anySelected).toBe(false);
   });
 
   test("hovering the gate node highlights no step rows", () => {
@@ -150,7 +194,7 @@ describe("WorkflowDetail", () => {
     render(<WorkflowDetail executionId="exec_1" onBack={() => {}} />);
 
     expect(screen.getByText("No steps recorded yet.")).toBeTruthy();
-    fireEvent.mouseEnter(screen.getByRole("button", { name: "field mapping" }));
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "gate" }));
     expect(screen.queryByText(/Dashed phases run deterministically/)).toBeNull();
   });
 });

@@ -9,21 +9,24 @@ export function StepRow({
   step,
   activePhase,
   onActiveChange,
+  selectedPhase = null,
 }: {
   step: StepResult;
   activePhase: Phase | null;
   onActiveChange: (phase: Phase | null) => void;
+  selectedPhase?: Phase | null;
 }) {
   const [open, setOpen] = useState(false);
   const phase = stepPhase(step.action_id);
   const highlighted = phase != null && phase === activePhase;
+  const selected = phase != null && phase === selectedPhase;
 
   return (
     <Collapsible.Root open={open} onOpenChange={setOpen}>
       <Collapsible.Trigger asChild>
         <button
           type="button"
-          className={`step-row${highlighted ? " highlighted" : ""}`}
+          className={`step-row${selected ? " selected" : ""}${highlighted ? " highlighted" : ""}`}
           onMouseEnter={() => onActiveChange(phase)}
           onMouseLeave={() => onActiveChange(null)}
           onFocus={() => onActiveChange(phase)}
