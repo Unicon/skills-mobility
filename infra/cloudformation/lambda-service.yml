@@ -133,9 +133,13 @@ Resources:
                   Action:
                     - bedrock:InvokeModel
                     - bedrock:InvokeModelWithResponseStream
-                  # Scope to the us. inference profile prefix for cross-region
-                  # inference profiles (e.g. us.anthropic.claude-haiku-4-5-...).
-                  Resource: "arn:aws:bedrock:*::foundation-model/*"
+                  # Cross-region inference profiles (the us.anthropic.claude-…
+                  # ids this project uses, ADR-0010) need InvokeModel on BOTH the
+                  # inference-profile ARN and the underlying foundation models —
+                  # matches the live-verified exec-role policy (infra/iam, demo).
+                  Resource:
+                    - "arn:aws:bedrock:*::foundation-model/*"
+                    - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
           - !Ref AWS::NoValue
         - !If
           - WithDynamoDB

@@ -1,0 +1,14 @@
+[
+  {"ParameterKey": "ProjectName",        "ParameterValue": "skills-mobility"},
+  {"ParameterKey": "EnvName",            "ParameterValue": "dev"},
+  {"ParameterKey": "ServiceName",        "ParameterValue": "context-builder"},
+  {"ParameterKey": "ImageUri",           "ParameterValue": "ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/skills-mobility/context-builder:latest"},
+  {"ParameterKey": "MemorySize",         "ParameterValue": "512"},
+  {"ParameterKey": "TimeoutSeconds",     "ParameterValue": "60"},
+  {"ParameterKey": "EventSourceType",    "ParameterValue": "url"},
+  {"ParameterKey": "EventBridgePattern", "ParameterValue": "{}"},
+  {"ParameterKey": "NeedsBedrock",       "ParameterValue": "false"},
+  {"ParameterKey": "NeedsDynamoDB",      "ParameterValue": "false"},
+  {"ParameterKey": "NeedsSqsSend",       "ParameterValue": "false"},
+  {"ParameterKey": "ExtraEnvJson",       "ParameterValue": "{}"}
+]

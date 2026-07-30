@@ -34,39 +34,40 @@ ENV=${ENV:-dev}
 declare -A STACKS=(
   [foundation]=foundation
 
-  # Services currently on main. Each needs a params/dev/<svc>.json; four examples
-  # are provided (foundation, event-consumer, orchestrator, field-mapping) — author
-  # the rest from the lambda-service.yml parameters before deploying them.
-  [context-builder]=lambda-service
-  [delivery-router]=lambda-service
-  [event-consumer]=lambda-service
-  [field-mapping]=lambda-service
-  [learncard-issuer-adapter]=lambda-service
-  [learncard-profile-resolver]=lambda-service
-  [learncard-wallet-adapter]=lambda-service
+  # The 9-service transformation chain — the same set .github/workflows/deploy.yml's
+  # matrix deploys (keep the two lists in sync; this file is the authoritative one).
+  # Every service below has a params/dev/<svc>.json.
   [mock-lms]=lambda-service
+  [event-consumer]=lambda-service
+  [context-builder]=lambda-service
+  [delivery-targets]=lambda-service
+  [workflow-actions]=lambda-service
+  [field-mapping]=lambda-service
+  [field-synthesis]=lambda-service
+  [transformation-executor]=lambda-service
   [orchestrator]=lambda-service
 
-  # Services not yet merged to main — uncomment when they arrive:
-  # [field-synthesis]=lambda-service
-  # [transformation-executor]=lambda-service
+  # On main but intentionally NOT in the POC deploy slice (LearnCard delivery is
+  # stubbed; SmartResume delivery + its mock run only in docker-compose):
+  # [delivery-router]=lambda-service
+  # [learncard-issuer-adapter]=lambda-service
+  # [learncard-profile-resolver]=lambda-service
+  # [learncard-wallet-adapter]=lambda-service
   # [smartresume-adapter]=lambda-service
   # [mock-smartresume]=lambda-service
-  # [delivery-targets]=lambda-service
-  # [workflow-actions]=lambda-service
 )
 
 # Deploy order: foundation MUST be first (exports are consumed by service stacks).
 # Service stacks have no inter-stack dependencies, so the rest can be in any order.
 STACK_ORDER=(
   foundation
-  context-builder
-  delivery-router
-  event-consumer
-  learncard-profile-resolver
-  learncard-wallet-adapter
-  field-mapping
-  learncard-issuer-adapter
   mock-lms
+  event-consumer
+  context-builder
+  delivery-targets
+  workflow-actions
+  field-mapping
+  field-synthesis
+  transformation-executor
   orchestrator
 )

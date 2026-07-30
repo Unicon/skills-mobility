@@ -104,18 +104,25 @@ jobs:
 
           TEMPLATE_URL="https://${TEMPLATE_BUCKET}.s3.${AWS_REGION}.amazonaws.com/cloudformation/lambda-service.yml"
 
+          # One --parameter-overrides flag only: the CLI treats a repeated flag as
+          # replace-not-merge, so file params and the ImageUri override must travel
+          # in the same token list. Expand the params file (ImageUri excluded — the
+          # committed placeholder always loses to the freshly-pushed image) and
+          # append the SHA-tagged ImageUri.
           PARAM_ARGS=()
           if [[ -f "${PARAMS_FILE}" ]]; then
-            PARAM_ARGS=(--parameter-overrides "file://${PARAMS_FILE}")
+            while IFS= read -r kv; do PARAM_ARGS+=("$kv"); done < <(
+              jq -r '.[] | select(.ParameterKey != "ImageUri")
+                     | "\(.ParameterKey)=\(.ParameterValue)"' "${PARAMS_FILE}"
+            )
           fi
+          PARAM_ARGS+=("ImageUri=${{ steps.build.outputs.image_uri }}")
 
-          # Override ImageUri to the freshly-pushed SHA-tagged image.
           aws cloudformation deploy \
             --region              "$AWS_REGION" \
             --template-url        "$TEMPLATE_URL" \
             --stack-name          "$STACK_NAME" \
-            "${PARAM_ARGS[@]}" \
-            --parameter-overrides "ImageUri=${{ steps.build.outputs.image_uri }}" \
+            --parameter-overrides "${PARAM_ARGS[@]}" \
             --capabilities        CAPABILITY_IAM \
             --no-fail-on-empty-changeset
 
