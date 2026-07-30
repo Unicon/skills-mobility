@@ -52,6 +52,9 @@ def test_run_workflow_completes_and_persists(client, sample_event):
         "candidates": [],
         "artifact_ref": None,
         "invocation_log_ref": None,
+        # Unconfigured seam -> the stub is the deterministic fallback, and the
+        # record says so explicitly (provenance, ADR-0022).
+        "decision_source": "deterministic_fallback",
         "created_at": gate_decision["created_at"],
     }
     # Neither Delivery Targets nor Workflow Actions is configured in tests, so both
@@ -64,21 +67,23 @@ def test_run_workflow_completes_and_persists(client, sample_event):
         "candidates": [],
         "artifact_ref": None,
         "invocation_log_ref": None,
+        "decision_source": "deterministic_fallback",
         "created_at": targets_decision["created_at"],
     }
     assert plan_decision == {
         "kind": "workflow_actions_plan",
         "confidence": None,
         "rationale": "Deterministic Phase 1 LearnCard workflow.",
-        "outcome": "phase1-skill_mastered.v1",
+        "outcome": "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1",
         "candidates": [],
         "artifact_ref": None,
         "invocation_log_ref": None,
+        "decision_source": "deterministic_fallback",
         "created_at": plan_decision["created_at"],
     }
-    assert body["plan_id"] == "phase1-skill_mastered.v1"
+    assert body["plan_id"] == "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1"
     assert [s["action_id"] for s in body["steps"]][0] == "resolve_learncard_profile"
-    assert len(body["steps"]) == 8
+    assert len(body["steps"]) == 11
     assert all(s["status"] == "succeeded" for s in body["steps"])
     assert body["result"]["recipient_profile_id"].startswith("@")
     # Read-model fields the Admin UI needs (#28 G3/G4): correlation id + timestamps.
@@ -106,6 +111,7 @@ def test_run_workflow_terminate_gate_persists_decision(client):
             "candidates": [],
             "artifact_ref": None,
             "invocation_log_ref": None,
+            "decision_source": "deterministic_fallback",
             "created_at": body["decisions"][0]["created_at"],
         }
     ]
@@ -117,7 +123,7 @@ def test_course_completed_path_completes(client, course_event):
     body = resp.json()
     assert body["status"] == "completed"
     assert body["event_type"] == "course_completed"
-    assert body["plan_id"] == "phase1-course_completed.v1"
+    assert body["plan_id"] == "phase1-course_completed.learncard_issuer.learncard_wallet.v1"
 
 
 def test_plan_lookup_toggle_and_delete(client, sample_event):
@@ -126,9 +132,10 @@ def test_plan_lookup_toggle_and_delete(client, sample_event):
     assert client.put("/admin/plan-lookup-toggle", json={"enabled": True}).json() == {
         "reusable_plan_lookup_enabled": True
     }
-    assert client.delete("/admin/plans/phase1-skill_mastered.v1").json() == {"deleted": True}
+    plan_id = "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1"
+    assert client.delete(f"/admin/plans/{plan_id}").json() == {"deleted": True}
     # Second delete is a no-op (already gone).
-    assert client.delete("/admin/plans/phase1-skill_mastered.v1").json() == {"deleted": False}
+    assert client.delete(f"/admin/plans/{plan_id}").json() == {"deleted": False}
 
 
 def test_list_executions_and_correlation_filter(client, sample_event, course_event):
@@ -142,7 +149,7 @@ def test_list_executions_and_correlation_filter(client, sample_event, course_eve
     a = next(r for r in rows if r["execution_id"] == "exec_a")
     assert a["correlation_id"] == "corr_1"
     assert a["status"] == "completed"
-    assert a["step_progress"] == {"completed": 8, "total": 8}
+    assert a["step_progress"] == {"completed": 11, "total": 11}
     assert a["created_at"] and a["updated_at"]
     assert "steps" not in a and "result" not in a  # compact projection
 

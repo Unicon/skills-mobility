@@ -15,7 +15,7 @@ import logging
 import time
 from typing import Any
 
-import boto3  # type: ignore[import-untyped]
+import boto3
 
 from .contracts import LlmCallMeta, MappingGeneration, MappingRequest
 from .prompt_builder import PROMPT_TEMPLATE_VERSION, build_user_message, system_prompt
