@@ -1,14 +1,24 @@
 /* Layer 1 — base/primitive: Open Props scales (spacing, sizing, type scale,
-   radii, shadows, easings) + Radix Colors 12-step dark scales (ADR-0018).
-   Radix Colors scopes its dark-scale custom properties to `.dark`/`.dark-theme`
-   (not `:root`) so light/dark themes can coexist — consumers of this file must
-   add `class="dark"` to their root HTML element (both apps here are dark-only,
-   no theme toggle) or these variables resolve to nothing. */
+   radii, shadows, easings) + Radix Colors 12-step light/dark scales (ADR-0018).
+   Radix Colors scopes its light-scale custom properties to `:root`/`.light`/
+   `.light-theme` and its dark-scale ones to `.dark`/`.dark-theme` so both can
+   coexist — light imports must come before dark ones so that, at equal
+   `:root`/`.dark` specificity, source order lets `.dark` win by default.
+   Admin toggles between the two (`class="light"`/`class="dark"` on `<html>`);
+   mock-lms stays dark-only (keeps `class="dark"`, no toggle) and is unaffected
+   by the light imports since dark still wins there by source order. */
 @import "open-props/sizes";
 @import "open-props/fonts";
 @import "open-props/borders";
+@import "open-props/shadows/light";
 @import "open-props/shadows/dark";
 @import "open-props/easings";
+@import "@radix-ui/colors/gray.css";
+@import "@radix-ui/colors/amber.css";
+@import "@radix-ui/colors/green.css";
+@import "@radix-ui/colors/red.css";
+@import "@radix-ui/colors/cyan.css";
+@import "@radix-ui/colors/purple.css";
 @import "@radix-ui/colors/gray-dark.css";
 @import "@radix-ui/colors/amber-dark.css";
 @import "@radix-ui/colors/green-dark.css";
@@ -19,18 +29,34 @@
 /* Layer 2 — semantic: our names, mapped onto the base layer above. Values are
    the current "mission control" identity re-expressed through Radix Colors'
    nearest matching step + Open Props' scales; not pixel-identical to the prior
-   hand-rolled hex (ADR-0018: "illustrative of the current look, not fixed"). */
+   hand-rolled hex (ADR-0018: "illustrative of the current look, not fixed").
+
+   `--ink-faint`, `--gold`, `--gold-bright`, `--live`, `--evt-skill`, and
+   `--danger` are WCAG 2.1 AA text-contrast (1.4.3, >=4.5:1) checked against
+   every background they're actually painted on (`--bg`/`--bg-2`/`--panel`/
+   `--panel-2`), not just against Radix's own step-11/12 promise — several
+   Radix steps this system reused for text are only guaranteed against steps
+   1-2, or (amber-9/red-9) are intentionally theme-invariant "solid" colors
+   meant for fills, not foreground text, so they fail badly as text once the
+   background is light instead of near-black. `--line`/`--line-bright` are
+   WCAG 1.4.11 non-text-contrast (>=3:1) checked the same way — Radix's
+   gray-5/6 are hairline-divider steps (~1.1-1.7:1), nowhere near the
+   UI-component-boundary minimum, so they're literal values here too rather
+   than Radix steps. `:root` below is DARK's set (the default, unscoped
+   case); `:root.light` overrides only the values that fail in light mode.
+   Un-listed tokens (e.g. `--ink`, `--ink-dim`, `--evt-credential`) already
+   clear their respective thresholds in both themes unchanged. */
 :root {
   --bg: var(--gray-1);
   --bg-2: var(--gray-2);
   --panel: var(--gray-3);
   --panel-2: var(--gray-4);
-  --line: var(--gray-5);
-  --line-bright: var(--gray-6);
+  --line: #767676; /* was var(--gray-5) #313131: 1.10-1.45:1 vs bg/panel, fails 1.4.11 (3:1) */
+  --line-bright: #828282; /* was var(--gray-6) #3a3a3a: 1.26-1.66:1, fails 1.4.11 (3:1) */
 
   --ink: var(--gray-12);
   --ink-dim: var(--gray-11);
-  --ink-faint: var(--gray-8);
+  --ink-faint: #989898; /* was var(--gray-8): 2.28-3.00:1 against panel/panel2, fails AA text */
 
   --gold: var(--amber-9);
   --gold-bright: var(--amber-10);
@@ -42,10 +68,42 @@
   --evt-course: var(--live);
   --evt-badge: var(--gold);
   --evt-credential: var(--purple-11);
-  --danger: var(--red-9);
+  --danger: #ff9592; /* was var(--red-9): 3.67-4.49:1 against panel/panel2/bg-2, fails AA text */
 
   --shadow: var(--shadow-4);
   --glow-gold: 0 0 0 1px rgba(230, 180, 80, 0.35), 0 0 24px -6px rgba(230, 180, 80, 0.5);
+  --gold-wash: rgba(230, 180, 80, 0.12);
+
+  /* Generic informational accent (info panels/callouts) — aliases the
+     already-compliant --evt-skill cyan rather than the raw Radix step, so it
+     stays >=4.5:1 as text in both themes without re-deriving the fix. */
+  --info: var(--evt-skill);
+  --info-wash: rgba(76, 204, 230, 0.12);
+
+  /* Brand identity layer (theming mechanics, ready for either theme) —
+     eyeballed from the "Areas of Practice" slide gradient/icon colors, not
+     an official brand guide, and NOT wired into --gold or any existing
+     accent yet: plan 05's branding rebrand is still gated on the 7/30 exec
+     decision. Defined here in the base layer (not light-only) precisely so
+     the mechanism — swap these values, or wire them into a new surface, in
+     either theme — is ready the moment that decision lands; today only
+     admin's light-mode topbar actually consumes them (apps/admin/src/index.css).
+     `--on-brand` is the text-safe color for content painted directly on
+     `--brand-gradient` (checked >=5:1 against every stop, both themes —
+     these are fixed saturated colors, not theme-relative). */
+  --brand-navy-2: #14203f;
+  --brand-navy: #1b2a5c;
+  --brand-magenta: #8e2072;
+  --brand-magenta-bright: #b8317f;
+  --brand-pink-tint: #e0a0c8;
+  --brand-gradient: linear-gradient(
+    120deg,
+    var(--brand-navy-2) 0%,
+    var(--brand-navy) 35%,
+    var(--brand-magenta) 70%,
+    var(--brand-magenta-bright) 100%
+  );
+  --on-brand: #f5f5f5;
 
   --font-display: "Archivo", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
@@ -62,4 +120,25 @@
   --text-1: var(--font-size-0);
   --text-2: var(--font-size-1);
   --text-3: var(--font-size-2);
+}
+
+/* Light-mode text-contrast overrides (Admin only toggles into `.light`;
+   mock-lms never sets this class, so it always gets the dark set above).
+   amber-9/amber-10/green-11/cyan-11/red-9 keep the exact same hex in both
+   Radix light and dark files (they're solid brand colors, not
+   theme-adjusted text steps), so they read fine as foreground text against
+   near-black but fail against near-white — hence the dedicated overrides
+   below instead of reusing the Layer-1 scale directly. */
+:root.light {
+  --ink-faint: var(--ink-dim); /* no distinct compliant tier below ink-dim exists in light */
+  --gold: #985900; /* was var(--amber-9) #ffc53d: 1.29-1.67:1, fails everywhere as text */
+  --gold-bright: #7a4a00; /* was var(--amber-10) #ffba18: 1.39-1.67:1, fails everywhere as text */
+  --live: #1c7049; /* was var(--green-11) #218358: 3.85:1 against panel-2, fails AA text */
+  --evt-skill: #0c6a82; /* was var(--cyan-11) #107d98: 3.89:1 against panel-2, fails AA text */
+  --danger: #c11f24; /* was var(--red-9) #e5484d: 3.19-3.81:1, fails AA text */
+  --glow-gold: 0 0 0 1px rgba(180, 130, 30, 0.35), 0 0 24px -6px rgba(180, 130, 30, 0.4);
+  --gold-wash: rgba(180, 130, 30, 0.12);
+  --info-wash: rgba(16, 125, 152, 0.12);
+  --line: #7f7f7f; /* was var(--gray-5) #e0e0e0: 1.08-1.29:1, fails 1.4.11 (3:1) */
+  --line-bright: #6c6c6c; /* was var(--gray-6) #d9d9d9: 1.15-1.38:1, fails 1.4.11 (3:1) */
 }
