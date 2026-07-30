@@ -20,7 +20,7 @@ const gateDecision: DecisionArtifact = {
   kind: "gate",
   confidence: 1,
   rationale: "Deterministic Phase 1 happy-path gate decision.",
-  outcome: "continue_to_delivery_targets",
+  outcome: "continue",
   candidates: [],
   artifact_ref: null,
   invocation_log_ref: null,
@@ -58,7 +58,7 @@ describe("DecisionDetailCard", () => {
   test("renders the Response bubble narrating outcome, confidence, and rationale, with no candidate list", () => {
     render(<DecisionDetailCard decision={gateDecision} execution={execution} />);
     expect(screen.getByText("gate Response")).toBeTruthy();
-    const responseText = screen.getByText(/I went with continue to delivery targets/);
+    const responseText = screen.getByText(/I went with continue/);
     expect(responseText.textContent).toContain("100% confident");
     expect(responseText.textContent).toContain("deterministic Phase 1 happy-path gate decision");
     expect(screen.queryByRole("list")).toBeNull();

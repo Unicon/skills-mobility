@@ -7,7 +7,7 @@ const gateDecision: DecisionArtifact = {
   kind: "gate",
   confidence: 1,
   rationale: "Deterministic Phase 1 happy-path gate decision.",
-  outcome: "continue_to_delivery_targets",
+  outcome: "continue",
   candidates: [],
   artifact_ref: null,
   invocation_log_ref: null,
