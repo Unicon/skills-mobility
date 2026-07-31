@@ -364,7 +364,7 @@ Responsibilities:
 - `contracts.py`: request/response schemas, synthesis-brief schema, synthesis-result artifact schema
 - `prompt_templates/`: versioned system prompt and request message templates; changes here trigger Layer D regression per ADR-0013
 - `llm_adapter.py`: define the provider-adapter protocol and shared result shape (same protocol as Field Mapping's adapter — implementations are interchangeable per ADR-0010)
-- `bedrock_adapter.py`: implement the provider adapter using Bedrock `Converse` with schema-constrained structured output via `toolUse`; capture per-invocation metadata per ADR-0010 §60
+- `bedrock_adapter.py`: implement the provider adapter using Bedrock `Converse` with schema-constrained structured output via `toolUse`; capture per-invocation metadata per ADR-0010 ("Decision")
 - `replay_adapter.py`: implement deterministic local replay without live Bedrock access; consume committed fixture responses keyed by synthesis-request artifact hash or scenario ID
 - `validators.py`: coverage validation (placeholder_id completeness), response-schema validation
 - `artifact_store.py`: persist synthesis-request artifacts (loaded by ref) and synthesis-result artifacts; same logical interface as Field Mapping's store

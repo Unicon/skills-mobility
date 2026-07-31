@@ -65,4 +65,64 @@ describe("DecisionNode", () => {
     fireEvent.click(screen.getByRole("button"));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  test("adds decision-node-highlighted only when highlighted is true", () => {
+    render(
+      <DecisionNode
+        label="gate"
+        confidence={0.5}
+        state="populated"
+        expanded={false}
+        onClick={() => {}}
+        highlighted
+      />,
+    );
+    expect(screen.getByRole("button", { name: "gate" }).className).toContain(
+      "decision-node-highlighted",
+    );
+  });
+
+  test("omitting highlighted keeps current behavior (no highlight class)", () => {
+    render(
+      <DecisionNode label="gate" confidence={0.5} state="populated" expanded={false} onClick={() => {}} />,
+    );
+    expect(screen.getByRole("button", { name: "gate" }).className).not.toContain(
+      "decision-node-highlighted",
+    );
+  });
+
+  test("fires onActiveChange(true/false) on hover enter/leave and focus/blur", () => {
+    const onActiveChange = vi.fn();
+    render(
+      <DecisionNode
+        label="gate"
+        confidence={0.5}
+        state="populated"
+        expanded={false}
+        onClick={() => {}}
+        onActiveChange={onActiveChange}
+      />,
+    );
+    const button = screen.getByRole("button", { name: "gate" });
+
+    fireEvent.mouseEnter(button);
+    expect(onActiveChange).toHaveBeenLastCalledWith(true);
+    fireEvent.mouseLeave(button);
+    expect(onActiveChange).toHaveBeenLastCalledWith(false);
+    fireEvent.focus(button);
+    expect(onActiveChange).toHaveBeenLastCalledWith(true);
+    fireEvent.blur(button);
+    expect(onActiveChange).toHaveBeenLastCalledWith(false);
+  });
+
+  test("omitting onActiveChange does not throw on hover/focus", () => {
+    render(
+      <DecisionNode label="gate" confidence={0.5} state="populated" expanded={false} onClick={() => {}} />,
+    );
+    const button = screen.getByRole("button", { name: "gate" });
+    expect(() => {
+      fireEvent.mouseEnter(button);
+      fireEvent.mouseLeave(button);
+    }).not.toThrow();
+  });
 });

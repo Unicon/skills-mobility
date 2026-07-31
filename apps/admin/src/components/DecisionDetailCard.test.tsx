@@ -20,7 +20,7 @@ const gateDecision: DecisionArtifact = {
   kind: "gate",
   confidence: 1,
   rationale: "Deterministic Phase 1 happy-path gate decision.",
-  outcome: "continue_to_delivery_targets",
+  outcome: "continue",
   candidates: [],
   artifact_ref: null,
   invocation_log_ref: null,
@@ -39,7 +39,7 @@ const deliveryTargetsDecision: DecisionArtifact = {
   ],
   artifact_ref: "s3://artifacts/delivery-targets/1",
   invocation_log_ref: "log://invocations/1",
-  decision_source: null,
+  decision_source: "llm",
   created_at: "2026-07-09T00:00:01Z",
 };
 
@@ -50,15 +50,21 @@ describe("DecisionDetailCard", () => {
 
   test("renders the Instructions bubble with the goal and a JSON block of the mock input", () => {
     render(<DecisionDetailCard decision={gateDecision} execution={execution} />);
-    expect(screen.getByText("Instructions")).toBeTruthy();
+    expect(screen.getByText(/Instructions/)).toBeTruthy();
     expect(screen.getByText(/proceed to delivery-target selection/)).toBeTruthy();
     expect(screen.getByText(/execution_id/)).toBeTruthy();
+  });
+
+  test("Instructions bubble discloses it's reconstructed, not real backend data", () => {
+    render(<DecisionDetailCard decision={gateDecision} execution={execution} />);
+    expect(screen.getByText("reconstructed")).toBeTruthy();
+    expect(screen.getByText(/doesn.t persist the real input/)).toBeTruthy();
   });
 
   test("renders the Response bubble narrating outcome, confidence, and rationale, with no candidate list", () => {
     render(<DecisionDetailCard decision={gateDecision} execution={execution} />);
     expect(screen.getByText("gate Response")).toBeTruthy();
-    const responseText = screen.getByText(/I went with continue to delivery targets/);
+    const responseText = screen.getByText(/I went with continue/);
     expect(responseText.textContent).toContain("100% confident");
     expect(responseText.textContent).toContain("deterministic Phase 1 happy-path gate decision");
     expect(screen.queryByRole("list")).toBeNull();
@@ -84,5 +90,28 @@ describe("DecisionDetailCard", () => {
     expect(screen.queryByText(/s3:\/\/artifacts/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "View raw" }));
     expect(screen.getByText(/s3:\/\/artifacts/)).toBeTruthy();
+  });
+
+  test("decision_source: 'llm' renders the normal LLM-voice narrative with no fallback badge", () => {
+    render(<DecisionDetailCard decision={deliveryTargetsDecision} execution={execution} />);
+    expect(screen.getByText(/I went with targets selected/)).toBeTruthy();
+    expect(screen.queryByText("deterministic fallback")).toBeNull();
+  });
+
+  test("decision_source: null (predates the field) renders exactly like today — no badge, normal narrative", () => {
+    render(<DecisionDetailCard decision={gateDecision} execution={execution} />);
+    expect(screen.queryByText("deterministic fallback")).toBeNull();
+    expect(screen.getByText(/I went with continue to delivery targets/)).toBeTruthy();
+  });
+
+  test("decision_source: 'deterministic_fallback' shows a badge and a plain, non-fabricated narrative", () => {
+    const fallbackDecision: DecisionArtifact = { ...gateDecision, decision_source: "deterministic_fallback" };
+    render(<DecisionDetailCard decision={fallbackDecision} execution={execution} />);
+    expect(screen.getByText("deterministic fallback")).toBeTruthy();
+    const responseText = screen.getByText(/orchestrator's deterministic fallback produced this decision/);
+    expect(responseText.textContent).not.toContain("I went with");
+    expect(responseText.textContent).not.toContain("confident");
+    expect(responseText.textContent).toContain("continue to delivery targets");
+    expect(responseText.textContent).toContain("Deterministic Phase 1 happy-path gate decision");
   });
 });

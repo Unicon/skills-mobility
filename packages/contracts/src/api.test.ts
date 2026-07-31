@@ -134,7 +134,7 @@ describe("orchestratorApi", () => {
           kind: "gate",
           confidence: 1,
           rationale: "stub",
-          outcome: "continue_to_delivery_targets",
+          outcome: "continue",
           candidates: [],
           artifact_ref: null,
           invocation_log_ref: null,

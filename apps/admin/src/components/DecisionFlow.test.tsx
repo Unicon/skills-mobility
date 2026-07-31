@@ -1,13 +1,24 @@
 import type { DecisionArtifact, ExecutionMetadata, StepResult } from "@skills-mobility/contracts";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, describe, expect, test } from "vitest";
 import { DecisionFlow } from "./DecisionFlow";
+import type { Phase } from "./stepPhases";
+
+// DecisionFlow's selection is now controlled (mirrors WorkflowDetail's own
+// lifted state) — this wrapper gives clicks somewhere to actually persist to.
+function ControlledDecisionFlow(
+  props: Omit<Parameters<typeof DecisionFlow>[0], "selectedPhase" | "onSelectedPhaseChange">,
+) {
+  const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
+  return <DecisionFlow {...props} selectedPhase={selectedPhase} onSelectedPhaseChange={setSelectedPhase} />;
+}
 
 const gateDecision: DecisionArtifact = {
   kind: "gate",
   confidence: 1,
   rationale: "Deterministic Phase 1 happy-path gate decision.",
-  outcome: "continue_to_delivery_targets",
+  outcome: "continue",
   candidates: [],
   artifact_ref: null,
   invocation_log_ref: null,
@@ -26,7 +37,7 @@ const deliveryTargetsDecision: DecisionArtifact = {
   ],
   artifact_ref: "s3://artifacts/delivery-targets/1",
   invocation_log_ref: "log://invocations/1",
-  decision_source: null,
+  decision_source: "llm",
   created_at: "2026-07-09T00:00:01Z",
 };
 
@@ -39,6 +50,12 @@ const deliveredStep: StepResult = {
   error: null,
   started_at: "2026-07-09T00:00:02Z",
   finished_at: "2026-07-09T00:00:03Z",
+};
+
+const smartResumeDeliveredStep: StepResult = {
+  ...deliveredStep,
+  step_id: 9,
+  action_id: "deliver_to_smartresume",
 };
 
 const baseExecution: ExecutionMetadata = {
@@ -60,46 +77,84 @@ describe("DecisionFlow", () => {
   });
 
   test("renders a single pending gate node when decisions is empty", () => {
-    render(<DecisionFlow execution={baseExecution} />);
+    render(<ControlledDecisionFlow execution={baseExecution} activePhase={null} onActivePhaseChange={() => {}} />);
     const button = screen.getByRole("button", { name: "gate" });
     expect(button.className).toContain("decision-node-pending");
   });
 
-  test("always renders a populated Event node and a pending Wallet node when nothing was delivered", () => {
-    render(<DecisionFlow execution={baseExecution} />);
+  test("always renders a populated Event node and a pending Delivered node when nothing was delivered", () => {
+    render(<ControlledDecisionFlow execution={baseExecution} activePhase={null} onActivePhaseChange={() => {}} />);
     expect(screen.getByRole("button", { name: "Event" }).className).toContain("decision-node-populated");
-    expect(screen.getByRole("button", { name: "Wallet" }).className).toContain("decision-node-pending");
+    expect(screen.getByRole("button", { name: "Delivered" }).className).toContain("decision-node-pending");
   });
 
-  test("renders a populated Wallet node once the delivery step succeeded", () => {
-    render(<DecisionFlow execution={{ ...baseExecution, steps: [deliveredStep] }} />);
-    expect(screen.getByRole("button", { name: "Wallet" }).className).toContain("decision-node-populated");
+  test("renders a populated Delivered node once the LearnCard Wallet delivery step succeeded", () => {
+    render(
+      <ControlledDecisionFlow
+        execution={{ ...baseExecution, steps: [deliveredStep] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Delivered" }).className).toContain("decision-node-populated");
   });
 
-  test("expanding Event shows the reconstructed envelope; expanding Wallet is a no-op while pending", () => {
-    render(<DecisionFlow execution={baseExecution} />);
+  test("renders a populated Delivered node once the SmartResume delivery step succeeded (no LearnCard wallet delivery)", () => {
+    render(
+      <ControlledDecisionFlow
+        execution={{ ...baseExecution, steps: [smartResumeDeliveredStep] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Delivered" }).className).toContain("decision-node-populated");
+  });
+
+  test("expanding Event shows the reconstructed envelope; expanding Delivered is a no-op while pending", () => {
+    render(<ControlledDecisionFlow execution={baseExecution} activePhase={null} onActivePhaseChange={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: "Event" }));
     expect(screen.getByText(/skill_mastered/)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "Wallet" }));
-    expect(screen.getByRole("button", { name: "Wallet" }).getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: "Delivered" }));
+    expect(screen.getByRole("button", { name: "Delivered" }).getAttribute("aria-expanded")).toBe("false");
   });
 
-  test("expanding a populated Wallet node shows the mocked delivery confirmation", () => {
-    render(<DecisionFlow execution={{ ...baseExecution, steps: [deliveredStep] }} />);
-    fireEvent.click(screen.getByRole("button", { name: "Wallet" }));
-    expect(screen.getByText(/no real wallet delivery-confirmation callback/)).toBeTruthy();
+  test("expanding a populated Delivered node shows the mocked delivery confirmation", () => {
+    render(
+      <ControlledDecisionFlow
+        execution={{ ...baseExecution, steps: [deliveredStep] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Delivered" }));
+    expect(screen.getByText(/no real delivered-confirmation callback/)).toBeTruthy();
+  });
+
+  test("expanding a Delivered node fed by both targets names both in the confirmation", () => {
+    render(
+      <ControlledDecisionFlow
+        execution={{ ...baseExecution, steps: [deliveredStep, smartResumeDeliveredStep] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Delivered" }));
+    expect(screen.getByText("LearnCard Wallet, SmartResume")).toBeTruthy();
   });
 
   test("renders today's real shape: gate populated, the rest pending", () => {
-    render(<DecisionFlow execution={{ ...baseExecution, decisions: [gateDecision] }} />);
+    render(
+      <ControlledDecisionFlow
+        execution={{ ...baseExecution, decisions: [gateDecision] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
     expect(screen.getByRole("button", { name: "gate" }).className).toContain(
       "decision-node-populated",
     );
     expect(screen.getByRole("button", { name: "delivery targets" }).className).toContain(
-      "decision-node-pending",
-    );
-    expect(screen.getByRole("button", { name: "field mapping" }).className).toContain(
       "decision-node-pending",
     );
     expect(screen.getByRole("button", { name: "workflow actions" }).className).toContain(
@@ -109,8 +164,10 @@ describe("DecisionFlow", () => {
 
   test("expanding a populated node shows rejected candidates dimmed and the selected one marked", () => {
     render(
-      <DecisionFlow
+      <ControlledDecisionFlow
         execution={{ ...baseExecution, decisions: [gateDecision, deliveryTargetsDecision] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "delivery targets" }));
@@ -122,16 +179,64 @@ describe("DecisionFlow", () => {
   });
 
   test("clicking a pending node is a no-op: no aria-expanded flip, no card, no state cleared", () => {
-    render(<DecisionFlow execution={{ ...baseExecution, decisions: [gateDecision] }} />);
+    render(
+      <ControlledDecisionFlow
+        execution={{ ...baseExecution, decisions: [gateDecision] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "gate" }));
     expect(screen.getByText("gate Response")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "field mapping" }));
+    fireEvent.click(screen.getByRole("button", { name: "delivery targets" }));
 
-    expect(screen.getByRole("button", { name: "field mapping" }).getAttribute("aria-expanded")).toBe(
+    expect(screen.getByRole("button", { name: "delivery targets" }).getAttribute("aria-expanded")).toBe(
       "false",
     );
     // The gate's detail card is still showing — clicking a pending node didn't clear it.
     expect(screen.getByText("gate Response")).toBeTruthy();
+  });
+
+  test("renders the decision nodes in gate → delivery targets → workflow actions order", () => {
+    render(
+      <ControlledDecisionFlow
+        execution={{ ...baseExecution, decisions: [gateDecision, deliveryTargetsDecision] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
+    const labels = screen
+      .getAllByRole("button")
+      .map((button) => button.getAttribute("aria-label"))
+      .filter((label): label is string => label != null && label !== "Event" && label !== "Delivered");
+    expect(labels).toEqual(["gate", "delivery targets", "workflow actions"]);
+  });
+
+  test("shows the dashed-phase legend once at least one step has run", () => {
+    render(
+      <ControlledDecisionFlow
+        execution={{ ...baseExecution, decisions: [gateDecision], steps: [deliveredStep] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
+    expect(screen.getByText(/Dashed phases run deterministically/)).toBeTruthy();
+  });
+
+  test("hides the legend for the single-pending-gate fallback (decisions empty)", () => {
+    render(<ControlledDecisionFlow execution={baseExecution} activePhase={null} onActivePhaseChange={() => {}} />);
+    expect(screen.queryByText(/Dashed phases run deterministically/)).toBeNull();
+  });
+
+  test("hides the legend for a gate-terminated run (decisions:[gate], steps:[])", () => {
+    render(
+      <ControlledDecisionFlow
+        execution={{ ...baseExecution, decisions: [gateDecision], steps: [] }}
+        activePhase={null}
+        onActivePhaseChange={() => {}}
+      />,
+    );
+    expect(screen.queryByText(/Dashed phases run deterministically/)).toBeNull();
   });
 });

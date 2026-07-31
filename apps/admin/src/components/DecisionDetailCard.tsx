@@ -5,6 +5,10 @@ import { KIND_LABEL } from "./decisionKinds";
 import { buildMockInput, goalFor } from "./mockDecisionInput";
 
 function buildResponseText(decision: DecisionArtifact): string {
+  if (decision.decision_source === "deterministic_fallback") {
+    const rationale = decision.rationale ? ` ${decision.rationale}` : "";
+    return `The orchestrator's deterministic fallback produced this decision, not the LLM. Outcome: ${decision.outcome.replace(/_/g, " ")}.${rationale}`;
+  }
   const pct = decision.confidence != null ? Math.round(decision.confidence * 100) : null;
   const choice = decision.outcome.replace(/_/g, " ");
   const confidenceClause = pct != null ? `, and am ${pct}% confident that this is the correct choice` : "";
@@ -35,16 +39,29 @@ export function DecisionDetailCard({
   return (
     <div className="decision-detail-card">
       <div className="decision-conversation-bubble">
-        <header className="decision-conversation-header">Instructions</header>
+        <header className="decision-conversation-header">
+          Instructions
+          <span className="decision-source-badge">reconstructed</span>
+        </header>
         <ClampedBlock>
           <p className="decision-conversation-text">
             Your goal is to take this data and {goalFor(decision.kind)}. Here&rsquo;s the data:
+          </p>
+          <p className="placeholder">
+            Reconstructed for display — the Orchestrator doesn&rsquo;t persist the real input any
+            LLM Decision Service received yet (FR-AU-18a). Some fields below are illustrative, not
+            the actual data sent.
           </p>
           <pre className="mono" dangerouslySetInnerHTML={{ __html: highlightJson(mockInput) }} />
         </ClampedBlock>
       </div>
       <div className="decision-conversation-bubble decision-conversation-bubble-response">
-        <header className="decision-conversation-header">{KIND_LABEL[decision.kind]} Response</header>
+        <header className="decision-conversation-header">
+          {KIND_LABEL[decision.kind]} Response
+          {decision.decision_source === "deterministic_fallback" ? (
+            <span className="decision-source-badge">deterministic fallback</span>
+          ) : null}
+        </header>
         <ClampedBlock>
           <p className="decision-conversation-text">{buildResponseText(decision)}</p>
         </ClampedBlock>

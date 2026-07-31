@@ -8,7 +8,7 @@ Confirming the decisions work takes **two** complementary views:
 
 | | Question | Surface | Scope |
 | --- | --- | --- | --- |
-| **Per-run explainability** | *What did the LLM decide for this event, and why?* | Admin UI decision pipeline (#82): each service is a node showing decision + `ConfidenceMeter` + rationale + the ADR-0010 §60 invocation log ("View raw": model, prompt, tokens, latency) | one execution |
+| **Per-run explainability** | *What did the LLM decide for this event, and why?* | Admin UI decision pipeline (#82): each service is a node showing decision + `ConfidenceMeter` + rationale + the ADR-0010 ("Decision") invocation log ("View raw": model, prompt, tokens, latency) | one execution |
 | **Aggregate accuracy** | *Across many labelled scenarios, how often is the decision right?* | The DeepEval harness in [`evals/`](../../evals/README.md) → a scorecard | a frozen corpus |
 
 The Admin UI makes a single run legible; the harness makes the pattern measurable. **You need both** — a single legible run tells you the machinery ran, not that the decision was correct.
