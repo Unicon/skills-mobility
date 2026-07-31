@@ -31,19 +31,19 @@ describe("useTheme", () => {
   });
 
   test("defaults to dark when the DOM class is unset", () => {
-    const { result } = renderHook(() => useTheme());
+    const { result } = renderHook(() => useTheme("admin-theme"));
     expect(result.current.theme).toBe("dark");
   });
 
   test("reads the initial theme from the DOM class the blocking script already set", () => {
     document.documentElement.classList.add("light");
-    const { result } = renderHook(() => useTheme());
+    const { result } = renderHook(() => useTheme("admin-theme"));
     expect(result.current.theme).toBe("light");
   });
 
   test("toggle() flips the <html> class and persists to localStorage", () => {
     document.documentElement.classList.add("dark");
-    const { result } = renderHook(() => useTheme());
+    const { result } = renderHook(() => useTheme("admin-theme"));
 
     act(() => {
       result.current.toggle();

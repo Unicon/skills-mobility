@@ -598,3 +598,20 @@ button {
     background-position: -200% 0;
   }
 }
+
+/* Theme toggle (shared component from @skills-mobility/ui; styled per app). */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.theme-toggle:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}

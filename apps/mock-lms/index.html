@@ -1,7 +1,22 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Apply the theme before first paint (no flash): an explicit toggle choice
+      // wins; otherwise follow the OS preference (a dark-room user with a dark
+      // system theme must not get blasted by a light default).
+      (function () {
+        var stored = localStorage.getItem("mock-lms-theme");
+        var theme =
+          stored === "light" || stored === "dark"
+            ? stored
+            : window.matchMedia("(prefers-color-scheme: light)").matches
+              ? "light"
+              : "dark";
+        document.documentElement.classList.add(theme);
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mock LMS · Event Producer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
