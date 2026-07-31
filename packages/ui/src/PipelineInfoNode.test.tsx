@@ -59,4 +59,53 @@ describe("PipelineInfoNode", () => {
     fireEvent.click(screen.getByRole("button"));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  test("adds decision-node-highlighted only when highlighted is true", () => {
+    render(
+      <PipelineInfoNode
+        icon={<svg />}
+        label="Event"
+        state="populated"
+        expanded={false}
+        onClick={() => {}}
+        highlighted
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Event" }).className).toContain(
+      "decision-node-highlighted",
+    );
+  });
+
+  test("omitting highlighted keeps current behavior (no highlight class)", () => {
+    render(
+      <PipelineInfoNode icon={<svg />} label="Event" state="populated" expanded={false} onClick={() => {}} />,
+    );
+    expect(screen.getByRole("button", { name: "Event" }).className).not.toContain(
+      "decision-node-highlighted",
+    );
+  });
+
+  test("fires onActiveChange(true/false) on hover enter/leave and focus/blur", () => {
+    const onActiveChange = vi.fn();
+    render(
+      <PipelineInfoNode
+        icon={<svg />}
+        label="Event"
+        state="populated"
+        expanded={false}
+        onClick={() => {}}
+        onActiveChange={onActiveChange}
+      />,
+    );
+    const button = screen.getByRole("button", { name: "Event" });
+
+    fireEvent.mouseEnter(button);
+    expect(onActiveChange).toHaveBeenLastCalledWith(true);
+    fireEvent.mouseLeave(button);
+    expect(onActiveChange).toHaveBeenLastCalledWith(false);
+    fireEvent.focus(button);
+    expect(onActiveChange).toHaveBeenLastCalledWith(true);
+    fireEvent.blur(button);
+    expect(onActiveChange).toHaveBeenLastCalledWith(false);
+  });
 });

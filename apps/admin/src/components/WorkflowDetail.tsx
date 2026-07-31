@@ -1,10 +1,21 @@
 import { CopyableId } from "@skills-mobility/ui";
+import { useEffect, useState } from "react";
 import { useExecution } from "../hooks/useExecution";
 import { DecisionFlow } from "./DecisionFlow";
+import type { Phase } from "./stepPhases";
 import { StepRow } from "./StepRow";
 
 export function WorkflowDetail({ executionId, onBack }: { executionId: string; onBack: () => void }) {
   const { execution, error } = useExecution(executionId);
+  const [activePhase, setActivePhase] = useState<Phase | null>(null);
+  const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
+
+  useEffect(() => {
+    if (error || !execution) {
+      setActivePhase(null);
+      setSelectedPhase(null);
+    }
+  }, [error, execution]);
 
   return (
     <div>
@@ -37,7 +48,13 @@ export function WorkflowDetail({ executionId, onBack }: { executionId: string; o
           <div className="card">
             <header>Decision flow</header>
             <div className="body">
-              <DecisionFlow execution={execution} />
+              <DecisionFlow
+                execution={execution}
+                activePhase={activePhase}
+                onActivePhaseChange={setActivePhase}
+                selectedPhase={selectedPhase}
+                onSelectedPhaseChange={setSelectedPhase}
+              />
             </div>
           </div>
 
@@ -48,7 +65,15 @@ export function WorkflowDetail({ executionId, onBack }: { executionId: string; o
                 <span className="placeholder">No steps recorded yet.</span>
               </div>
             ) : (
-              execution.steps.map((step) => <StepRow key={step.step_id} step={step} />)
+              execution.steps.map((step) => (
+                <StepRow
+                  key={step.step_id}
+                  step={step}
+                  activePhase={activePhase}
+                  onActiveChange={setActivePhase}
+                  selectedPhase={selectedPhase}
+                />
+              ))
             )}
           </div>
         </>

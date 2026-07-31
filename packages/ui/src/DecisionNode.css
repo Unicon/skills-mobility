@@ -70,3 +70,7 @@
   outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
+.decision-node-highlighted:not(.decision-node-expanded) {
+  border-color: var(--gold-bright);
+  box-shadow: var(--glow-gold);
+}
