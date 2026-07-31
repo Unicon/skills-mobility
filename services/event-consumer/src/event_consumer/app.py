@@ -50,7 +50,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.post("/reset", tags=["meta"])
     def reset() -> dict[str, Any]:
-        return {"ok": True, "cleared": app.state.store.reset()}
+        return {
+            "ok": True,
+            "cleared": app.state.store.reset(),
+            # Cascade so the whole chain resets from one call (mock-lms → here →
+            # Orchestrator); the outcome is reported for audit-visibility.
+            "orchestrator": app.state.handoff.reset_downstream(),
+        }
 
     @app.get("/healthz", tags=["meta"])
     def healthz() -> dict[str, Any]:

@@ -37,7 +37,8 @@ to quiet the ingress logs or `DEBUG` for more). The entrypoint calls
 - **rejected** (`422`) — the envelope failed validation; a `rejected` record is
   written and the event is acked (not retried).
 
-`POST /reset` clears the idempotency + execution + outbox state so a demo can
+`POST /reset` clears the idempotency + execution + outbox state (and cascades the
+reset to the Orchestrator when `EVENT_CONSUMER_ORCHESTRATOR_URL` is set) so a demo can
 re-run the same scenario (FR-EC-23) — the Mock LMS Reset calls this.
 
 ## Local vs AWS

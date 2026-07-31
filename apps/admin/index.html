@@ -5,9 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin UI · Orchestrator Console</title>
     <script>
+      // Explicit toggle choice wins; otherwise follow the OS preference.
       (function () {
         var stored = localStorage.getItem("admin-theme");
-        var theme = stored === "light" ? "light" : "dark";
+        var theme =
+          stored === "light" || stored === "dark"
+            ? stored
+            : window.matchMedia("(prefers-color-scheme: light)").matches
+              ? "light"
+              : "dark";
         document.documentElement.classList.add(theme);
       })();
     </script>

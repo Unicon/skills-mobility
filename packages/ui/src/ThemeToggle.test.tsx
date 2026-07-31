@@ -33,13 +33,13 @@ describe("ThemeToggle", () => {
   });
 
   test("renders an icon button labeled for the current theme", () => {
-    render(<ThemeToggle />);
+    render(<ThemeToggle storageKey="admin-theme" />);
     const button = screen.getByRole("button", { name: "Switch to light theme" });
     expect(button.querySelector("svg")).toBeTruthy();
   });
 
   test("clicking flips the theme, the DOM class, and the label", () => {
-    render(<ThemeToggle />);
+    render(<ThemeToggle storageKey="admin-theme" />);
     fireEvent.click(screen.getByRole("button", { name: "Switch to light theme" }));
 
     const button = screen.getByRole("button", { name: "Switch to dark theme" });

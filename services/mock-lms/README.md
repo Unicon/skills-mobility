@@ -67,7 +67,8 @@ curl -X POST localhost:8000/demo/courses/ACCY-111/actions \
   -H 'content-type: application/json' \
   -d '{"action_id": "ACCY-111-grade-m1", "scope": "one"}'
 
-curl -X POST localhost:8000/demo/reset    # clear emission state for a clean re-run
+curl -X POST localhost:8000/demo/reset    # clean re-run: clears emission state and cascades
+                                          # the reset to the Event Consumer -> Orchestrator
 ```
 
 ## Data & repeatability

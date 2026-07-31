@@ -26,6 +26,8 @@ def test_reset_endpoint(client, skill_event):
     resp = client.post("/reset")
     assert resp.status_code == 200 and resp.json()["ok"] is True
     assert resp.json()["cleared"] >= 1
+    # Capture-mode handoff has no Orchestrator to cascade to — reported, not hidden.
+    assert resp.json()["orchestrator"] == "not_configured"
 
 
 def test_healthz(client):
