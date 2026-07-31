@@ -122,3 +122,20 @@ def test_mapping_generation_still_rejects_non_array_strings():
         MappingGeneration(
             jsonata="{ }", synthesis_requests='{"a": 1}', confidence=0.9, rationale="r"
         )
+
+
+def test_mapping_generation_decodes_arrays_with_raw_control_chars():
+    # #152 second half (live): the model writes multi-line instruction text with
+    # RAW newlines inside the JSON string values — invalid strict JSON.
+    gen = MappingGeneration(
+        jsonata="{ }",
+        synthesis_requests=(
+            '[{"placeholder_id": "achievement_description",'
+            ' "target_path": "credentialSubject.achievement.description",'
+            ' "source_payload_paths": ["outcome.description"],'
+            ' "instruction": "Describe the achievement.\nUse two sentences."}]'
+        ),  # the \n above is a REAL newline inside the JSON string — invalid strict JSON
+        confidence=0.9,
+        rationale="r",
+    )
+    assert "\n" in gen.synthesis_requests[0].instruction
