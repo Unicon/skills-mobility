@@ -43,14 +43,16 @@ Code & API
 [ ] Replay/default fallbacks LOG when they fall through to the default fixture (#77)
 [ ] Plans/templates/routing are bounded by the ACTUAL selection, not all-known-targets;
     a selection-blind step logs the divergence at failure level (#89, #112)
-[ ] Values that change per call site are explicit parameters, not reads off a shared
-    inputs dict — an unbound key silently resolves the WRONG phase's data (#102 item 1)
+[ ] Values that differ per call site are explicit function parameters, not reads off a
+    shared inputs dict: if the caller forgets to bind the key, `inputs.get(...)` quietly
+    returns the other phase's data instead of erroring (#102 item 1)
 [ ] Name reflects actual scope: target-qualify helpers/actions once a sibling family
     exists; don't reuse one field name for different semantics on different models
     (plan_source vs output_source, #78/#89/#90 item 7)
 [ ] Paired/parallel implementations share a helper — duplication hides the divergence
     a shared signature would surface (#96, #102 item 6)
-[ ] An empty input collection is rejected, not silently "completed" as a no-op (#90)
+[ ] An executor handed an empty plan/collection fails or refuses — it must not
+    return success having executed nothing (#90)
 
 Tests
 [ ] The primary endpoint is tested at the HTTP layer (happy path + a malformed/422), not just /healthz
@@ -66,21 +68,21 @@ Tests
 [ ] Tests assert the behavioral consequence of a flag/branch, not just that the toggle flips
 [ ] The HTTP-200-but-status:"failed" branch has its OWN test, distinct from the
     exception path (#87, #88, #96)
-[ ] Two-step auth flows test token-acquisition failure independently of call failure (#87)
 [ ] An UNRECOGNIZED enum-like value (typo/new id) exercises the fallback — not just the
     known-empty case (#89)
 [ ] Required no-default env vars have a config test asserting absence raises (#87)
 [ ] A negative test's fixture carries ONE fault — multi-fault fixtures pass coincidentally
     on whichever check fires first (#90 item 1)
-[ ] Seam success tests feed a divergent-but-valid input and assert the SEAM's version
-    survives — inputs identical to the deterministic default can't tell them apart (#90 item 2)
+[ ] When a real seam and a deterministic fallback can produce the same output, at least
+    one test feeds an input where they DIFFER and asserts the seam's version wins — tests
+    whose expected output matches the fallback pass even when the seam is silently
+    bypassed (#90 item 2)
 [ ] Inputs dicts are driven through the real caller/planner at least once — hand-built
     dicts hide the gap between what the caller binds and the helper expects (#102 item 1)
 [ ] Every error-taxonomy branch has coverage, not just the well-trodden ones (#102 item 4)
 [ ] Replay fixtures are keyed by the signal that DRIVES the decision (subject, grade,
     sub-competency), not by event_type; and fixtures satisfy the schemas they claim
     (#77, #78 item 20, #105, #127)
-[ ] Assert on the discriminating signal, not the action word ("fail", not "terminate") (#85)
 
 Docs & spec alignment
 [ ] Design AND requirements docs updated to match descoped/shipped behavior — no stale example a
@@ -92,9 +94,9 @@ Docs & spec alignment
 [ ] ADR open questions get closed IN THE ADR when a downstream doc resolves them (#111)
 [ ] Cite ADR sections by NAME, never by §line-number (they drift); no bare PR-number
     cites where the rule should be stated inline (#96, #111, #115)
-[ ] README has a pasteable sample request (json_schema_extra example + curl); auth uses
+[ ] README parity with field-mapping's (the reference): uv sync first, a pasteable sample
+    request (json_schema_extra example + curl), live-Bedrock/AWS-SSO section; auth via
     HTTPBearer/HTTPBasic so Swagger renders a working Authorize control (#77/#78/#85/#87)
-[ ] README parity with field-mapping's: uv sync first, live-Bedrock/AWS-SSO section (#77/#78/#85)
 [ ] User-facing READMEs don't cite AGENTS.md (internal agent instructions) (#102 item 7)
 [ ] A deliberate "lighter than the FR for POC" cut is written back into the design doc,
     not left as silent under-implementation (#102 item 3, #125)
@@ -104,8 +106,6 @@ Git / PR hygiene
 [ ] PR body refreshed — resolved open questions removed, stale "Depends on" sections updated;
     re-check it against the PR's OWN later commits before review (#107 item 5)
 [ ] The description lists EVERY issue the PR closes, so auto-close fires (#89)
-[ ] Review responses cite the commit each item was fixed in (Mary verifies per-item
-    against commits — make that cheap)
 
 Project-specific
 [ ] Mock data/events do NOT bake in answers the LLM Decision Services are meant to discern;
@@ -141,15 +141,17 @@ Cross-component & environment parity
     in-flight branches at merge time (#131)
 [ ] When two artifacts encode the same set (CI matrix vs env file, doc example vs
     contract), declare ONE authoritative and cross-reference the other (#107 item 4)
-[ ] One-per-key map collapses over a list need the uniqueness assumption checked —
-    or a model split (planning decisions ≠ per-step calls, #132)
+[ ] Don't index a list into a dict/Map by a field that can repeat (e.g. decisions[]
+    keyed by kind): later entries silently replace earlier ones. If the key can
+    legitimately repeat, keep a list per key — or split the model so it can't (#132)
 [ ] Local is laxer than deployed: percent-encode bracket query params (%5B%5D — Function
     URLs/CloudFront 400 what uvicorn accepts); smoke each new surface live once (#134, #141)
 [ ] IAM matches the live-proven policy (Bedrock needs inference-profile AND
     foundation-model ARNs); verify CLI flag semantics — a repeated list flag REPLACES,
     not merges (#107)
-[ ] No declared-but-never-populated scaffolding: fields always None, resources nothing
-    consumes (#107 item 3, #133)
+[ ] No declared-but-never-populated scaffolding: schema fields that every construction
+    site leaves None, or template resources nothing consumes — delete them or wire them
+    (#107 item 3, #133)
 ```
 
 ## Notes (the why)
@@ -165,5 +167,5 @@ Only the items whose rationale isn't self-evident from the checklist above — t
 - **Fail loudly on unknown input** — the flip side of "no silent drops": a helper that defaults an unrecognized course prefix to `"accounting"`, or a catch-all that treats any `createProfile` error as "already exists", hides real problems. Raise on the unexpected; catch only what you expect. *(#34, #54.)*
 - **Fallback provenance is the third wave's `.env` bug** — the single most-repeated theme (five PRs, six issues): a best-effort seam that falls back must say so *on the stored record*, because the fallback's own fields lie (stub gate reports confidence 1.0; `_DEGRADED_MAPPING` reports `status:"succeeded"`). A `logger.warning` is invisible to the Admin UI and gone on Lambda. Mark it positively (`decision_source`, `_degraded`, `output_source`) and render it distinctly. *(#88, #89, #90, #102; #128–#133.)*
 - **Local is laxer than deployed** — uvicorn/compose accept literal `[]` in query strings, tolerate missing IAM, and never exercise CloudFront/Function-URL behavior (auth permission pairs, origin timeouts, ASGI lifespan per event). Anything that builds URLs, policies, or CLI invocations needs one live verification per surface — three separate live-only bugs shipped past green local suites in one week. *(#134, #141, #107; the AWS bring-up.)*
-- **Cross-PR seams need a reconciliation pass at merge time** — two in-flight PRs can each be right and still be wrong together (wiring registered under a pre-rename key; a convention the older branch predates). At merge: grep for the other PR's renamed ids, and add a guard test that every producer id has a consumer registration. *(#121, #124, #126, #131.)*
+- **Why cross-PR drift survives two green reviews** — each PR is reviewed and tested against its *own* base, so no reviewer or CI run ever sees the two branches combined; the first time the combination exists is the merge commit. And because these integration points are exact-string contracts wired to best-effort fallbacks, the combined failure isn't red — a plan whose action_id matches nothing quietly re-binds to the deterministic plan, a convention the older branch predates simply doesn't fire. Nothing fails, so nothing gets noticed. That's why the reconciliation bullets above are a *merge-time* step and why the guard test matters: it's the only artifact that executes against the combination. *(#121, #124, #126, #131.)*
 - **Don't spoon-feed the LLMs** — mock data/events must mirror real-world signal availability so the Decision Services are genuinely tested — badge acceptance is *discovered* via a fetch, not handed over as a boolean; competency-vs-sub-competency is read from the outcome title prefix, not a flag; and content must genuinely vary per entity (108 submissions from 12 reused bodies makes titles mismatch content). *(#4, #34.)*
