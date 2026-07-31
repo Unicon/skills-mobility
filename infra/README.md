@@ -86,20 +86,20 @@ The `orchestrator.json` parameter file currently sets `EventSourceType=url` (Fun
 
 Before this skeleton can be deployed against a live AWS account:
 
-1. **AWS account setup** — fill in `REPLACE_WITH_ACCOUNT_ID` in `.github/workflows/deploy.yml` and `TEMPLATE_BUCKET` in `infra/skills-mobility.aws`.
+1. **AWS account setup** — fill in `TEMPLATE_BUCKET` in `infra/skills-mobility.aws` (the account id and deploy-role ARN are already set in `.github/workflows/deploy.yml`).
 
 2. **Template bucket** — create the S3 bucket that holds uploaded CFN templates:
    ```bash
    aws s3 mb s3://<YOUR-CFN-TEMPLATE-BUCKET> --region us-east-1 --profile skills
    ```
 
-3. **GitHub OIDC provider** — deploy the foundation stack first (with `CreateOidcProvider=true`). If the account already has a GitHub OIDC provider, set `CreateOidcProvider=false` in `infra/params/dev/foundation.json`.
+3. **CI deploy identity** — `deploy.yml` assumes the Ops-managed `skills-mobility-dev-deploy` role (its GitHub-OIDC trust statement is the Ops ticket's Task 4). The foundation stack creates no IAM, so verify with Ops that the trust statement (and the account's `token.actions.githubusercontent.com` OIDC provider) is in place before the first workflow run.
 
 4. **Mangum handlers** — every FastAPI service needs `mangum` in its dependencies and a `handler = Mangum(app)` line (see [Adding a new service](#adding-a-new-service) above). Without this the Lambda invocation will fail at cold-start.
 
 5. **Lambda-compatible Dockerfiles** — current Dockerfiles target local/Docker Compose use. Each needs to be updated (or a separate `Dockerfile.lambda` added) to use the AWS Lambda base image and expose the `handler` symbol.
 
-6. **Parameter files for remaining services** — `infra/params/dev/` has examples for `event-consumer`, `orchestrator`, and `field-mapping`. Add a `<service>.json` for every other service before deploying it.
+6. **Mode switching** — `ExtraEnvJson` isn't wired to anything yet (`lambda-service.yml` passes it through as one opaque `EXTRA_ENV_JSON` string no service reads; e.g. Field Mapping's `Settings.mode` reads `FIELD_MAPPING_MODE` via its own `env_prefix`). Flipping a deployed LLM service (field-mapping, field-synthesis, delivery-targets, workflow-actions) from replay to bedrock mode currently requires a manual Lambda console env-var override.
 
 7. **Orchestrator SQS refactor** — see [Orchestrator SQS gap](#orchestrator-sqs-gap) above.
 
