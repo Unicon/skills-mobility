@@ -11,6 +11,7 @@ AWS SDK chain (FR-FM-29); no API-key layer.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from typing import Any
@@ -104,10 +105,36 @@ class BedrockAdapter:
         try:
             generation = MappingGeneration(**_extract_tool_input(response))
         except Exception as exc:
+            # The 502 this becomes carries no detail past the client — log the
+            # diagnosis here or it exists nowhere (#152: CloudWatch showed only
+            # START/END/REPORT for live failures).
+            logger.warning(
+                "bedrock mapping output rejected: transformation_type=%s "
+                "delivery_target=%s stop_reason=%s output_tokens=%s error=%s "
+                "tool_input(trunc)=%.500s",
+                request.transformation_type,
+                request.delivery_target,
+                response.get("stopReason"),
+                usage.get("outputTokens"),
+                exc,
+                _safe_tool_input(response),
+            )
             raise BedrockResponseError(
                 f"Bedrock tool output did not match the expected schema: {exc}"
             ) from exc
         return generation, meta
+
+
+def _safe_tool_input(response: dict[str, Any]) -> str:
+    """Best-effort raw tool input for the diagnostic log (never raises)."""
+    try:
+        return json.dumps(_extract_tool_input(response))
+    except Exception:
+        try:
+            blocks = response["output"]["message"]["content"]
+            return f"<no toolUse; content blocks: {[list(b.keys()) for b in blocks]}>"
+        except Exception:
+            return "<unparseable response>"
 
 
 def _extract_tool_input(response: dict[str, Any]) -> dict[str, Any]:
@@ -116,4 +143,9 @@ def _extract_tool_input(response: dict[str, Any]) -> dict[str, Any]:
         if "toolUse" in block:
             tool_input: dict[str, Any] = block["toolUse"]["input"]
             return tool_input
-    raise BedrockResponseError("Converse response contained no toolUse block")
+    # Most often stopReason=max_tokens (the model ran out mid-call) or the model
+    # answered in prose instead of calling the tool — say which.
+    raise BedrockResponseError(
+        "Converse response contained no toolUse block "
+        f"(stopReason={response.get('stopReason')!r})"
+    )
