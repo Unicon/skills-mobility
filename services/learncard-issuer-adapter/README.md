@@ -4,7 +4,7 @@ The thin Node/TypeScript boundary around the **LearnCard SDK** that signs an
 already-shaped unsigned OBv3 and returns the issued credential (issue #42; design:
 [`docs/3_design/learncard-issuer-adapter.md`](../../docs/3_design/learncard-issuer-adapter.md)).
 It is the one TypeScript **service** in the stack (the LearnCard SDK forces a
-Node/TS runtime — AGENTS.md / ADR-0003). It does **not** resolve recipient
+Node/TS runtime — ADR-0003). It does **not** resolve recipient
 profiles (that's the Profile Resolver) or route (that's the Delivery Router).
 
 > **Status: wired to the LearnCard SDK.** `issueCredential` initializes the issuer
