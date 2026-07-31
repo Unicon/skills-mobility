@@ -1,7 +1,8 @@
+import { ThemeToggle } from "@skills-mobility/ui";
 import { Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { ExecutionListView } from "./components/ExecutionListView";
-import { ThemeToggle } from "./components/ThemeToggle";
 import { ResetDemoButton } from "./components/ResetDemoButton";
+
 import { WorkflowDetail } from "./components/WorkflowDetail";
 
 function ListRoute() {
@@ -24,7 +25,7 @@ export default function App() {
           ADMIN <span>UI</span>
         </div>
         <ResetDemoButton />
-        <ThemeToggle />
+        <ThemeToggle storageKey="admin-theme" />
       </header>
       <main className="main">
         <Routes>

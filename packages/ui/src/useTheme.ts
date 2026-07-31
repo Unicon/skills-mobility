@@ -2,9 +2,10 @@ import { useState } from "react";
 
 export type Theme = "light" | "dark";
 
-const STORAGE_KEY = "admin-theme";
-
-export function useTheme(): { theme: Theme; toggle: () => void } {
+/** Theme state backed by the <html> class the app's blocking bootstrap script
+ * already set pre-paint (no flash), persisted per app under `storageKey` so
+ * the two consoles' choices don't clobber each other. */
+export function useTheme(storageKey: string): { theme: Theme; toggle: () => void } {
   const [theme, setTheme] = useState<Theme>(
     document.documentElement.classList.contains("light") ? "light" : "dark",
   );
@@ -13,7 +14,7 @@ export function useTheme(): { theme: Theme; toggle: () => void } {
     const next: Theme = theme === "light" ? "dark" : "light";
     document.documentElement.classList.remove(theme);
     document.documentElement.classList.add(next);
-    localStorage.setItem(STORAGE_KEY, next);
+    localStorage.setItem(storageKey, next);
     setTheme(next);
   };
 

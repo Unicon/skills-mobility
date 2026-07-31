@@ -8,3 +8,6 @@ export { eventColor } from "./eventColor";
 export { FlowConnector } from "./FlowConnector";
 export { highlightJson } from "./highlightJson";
 export { PipelineInfoNode } from "./PipelineInfoNode";
+export { ThemeToggle } from "./ThemeToggle";
+export { useTheme } from "./useTheme";
+export type { Theme } from "./useTheme";

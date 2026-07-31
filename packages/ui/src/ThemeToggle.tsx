@@ -1,8 +1,8 @@
 import { MoonIcon, SunIcon } from "@radix-ui/react-icons";
-import { useTheme } from "../hooks/useTheme";
+import { useTheme } from "./useTheme";
 
-export function ThemeToggle() {
-  const { theme, toggle } = useTheme();
+export function ThemeToggle({ storageKey }: { storageKey: string }) {
+  const { theme, toggle } = useTheme(storageKey);
   const isLight = theme === "light";
 
   return (

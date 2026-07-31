@@ -1,3 +1,5 @@
+import { ThemeToggle } from "@skills-mobility/ui";
+
 export function Header() {
   return (
     <header className="topbar">
@@ -14,6 +16,7 @@ export function Header() {
         <span className="dot" style={{ background: "var(--gold)" }} />
         SOURCE SYSTEM
       </div>
+      <ThemeToggle storageKey="mock-lms-theme" />
     </header>
   );
 }
