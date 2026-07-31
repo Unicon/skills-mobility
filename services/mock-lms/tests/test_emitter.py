@@ -52,22 +52,40 @@ def test_without_forward_url_only_captures():
     assert emitter.emitted == [envelope]
 
 
-def test_reset_downstream_posts_reset_and_reports():
+def test_reset_downstream_propagates_both_hops():
     seen: dict = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
         seen["url"] = str(request.url)
-        return httpx.Response(200, json={"ok": True})
+        return httpx.Response(200, json={"ok": True, "cleared": 2, "orchestrator": "reset"})
 
     emitter = LocalEmitter(
         client=httpx.Client(transport=httpx.MockTransport(handler), base_url="http://ec")
     )
-    assert emitter.reset_downstream() == "reset"
+    assert emitter.reset_downstream() == {"event_consumer": "reset", "orchestrator": "reset"}
     assert seen["url"] == "http://ec/reset"
 
 
+def test_reset_downstream_surfaces_a_failed_terminus():
+    # The EC hop succeeding must not mask a failed orchestrator hop (found live:
+    # the terminus 500'd while the top-level response claimed success).
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"ok": True, "orchestrator": "unreachable"})
+
+    emitter = LocalEmitter(
+        client=httpx.Client(transport=httpx.MockTransport(handler), base_url="http://ec")
+    )
+    assert emitter.reset_downstream() == {
+        "event_consumer": "reset",
+        "orchestrator": "unreachable",
+    }
+
+
 def test_reset_downstream_without_forwarding_is_not_configured():
-    assert LocalEmitter().reset_downstream() == "not_configured"
+    assert LocalEmitter().reset_downstream() == {
+        "event_consumer": "not_configured",
+        "orchestrator": "not_configured",
+    }
 
 
 def test_reset_downstream_reports_unreachable_on_http_error():
@@ -77,4 +95,7 @@ def test_reset_downstream_reports_unreachable_on_http_error():
     emitter = LocalEmitter(
         client=httpx.Client(transport=httpx.MockTransport(handler), base_url="http://ec")
     )
-    assert emitter.reset_downstream() == "unreachable"
+    assert emitter.reset_downstream() == {
+        "event_consumer": "unreachable",
+        "orchestrator": "unknown",
+    }

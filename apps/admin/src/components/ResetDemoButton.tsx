@@ -14,7 +14,8 @@ export function ResetDemoButton() {
     setState("busy");
     try {
       const result = await api.reset();
-      setState(result.event_consumer === "reset" ? "done" : "partial");
+      const fullChain = result.event_consumer === "reset" && result.orchestrator === "reset";
+      setState(fullChain ? "done" : "partial");
       window.setTimeout(() => window.location.assign("#/"), 600);
       window.setTimeout(() => window.location.reload(), 700);
     } catch {
