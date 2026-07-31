@@ -15,11 +15,13 @@ from pydantic import BaseModel
 class Action(StrEnum):
     ISSUE_LEARNCARD_BADGE = "issue_learncard_badge"
     DELIVER_TO_LEARNCARD_WALLET = "deliver_to_learncard_wallet"
+    DELIVER_TO_SMARTRESUME = "deliver_to_smartresume"
 
 
 class AdapterKey(StrEnum):
     LEARNCARD_ISSUER = "learncard_issuer"
     LEARNCARD_WALLET = "learncard_wallet"
+    SMART_RESUME = "smart_resume"
 
 
 class DeliveryActionRequest(BaseModel):

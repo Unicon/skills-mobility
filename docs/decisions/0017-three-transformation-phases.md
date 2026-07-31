@@ -122,7 +122,7 @@ This ADR also changes the invocation-count assumptions that earlier documents in
 
 ## Open Questions
 
-- When both LearnCard Wallet and SmartResume are active delivery targets, how are their target-specific delivery phases structured? Both will require a Phase 3 variant but with different target schemas. The open question is whether these run as parallel phases within one orchestration step or as sequential phases, and how the phases are keyed per delivery target — the three-phase model itself applies to both targets, but the orchestration topology for multiple simultaneous delivery phases is not yet defined.
+- *(Resolved 2026-07-25, see [Phase 2 POC Slice](../2_requirements/phase-2-poc-slice.md) §2: the shared prefix — `credential_template` → `issuer_payload` → LearnCard Issuer badge issuance — runs once; the `wallet_payload`-equivalent phase then runs once per selected delivery target, keyed by target, as separate per-target steps within the single ordered delivery-phase plan, each with its own Field Mapping / Field Synthesis pass producing a target-specific payload for its adapter.)*
 - How much transformation is necessary between the issued badge and the target wallet system?
 - Which fields, if any, in the wallet payload phase actually require Field Synthesis instead of direct structural mapping from the issued badge artifact?
 - Should skills-framework grounding be provided through curated retrieval, static snapshots, or model priors alone for the credential-template phase?

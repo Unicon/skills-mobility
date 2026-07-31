@@ -16,7 +16,7 @@ const baseExecution: ExecutionMetadata = {
   correlation_id: "corr_1",
   event_type: "skill_mastered",
   status: "running",
-  gate_decision: null,
+  decisions: [],
   plan_id: null,
   steps: [],
   result: {},

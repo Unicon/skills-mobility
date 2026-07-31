@@ -1,9 +1,16 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin UI · Orchestrator Console</title>
+    <script>
+      (function () {
+        var stored = localStorage.getItem("admin-theme");
+        var theme = stored === "light" ? "light" : "dark";
+        document.documentElement.classList.add(theme);
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

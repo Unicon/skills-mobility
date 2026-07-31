@@ -34,7 +34,7 @@ Response (stable across adapters; `result`/`payload` bodies differ per action):
   "external_reference_id": "lc:network:…", "result": { }, "error": null }
 ```
 
-Phase-1 actions (design §6): `issue_learncard_badge` → `learncard_issuer`, `deliver_to_learncard_wallet` → `learncard_wallet`.
+Phase-1 actions (design §6): `issue_learncard_badge` → `learncard_issuer`, `deliver_to_learncard_wallet` → `learncard_wallet`, `deliver_to_smartresume` → `smart_resume`.
 
 - The router **routes by `action`** (authoritative) and echoes the resolved `adapter_key`.
 - Adapter/transport failures — after config-driven retries on transport errors — normalize to `status: "failed"` with **structured** `error` (HTTP 200); the router never leaks a raw exception or an unconfigured-adapter into an HTTP error.
@@ -56,6 +56,7 @@ Smoke test: `curl -s localhost:8800/healthz`
 | `DELIVERY_ROUTER_PORT` | `8800` | Local HTTP port (clear of Consul's 8300) |
 | `DELIVERY_ROUTER_LEARNCARD_ISSUER_URL` | `None` | Issuer adapter base URL |
 | `DELIVERY_ROUTER_LEARNCARD_WALLET_URL` | `None` | Wallet adapter base URL |
+| `DELIVERY_ROUTER_SMARTRESUME_URL` | `None` | SmartResume adapter base URL |
 | `DELIVERY_ROUTER_REQUEST_TIMEOUT` | `30.0` | Per-request timeout (s) |
 | `DELIVERY_ROUTER_RETRY_LIMIT` | `1` | Retries on transport errors (on top of the first try) |
 | `DELIVERY_ROUTER_LOG_LEVEL` | `INFO` | Root log level |

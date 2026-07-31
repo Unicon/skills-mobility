@@ -14,10 +14,11 @@ from datetime import UTC, datetime
 from typing import Any
 
 from orchestrator.schemas import (
+    DecisionArtifact,
+    DecisionCandidate,
     DeliveryPhasePlan,
     ExecutionMetadata,
     ExecutionSummary,
-    GateDecision,
     StepProgress,
     StepResult,
 )
@@ -29,13 +30,25 @@ CREATE TABLE IF NOT EXISTS workflow_execution (
     correlation_id       TEXT,
     event_type           TEXT,
     status               TEXT NOT NULL,
-    gate_decision        TEXT,
     plan_id              TEXT,
     context_artifact_ref TEXT,
     result               TEXT,
     created_at           TEXT NOT NULL,
     updated_at           TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS workflow_decision (
+    execution_id       TEXT NOT NULL,
+    kind               TEXT NOT NULL,
+    confidence         REAL,
+    rationale          TEXT NOT NULL,
+    outcome            TEXT NOT NULL,
+    candidates_json    TEXT,
+    artifact_ref       TEXT,
+    invocation_log_ref TEXT,
+    decision_source    TEXT,
+    created_at         TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_workflow_decision_execution ON workflow_decision(execution_id);
 CREATE TABLE IF NOT EXISTS workflow_step_execution (
     execution_id TEXT NOT NULL,
     step_id      INTEGER NOT NULL,
@@ -100,11 +113,29 @@ class ExecutionStore:
         )
         self._conn.commit()
 
-    def record_gate_decision(self, execution_id: str, gate: GateDecision) -> None:
+    def record_decision(self, execution_id: str, decision: DecisionArtifact) -> None:
+        candidates_json = (
+            json.dumps([c.model_dump() for c in decision.candidates])
+            if decision.candidates
+            else None
+        )
         self._conn.execute(
-            "UPDATE workflow_execution SET gate_decision = ?, updated_at = ? "
-            "WHERE execution_id = ?",
-            (gate.model_dump_json(), _now(), execution_id),
+            "INSERT INTO workflow_decision "
+            "(execution_id, kind, confidence, rationale, outcome, candidates_json, "
+            "artifact_ref, invocation_log_ref, decision_source, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                execution_id,
+                decision.kind,
+                decision.confidence,
+                decision.rationale,
+                decision.outcome,
+                candidates_json,
+                decision.artifact_ref,
+                decision.invocation_log_ref,
+                decision.decision_source,
+                decision.created_at or _now(),
+            ),
         )
         self._conn.commit()
 
@@ -193,12 +224,34 @@ class ExecutionStore:
             )
             for s in step_rows
         ]
+        decision_rows = self._conn.execute(
+            "SELECT * FROM workflow_decision WHERE execution_id = ? ORDER BY rowid",
+            (execution_id,),
+        ).fetchall()
+        decisions = [
+            DecisionArtifact(
+                kind=d["kind"],
+                confidence=d["confidence"],
+                rationale=d["rationale"],
+                outcome=d["outcome"],
+                candidates=(
+                    [DecisionCandidate(**c) for c in json.loads(d["candidates_json"])]
+                    if d["candidates_json"]
+                    else []
+                ),
+                artifact_ref=d["artifact_ref"],
+                invocation_log_ref=d["invocation_log_ref"],
+                decision_source=d["decision_source"],
+                created_at=d["created_at"],
+            )
+            for d in decision_rows
+        ]
         return ExecutionMetadata(
             execution_id=row["execution_id"],
             correlation_id=row["correlation_id"] or "",
             event_type=row["event_type"],
             status=row["status"],
-            gate_decision=json.loads(row["gate_decision"]) if row["gate_decision"] else None,
+            decisions=decisions,
             plan_id=row["plan_id"],
             steps=steps,
             result=json.loads(row["result"]) if row["result"] else {},

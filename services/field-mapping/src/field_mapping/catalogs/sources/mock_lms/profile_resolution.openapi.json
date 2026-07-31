@@ -1,0 +1,32 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Mock LMS Profile Resolution (issuer/wallet context)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "ProfileResolution": {
+        "type": "object",
+        "description": "The resolved issuer-and-recipient identity context produced by the Profile Resolver before the issuer and wallet transformation phases. Carries the DID identifiers and profile references needed by downstream delivery adapters.",
+        "x-source-system": "mock_lms",
+        "x-resource-schema-id": "profile_resolution",
+        "required": ["issuer_id", "recipient_did", "recipient_profile_id"],
+        "properties": {
+          "issuer_id": {
+            "type": "string",
+            "description": "DID of the credential issuer (the institution or platform issuing the badge). Used as the `issuer` field in the unsigned VC.",
+            "examples": ["did:web:issuer.example.com"]
+          },
+          "recipient_did": {
+            "type": "string",
+            "description": "DID of the credential recipient (the learner's LearnCard wallet identity). Used as `credentialSubject.id` in the unsigned VC.",
+            "examples": ["did:web:network.learncard.com:users:learner"]
+          },
+          "recipient_profile_id": {
+            "type": "string",
+            "description": "LearnCard profile id of the recipient (the learner's LearnCloud network profile id). Used as the `profileId` path parameter when sending a credential to the LearnCloud wallet API.",
+            "examples": ["smi-demo-learner"]
+          }
+        }
+      }
+    }
+  }
+}

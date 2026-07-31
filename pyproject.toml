@@ -28,6 +28,7 @@ dev = [
     "coverage>=7",
     "faker>=30",
     "types-pyyaml>=6",
+    "types-jsonschema>=4.21",
 ]
 
 [tool.ruff]

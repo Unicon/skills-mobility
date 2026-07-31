@@ -1,0 +1,17 @@
+{
+  "action_ids": [
+    "resolve_learncard_profile",
+    "generate_credential_template_mapping",
+    "generate_credential_template_synthesis",
+    "execute_credential_template_translation",
+    "generate_issuer_payload_mapping",
+    "generate_issuer_payload_synthesis",
+    "execute_issuer_payload_translation",
+    "issue_learncard_badge",
+    "generate_learncard_wallet_payload_mapping",
+    "execute_learncard_wallet_payload_translation",
+    "deliver_to_learncard_wallet"
+  ],
+  "confidence": 0.94,
+  "rationale": "LearnCard wallet delivery: resolve profile, generate the credential template, generate issuer mapping and synthesis, translate and issue badge, generate wallet mapping, translate and deliver to wallet."
+}
