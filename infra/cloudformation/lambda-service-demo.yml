@@ -103,6 +103,12 @@ Parameters:
     Description: >
       Pre-minted scoped bearer JWT for the wallet adapter (tools/learncard-demo).
       Supplied at deploy time — never committed.
+  OrchestratorIssuerDid:
+    Type: String
+    Default: ""
+    Description: >
+      Issuer DID stamped into credentials (must be a resolvable LearnCard
+      profile DID for live issuance; the code default is a placeholder domain).
   IssuerSeedLabel:
     Type: String
     Default: ""
@@ -148,6 +154,7 @@ Resources:
           ORCHESTRATOR_TRANSFORMATION_EXECUTOR_URL: !Ref TransformationExecutorUrl
           CONTEXT_BUILDER_LMS_BASE_URL: !Ref LmsBaseUrl
           ORCHESTRATOR_DELIVERY_ROUTER_URL: !Ref DeliveryRouterUrl
+          ORCHESTRATOR_ISSUER_ID: !Ref OrchestratorIssuerDid
           DELIVERY_ROUTER_LEARNCARD_ISSUER_URL: !Ref LearncardIssuerUrl
           DELIVERY_ROUTER_LEARNCARD_WALLET_URL: !Ref LearncardWalletUrl
           LEARNCARD_API_URL: !Ref LearncardApiUrl
