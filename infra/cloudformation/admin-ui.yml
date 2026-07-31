@@ -22,6 +22,12 @@ Parameters:
     Description: >
       Orchestrator Function URL host only, no scheme/path — e.g.
       abc123.lambda-url.us-east-1.on.aws
+  MockLmsDomain:
+    Type: String
+    Description: >
+      Mock LMS Function URL host only, no scheme/path. Serves the /demo/reset
+      cascade the Admin UI's Reset Demo button fires (mock-lms → event-consumer
+      → orchestrator).
   DemoAuthCredential:
     Type: String
     NoEcho: true
@@ -124,6 +130,13 @@ Resources:
             CustomOriginConfig:
               OriginProtocolPolicy: https-only
               OriginSSLProtocols: [TLSv1.2]
+          - Id: mock-lms
+            DomainName: !Ref MockLmsDomain
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols: [TLSv1.2]
+              # The reset cascade waits synchronously on EC + Orchestrator resets.
+              OriginReadTimeout: 60
         DefaultCacheBehavior:
           TargetOriginId: s3-spa
           ViewerProtocolPolicy: redirect-to-https
@@ -133,6 +146,16 @@ Resources:
             - EventType: viewer-request
               LambdaFunctionARN: !Ref EdgeAuthVersionV1
         CacheBehaviors:
+          # POST allowed: the Reset Demo button fires the demo-reset cascade.
+          - PathPattern: /demo/reset
+            TargetOriginId: mock-lms
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+            LambdaFunctionAssociations:
+              - EventType: viewer-request
+                LambdaFunctionARN: !Ref EdgeAuthVersionV1
           - PathPattern: /executions*
             TargetOriginId: orchestrator
             ViewerProtocolPolicy: redirect-to-https
