@@ -32,7 +32,13 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ action_id, scope, user_id: user_id ?? null }),
     }),
-  reset: () => req<{ ok: boolean }>("/demo/reset", { method: "POST" }),
+  // Cascades mock-lms → event-consumer → orchestrator; each hop reports whether
+  // its downstream actually cleared ("reset" | "not_configured" | "unreachable").
+  reset: () =>
+    req<{ ok: boolean; event_consumer?: "reset" | "not_configured" | "unreachable" }>(
+      "/demo/reset",
+      { method: "POST" },
+    ),
 
   // LMS Resource APIs (the same reads the Context Builder uses). Canvas-style
   // array params are sent pre-encoded (%5B%5D, not literal []) — CloudFront and

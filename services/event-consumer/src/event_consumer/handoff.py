@@ -18,6 +18,8 @@ from event_consumer.store import SqliteStore
 class Handoff(Protocol):
     def hand_off(self, execution_id: str, event: dict[str, Any]) -> str: ...
 
+    def reset_downstream(self) -> str: ...
+
 
 class CaptureHandoff:
     """Record the handoff in the local store (no Orchestrator running)."""
@@ -28,6 +30,9 @@ class CaptureHandoff:
     def hand_off(self, execution_id: str, event: dict[str, Any]) -> str:
         self._store.capture_handoff(execution_id, event)
         return "handoff_captured"
+
+    def reset_downstream(self) -> str:
+        return "not_configured"
 
 
 class HttpHandoff:
@@ -42,3 +47,12 @@ class HttpHandoff:
         )
         resp.raise_for_status()  # surface a non-2xx from the Orchestrator instead of swallowing it
         return "handoff_sent"
+
+    def reset_downstream(self) -> str:
+        """Cascade the demo reset to the Orchestrator; report, don't swallow."""
+        try:
+            resp = self._client.post("/admin/reset")
+            resp.raise_for_status()
+        except httpx.HTTPError:
+            return "unreachable"
+        return "reset"

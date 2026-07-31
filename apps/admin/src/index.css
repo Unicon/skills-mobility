@@ -504,3 +504,24 @@ button {
   text-align: center;
   word-break: break-all;
 }
+
+/* Demo reset (destructive-adjacent: bordered, quiet until hover). */
+.reset-demo {
+  margin-left: auto;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line-bright);
+  background: transparent;
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.reset-demo:hover {
+  border-color: var(--red, #e5484d);
+  color: var(--red, #e5484d);
+}
+.reset-demo:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

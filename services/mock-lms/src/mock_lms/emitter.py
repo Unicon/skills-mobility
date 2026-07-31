@@ -20,6 +20,8 @@ class Emitter(Protocol):
 
     def emit(self, envelope: LiveEventEnvelope) -> None: ...
 
+    def reset_downstream(self) -> str: ...
+
 
 class LocalEmitter:
     """Captures emitted envelopes in process. The default for dev and tests.
@@ -45,6 +47,19 @@ class LocalEmitter:
         if self._client is not None:
             self._client.post("/ingest", json=envelope.model_dump(mode="json"))
 
+    def reset_downstream(self) -> str:
+        """Cascade a demo reset to the Event Consumer (which cascades to the
+        Orchestrator). The outcome is reported, not swallowed — a reset that
+        didn't actually clear downstream state must be visible to the caller."""
+        if self._client is None:
+            return "not_configured"
+        try:
+            resp = self._client.post("/reset")
+            resp.raise_for_status()
+        except httpx.HTTPError:
+            return "unreachable"
+        return "reset"
+
 
 class EventBridgeEmitter:
     """AWS EventBridge emitter (PutEvents). Stubbed until infra lands (design §5.2)."""
@@ -58,3 +73,6 @@ class EventBridgeEmitter:
         raise NotImplementedError(
             "EventBridgeEmitter is not wired yet; use MOCK_LMS_EMITTER=local for the POC."
         )
+
+    def reset_downstream(self) -> str:  # pragma: no cover - not wired yet
+        return "not_configured"

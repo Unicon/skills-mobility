@@ -138,6 +138,20 @@ def test_plan_lookup_toggle_and_delete(client, sample_event):
     assert client.delete(f"/admin/plans/{plan_id}").json() == {"deleted": False}
 
 
+def test_admin_reset_clears_executions_but_keeps_plans(client, sample_event):
+    # The demo-reset cascade terminus: executions go, reusable plans survive
+    # (they're templates, FR-OR-29 — deletable only via /admin/plans/{id}).
+    client.post("/run-workflow", json={"execution_id": "exec_r", "event": sample_event})
+    assert len(client.get("/executions").json()) == 1
+
+    resp = client.post("/admin/reset")
+    assert resp.json() == {"ok": True, "executions_cleared": 1}
+    assert client.get("/executions").json() == []
+    # The persisted plan still exists — deleting it reports True, not a no-op.
+    plan_id = "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1"
+    assert client.delete(f"/admin/plans/{plan_id}").json() == {"deleted": True}
+
+
 def test_list_executions_and_correlation_filter(client, sample_event, course_event):
     # Two runs with distinct correlation ids (corr_1 on skill, corr_2 on course).
     client.post("/run-workflow", json={"execution_id": "exec_a", "event": sample_event})
