@@ -3,6 +3,7 @@
 import json
 
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 from mock_lms.app import create_app
 from mock_lms.config import Settings
@@ -99,3 +100,26 @@ def test_reset_downstream_reports_unreachable_on_http_error():
         "event_consumer": "unreachable",
         "orchestrator": "unknown",
     }
+
+
+def test_emit_tolerates_slow_chain_but_raises_on_undelivered():
+    # A ReadTimeout means the request WAS delivered and the synchronous chain is
+    # still running — the fire must not hang or fail on it. A connect error
+    # means the event never arrived — that must stay loud.
+    def slow(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("chain still running", request=request)
+
+    emitter = LocalEmitter(
+        client=httpx.Client(transport=httpx.MockTransport(slow), base_url="http://ec")
+    )
+    emitter.emit(_an_envelope())  # does not raise
+    assert len(emitter.emitted) == 1
+
+    def down(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("nobody home", request=request)
+
+    broken = LocalEmitter(
+        client=httpx.Client(transport=httpx.MockTransport(down), base_url="http://ec")
+    )
+    with pytest.raises(httpx.ConnectError):
+        broken.emit(_an_envelope())
