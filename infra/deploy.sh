@@ -33,7 +33,8 @@ TMPL="$(dirname "$0")/cloudformation/lambda-service-demo.yml"
 # The full 9-service transformation chain (all packaged + imaged). orchestrator is
 # last so pass 2 can wire the URLs its downstream seams expose.
 SERVICES=(mock-lms event-consumer context-builder delivery-targets workflow-actions \
-  field-mapping field-synthesis transformation-executor orchestrator)
+  field-mapping field-synthesis transformation-executor \
+  delivery-router learncard-issuer-adapter learncard-wallet-adapter orchestrator)
 
 aws() { command aws --region "$REGION" "$@"; }
 stack() { echo "${PROJECT}-${ENV}-$1"; }
@@ -82,6 +83,17 @@ for svc in "${SERVICES[@]}"; do
     mock-lms|event-consumer) deploy_service "$svc" TimeoutSeconds=150 ;;
     delivery-targets|workflow-actions|field-mapping|field-synthesis) \
                        deploy_service "$svc" LlmMode=bedrock TimeoutSeconds=60 ;;
+    # LearnCard delivery leg: adapters call live LearnCloud; the router waits on
+    # them. Issuer identity derives from the public seed label; the wallet token
+    # comes from the deployer's env (tools/learncard-demo/.env — never committed).
+    delivery-router)   deploy_service "$svc" TimeoutSeconds=90 ;;
+    learncard-issuer-adapter) deploy_service "$svc" TimeoutSeconds=60 \
+      IssuerSeedLabel="${ISSUER_SEED_LABEL:-organization}" \
+      IssuerProfileId="${ISSUER_PROFILE_ID:-smi-demo-organization}" \
+      IssuerProfileName="${ISSUER_PROFILE_NAME:-SMI Demo Organization}" ;;
+    learncard-wallet-adapter) deploy_service "$svc" TimeoutSeconds=60 \
+      LearncardApiUrl="${LEARNCARD_API_URL:-https://network.learncard.com/api}" \
+      LearncardApiToken="${LEARNCARD_API_TOKEN:?set LEARNCARD_API_TOKEN (tools/learncard-demo/.env)}" ;;
     *)                 deploy_service "$svc" ;;
   esac
 done
@@ -97,6 +109,9 @@ WORKFLOW_ACTIONS_URL=$(url_of workflow-actions)
 FIELD_MAPPING_URL=$(url_of field-mapping)
 FIELD_SYNTHESIS_URL=$(url_of field-synthesis)
 TRANSFORMATION_EXECUTOR_URL=$(url_of transformation-executor)
+DELIVERY_ROUTER_URL=$(url_of delivery-router)
+LEARNCARD_ISSUER_URL=$(url_of learncard-issuer-adapter)
+LEARNCARD_WALLET_URL=$(url_of learncard-wallet-adapter)
 printf "  orchestrator: %s\n  mock-lms: %s\n" "$ORCHESTRATOR_URL" "$MOCK_LMS_URL"
 
 # --- Pass 2: wire the chain (feed URLs back into the consumers) ------------
@@ -104,13 +119,17 @@ echo "== pass 2: wire the chain =="
 deploy_service mock-lms        TimeoutSeconds=150 EventConsumerUrl="$EVENT_CONSUMER_URL"
 deploy_service event-consumer  TimeoutSeconds=150 OrchestratorUrl="$ORCHESTRATOR_URL"
 deploy_service context-builder LmsBaseUrl="$MOCK_LMS_URL"
+deploy_service delivery-router TimeoutSeconds=90 \
+  LearncardIssuerUrl="$LEARNCARD_ISSUER_URL" \
+  LearncardWalletUrl="$LEARNCARD_WALLET_URL"
 deploy_service orchestrator    DynamoTable="$TABLE" TimeoutSeconds=120 \
   ContextBuilderUrl="$CONTEXT_BUILDER_URL" \
   DeliveryTargetsUrl="$DELIVERY_TARGETS_URL" \
   WorkflowActionsUrl="$WORKFLOW_ACTIONS_URL" \
   FieldMappingUrl="$FIELD_MAPPING_URL" \
   FieldSynthesisUrl="$FIELD_SYNTHESIS_URL" \
-  TransformationExecutorUrl="$TRANSFORMATION_EXECUTOR_URL"
+  TransformationExecutorUrl="$TRANSFORMATION_EXECUTOR_URL" \
+  DeliveryRouterUrl="$DELIVERY_ROUTER_URL"
 
 # --- Smoke test ------------------------------------------------------------
 echo "== smoke test =="

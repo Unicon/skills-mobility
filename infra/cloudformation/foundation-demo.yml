@@ -38,6 +38,24 @@ Resources:
       RepositoryName: !Sub "${ProjectName}/mock-lms"
       EmptyOnDelete: true
 
+  DeliveryRouterRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}/delivery-router"
+      EmptyOnDelete: true
+
+  LearncardIssuerAdapterRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}/learncard-issuer-adapter"
+      EmptyOnDelete: true
+
+  LearncardWalletAdapterRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}/learncard-wallet-adapter"
+      EmptyOnDelete: true
+
   EventConsumerRepo:
     Type: AWS::ECR::Repository
     Properties:

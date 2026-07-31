@@ -11,6 +11,9 @@ dependencies = [
     "uvicorn>=0.30",
 ]
 
+[project.optional-dependencies]
+lambda = ["mangum>=0.19"]
+
 [project.scripts]
 delivery-router = "delivery_router.app:run"
 

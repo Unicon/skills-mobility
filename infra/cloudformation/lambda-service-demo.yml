@@ -80,6 +80,41 @@ Parameters:
     Type: String
     Default: ""
     Description: orchestrator DynamoDB execution-state table name.
+  DeliveryRouterUrl:
+    Type: String
+    Default: ""
+    Description: Orchestrator seam — Delivery Router Function URL (empty = stub delivery).
+  LearncardIssuerUrl:
+    Type: String
+    Default: ""
+    Description: Delivery Router seam — LearnCard Issuer Adapter Function URL.
+  LearncardWalletUrl:
+    Type: String
+    Default: ""
+    Description: Delivery Router seam — LearnCard Wallet Adapter Function URL.
+  LearncardApiUrl:
+    Type: String
+    Default: ""
+    Description: LearnCloud API base for the wallet adapter.
+  LearncardApiToken:
+    Type: String
+    Default: ""
+    NoEcho: true
+    Description: >
+      Pre-minted scoped bearer JWT for the wallet adapter (tools/learncard-demo).
+      Supplied at deploy time — never committed.
+  IssuerSeedLabel:
+    Type: String
+    Default: ""
+    Description: LearnCard issuer seed label (public; the seed derives from it).
+  IssuerProfileId:
+    Type: String
+    Default: ""
+    Description: LearnCard issuer profile id (must match the seed-derived profile).
+  IssuerProfileName:
+    Type: String
+    Default: ""
+    Description: LearnCard issuer display name.
   LlmMode:
     Type: String
     Default: replay
@@ -112,6 +147,15 @@ Resources:
           ORCHESTRATOR_FIELD_SYNTHESIS_URL: !Ref FieldSynthesisUrl
           ORCHESTRATOR_TRANSFORMATION_EXECUTOR_URL: !Ref TransformationExecutorUrl
           CONTEXT_BUILDER_LMS_BASE_URL: !Ref LmsBaseUrl
+          ORCHESTRATOR_DELIVERY_ROUTER_URL: !Ref DeliveryRouterUrl
+          DELIVERY_ROUTER_LEARNCARD_ISSUER_URL: !Ref LearncardIssuerUrl
+          DELIVERY_ROUTER_LEARNCARD_WALLET_URL: !Ref LearncardWalletUrl
+          LEARNCARD_API_URL: !Ref LearncardApiUrl
+          LEARNCARD_API_TOKEN: !Ref LearncardApiToken
+          # Issuer adapter (Node) reads unprefixed names; other services ignore them.
+          SEED_LABEL: !Ref IssuerSeedLabel
+          PROFILE_ID: !Ref IssuerProfileId
+          PROFILE_NAME: !Ref IssuerProfileName
           ORCHESTRATOR_DYNAMO_TABLE: !Ref DynamoTable
           # LLM adapter mode (only the four Bedrock services read their prefix).
           DELIVERY_TARGETS_MODE: !Ref LlmMode
