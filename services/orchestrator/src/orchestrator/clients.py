@@ -83,7 +83,11 @@ class StubProfileResolver:
     ) -> dict[str, Any]:
         handle = (learner_id_value or "learner").lower()
         return {
-            "profile_id": f"@{handle}",
+            # Plain profileId — the REAL resolver returns the network's profileId
+            # verbatim, and the wallet adapter interpolates it into
+            # /credential/send/{profileId}: an "@" prefix (display convention)
+            # 404s the live API. Found on the first live AWS delivery.
+            "profile_id": handle,
             "did": f"did:web:network.learncard.com:users:{handle}",
             "resolution_method": "stubbed",
         }
