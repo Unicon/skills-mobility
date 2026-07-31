@@ -237,7 +237,10 @@ class MappingGeneration(BaseModel):
         to a list, falls through to normal validation and still fails loudly."""
         if isinstance(v, str):
             try:
-                decoded = json.loads(v)
+                # strict=False: the model writes multi-line text into string
+                # fields with RAW newlines (invalid strict JSON) — the second
+                # half of the #152 quirk, found live after the first fix.
+                decoded = json.loads(v, strict=False)
             except ValueError:
                 return v
             if isinstance(decoded, list):
