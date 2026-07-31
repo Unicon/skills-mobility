@@ -9,10 +9,13 @@ no emission log here.
 
 from __future__ import annotations
 
+import logging
 from typing import Protocol
 
 import httpx
 from skills_mobility_events import LiveEventEnvelope
+
+logger = logging.getLogger(__name__)
 
 
 class Emitter(Protocol):
@@ -38,14 +41,29 @@ class LocalEmitter:
         self, forward_url: str | None = None, client: httpx.Client | None = None
     ) -> None:
         self.emitted: list[LiveEventEnvelope] = []
+        # Short READ timeout on the forward: the Event Consumer processes the
+        # whole downstream workflow synchronously before answering (15-30s live
+        # with Bedrock), and its response body is not consumed here — waiting
+        # for it only hostages the console's fire button (and used to end as a
+        # 30s hang → 500 while the workflow completed anyway). 3s is enough to
+        # deliver the request; the chain keeps running server-side.
         self._client = client or (
-            httpx.Client(base_url=forward_url, timeout=30.0) if forward_url else None
+            httpx.Client(base_url=forward_url, timeout=httpx.Timeout(30.0, read=3.0))
+            if forward_url
+            else None
         )
 
     def emit(self, envelope: LiveEventEnvelope) -> None:
         self.emitted.append(envelope)
-        if self._client is not None:
+        if self._client is None:
+            return
+        try:
             self._client.post("/ingest", json=envelope.model_dump(mode="json"))
+        except httpx.ReadTimeout:
+            # Delivered — the Event Consumer just hasn't finished the synchronous
+            # chain yet. Not a failure; connect errors still raise (undelivered
+            # events must stay loud).
+            logger.info("event delivered; not waiting on the synchronous chain")
 
     def reset_downstream(self) -> dict[str, str]:
         """Cascade a demo reset to the Event Consumer (which cascades to the

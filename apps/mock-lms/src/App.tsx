@@ -39,9 +39,9 @@ export default function App() {
     setLastRun(null);
   }, [activeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const flash = useCallback((msg: string) => {
+  const flash = useCallback((msg: string, ms = 1600) => {
     setToast(msg);
-    window.setTimeout(() => setToast(null), 1600);
+    window.setTimeout(() => setToast(null), ms);
   }, []);
 
   const onCopy = useCallback(
@@ -66,7 +66,10 @@ export default function App() {
         scope === "one" ? (learnerId ?? undefined) : undefined,
       );
       setLastRun(result);
-      flash(`Emitted ${result.emitted.length} event(s)`);
+      flash(
+        `Emitted ${result.emitted.length} event(s) — the workflow runs ~15–30s; watch it in the Admin UI`,
+        4200,
+      );
     } catch (e) {
       flash(`Run failed: ${e}`);
     } finally {
