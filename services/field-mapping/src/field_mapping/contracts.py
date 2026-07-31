@@ -7,11 +7,12 @@ seam reads — see ``orchestrator.actions._generate_payload_mapping``.
 
 from __future__ import annotations
 
+import json
 import re
 from enum import StrEnum
 from typing import Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class TransformationType(StrEnum):
@@ -225,6 +226,23 @@ class MappingGeneration(BaseModel):
     synthesis_requests: list[SynthesisRequestEntry] = Field(default_factory=list)
     confidence: float | None = None
     rationale: str | None = None
+
+    @field_validator("placeholder_ids", "synthesis_requests", mode="before")
+    @classmethod
+    def _decode_stringified_array(cls, v: object) -> object:
+        """Claude's toolUse output sometimes serializes a nested array as a JSON
+        STRING (#152: every live credential_template failure was
+        synthesis_requests='[...]'). Decoding it is deterministic repair of a
+        known transport quirk — anything that isn't valid JSON, or doesn't decode
+        to a list, falls through to normal validation and still fails loudly."""
+        if isinstance(v, str):
+            try:
+                decoded = json.loads(v)
+            except ValueError:
+                return v
+            if isinstance(decoded, list):
+                return decoded
+        return v
 
 
 class LlmCallMeta(BaseModel):
