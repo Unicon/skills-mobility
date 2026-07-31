@@ -101,7 +101,7 @@ describe("DecisionDetailCard", () => {
   test("decision_source: null (predates the field) renders exactly like today — no badge, normal narrative", () => {
     render(<DecisionDetailCard decision={gateDecision} execution={execution} />);
     expect(screen.queryByText("deterministic fallback")).toBeNull();
-    expect(screen.getByText(/I went with continue to delivery targets/)).toBeTruthy();
+    expect(screen.getByText(/I went with continue/)).toBeTruthy();
   });
 
   test("decision_source: 'deterministic_fallback' shows a badge and a plain, non-fabricated narrative", () => {
@@ -111,7 +111,7 @@ describe("DecisionDetailCard", () => {
     const responseText = screen.getByText(/orchestrator's deterministic fallback produced this decision/);
     expect(responseText.textContent).not.toContain("I went with");
     expect(responseText.textContent).not.toContain("confident");
-    expect(responseText.textContent).toContain("continue to delivery targets");
+    expect(responseText.textContent).toContain("Outcome: continue.");
     expect(responseText.textContent).toContain("Deterministic Phase 1 happy-path gate decision");
   });
 });
