@@ -83,5 +83,35 @@ def test_adapter_builds_converse_request_and_parses_tool_output() -> None:
 
 
 def test_extract_tool_input_raises_without_tooluse() -> None:
-    with pytest.raises(BedrockResponseError):
-        _extract_tool_input({"output": {"message": {"content": [{"text": "no tool call"}]}}})
+    with pytest.raises(BedrockResponseError, match="stopReason='max_tokens'"):
+        _extract_tool_input(
+            {
+                "stopReason": "max_tokens",
+                "output": {"message": {"content": [{"text": "no tool call"}]}},
+            }
+        )
+
+
+def test_schema_rejection_logs_the_diagnosis(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    # #152: the BedrockResponseError becomes an opaque 502 to the caller, so the
+    # failure detail (stop reason, tokens, truncated raw tool input) MUST land
+    # in the log — live CloudWatch previously showed nothing at all.
+    bad_tool_input = {"jsonata": 42, "confidence": "not-a-number"}
+    fake = _FakeBedrock(bad_tool_input)
+    adapter = BedrockAdapter(
+        model_id="us.anthropic.claude-haiku-4-5-20251001-v1:0",
+        region="us-east-1",
+        client=fake,
+    )
+
+    with caplog.at_level("WARNING", logger="field_mapping.bedrock_adapter"):
+        with pytest.raises(BedrockResponseError):
+            adapter.generate(_wallet_request(), target_schema={"required": []})
+
+    joined = " ".join(r.getMessage() for r in caplog.records)
+    assert "bedrock mapping output rejected" in joined
+    assert "transformation_type=wallet_payload" in joined
+    assert "stop_reason=" in joined
+    assert '"jsonata": 42' in joined  # the raw tool input is recoverable
