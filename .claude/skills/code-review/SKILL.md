@@ -31,13 +31,19 @@ Check the dimensions the diff actually touches; skip the rest and say which you 
 
 - **Correctness**: logic, edge cases, error paths, async/None handling.
 - **The architectural contract**: if the diff touches an LLM Decision Service or the
-  orchestrator, confirm LLM output still passes through deterministic Policy Rules
-  validation before it can affect delivery, and that the audit trail still captures what
-  ADR-0011 §9 requires. This is the one thing in this codebase that must never regress
+  orchestrator, confirm LLM output still passes through deterministic policy validation
+  (Layer-A validators + the orchestrator's conformance/re-binding checks) before it can
+  affect delivery, and that the audit trail keeps its provenance signals — a fallback
+  must stay positively marked (`decision_source`, `_degraded`), never inferable only
+  from missing fields. This is the one thing in this codebase that must never regress
   quietly — treat any weakening of it as a `Bug.`, not a `Suggestion.`.
+- **The recurring-feedback checklist**: run the diff against `docs/pr-checklist.md` —
+  it distills three waves of real review feedback (config loading, fallback visibility,
+  cross-component drift, environment parity) and is maintained as reviews land.
 - **Module boundaries**: no import from `services/` into another `services/*` directly;
   `apps/` doesn't import `services/`; `libs/` doesn't import `apps/` or `services/`. Any
-  AWS resource change goes through CDK in `infra/`, never an ad-hoc `aws-cli` call.
+  AWS resource change goes through CloudFormation in `infra/` (ADR-0003, revised — CDK
+  was superseded), never an ad-hoc `aws-cli` call; `aws-cli` is read-only verification.
 - **Data & fixtures**: mock data follows generate → capture → commit → replay
   (`AGENTS.md`); runtime code must load committed `fixtures/*.json`, never call the
   generator at request time; `generated-fixtures/` stays out of the diff (gitignored).
@@ -47,7 +53,7 @@ Check the dimensions the diff actually touches; skip the rest and say which you 
   the bulk of the work, API tests use FastAPI's `TestClient`, e2e stays happy-path only.
   No elaborate edge-case tests beyond what's reasonable for a POC. Assertions can
   actually fail; no vacuous tests. Fixtures/fakes over real network calls.
-- **Types & lint**: would `uv run mypy libs/*/src services/*/src` and `uv run ruff check .`
+- **Types & lint**: would `uv run mypy libs/*/src $(ls -d services/*/src | grep -v learncard-issuer-adapter)` and `uv run ruff check .`
   pass on the changed files? Note anything that looks like it'd fail either.
 - **Secrets & generated artifacts**: no `.env`, credentials, hardcoded hostnames; nothing
   from the gitignored list (`audit-output/`, `execution-traces/`, `generated-fixtures/`,

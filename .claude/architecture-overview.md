@@ -18,9 +18,14 @@ Learner/credential events flow: **Event Consumer** ingests an event → **Orches
 runs the plan (gated by two Workflow Actions stages and informed by the Delivery Targets
 and Transformation Mappings LLM Decision Services) → validated steps deliver transformed
 credentials to **LearnCloud/LearnCard** and **SmartResume**. Every LLM decision is paired
-with deterministic **Policy Rules Service** validation before anything executes, and a
-complete audit trace is recorded. This LLM-reasoning-plus-deterministic-validation
-contract is the architectural spine of the project (`AGENTS.md`, ADR-0007, ADR-0011 §9)
+with deterministic policy validation before anything executes — today that means each
+Decision Service's own Layer-A validators plus the orchestrator's registry/binding
+conformance checks (a standalone Policy Rules Service is explicitly a future phase, not
+a present dependency) — and a complete audit trace is recorded, including LLM-vs-fallback
+provenance (`decision_source` on every recorded decision, FR-OR-34/ADR-0022, and
+`_degraded` markers on best-effort step fallbacks). This
+LLM-reasoning-plus-deterministic-validation contract is the architectural spine of the
+project (`AGENTS.md`, ADR-0007, ADR-0011's audit/trace contract)
 — never let LLM output flow straight to delivery. Treat any change that weakens this
 pairing as a bug, not a style preference, regardless of how the change is phrased.
 
@@ -67,7 +72,10 @@ treating a specific field name or rule as unchanged.
 
 **ADR-0007 (LLM Decision Service Decomposition).** Three services, not one monolithic
 call, because each has different inputs, prompt strategy, confidence profile, and failure
-modes — one prompt carrying all three degrades quality and complicates iteration/
+modes. (As built, the Transformation Mappings leg decomposed further: **Field Mapping**
+and **Field Synthesis** are the LLM services, and the deterministic **Transformation
+Executor** runs the generated JSONata mapping — see their `docs/2_requirements/` /
+`docs/3_design/` entries.) The original rationale — one prompt carrying all three degrades quality and complicates iteration/
 testing/audit. Revisit triggers: multi-call overhead becomes unacceptable with equivalent
 quality achievable via a combined approach; the three decisions turn out to share enough
 context for one prompt; or the Delivery-Targets→Transformation-Mappings sequencing causes
@@ -93,8 +101,11 @@ plan contract, not redesign the orchestration model. Key contracts:
   `timeout`, `retry_policy`, `on_failure`, `metadata`). **No arbitrary Python/JavaScript
   execution in generated plans.**
 - **Plan reuse** — only delivery-phase plans (never pre-target gate decisions), only
-  post-Policy-Rules-validated plans; re-validate reused plans before execution; record
-  generated-vs-reused in the audit trail.
+  post-validation plans; re-validate reused plans before execution; record
+  generated-vs-reused in the audit trail. (As built, LLM-proposed plans are accepted via
+  **re-binding** — ADR-0022: the LLM owns action selection/order/skips, the orchestrator
+  re-derives executor bindings; a non-rebindable plan falls back to the deterministic
+  plan, recorded via `decision_source`.)
 - **Audit/trace minimum fields** — event id, workflow execution id, correlation id,
   pre-target gate outcome, selected delivery targets, selected/generated plan id + schema
   version, Workflow Actions model/prompt version, plan confidence/rationale, Policy Rules
@@ -126,9 +137,9 @@ conventions section, both of which now state this convention directly.
 
 ## Requirements & design doc conventions
 
-No GitHub issue template or ticket-tracking convention exists in this repo (no
-`.github/` directory, no `CONTRIBUTING.md`) — work items live as docs, not tickets. The
-real conventions:
+Work items live in GitHub issues (P0–P3 labels; no issue template) alongside the
+docs-first conventions below; `.github/` holds CI/deploy workflows only, and there is no
+`CONTRIBUTING.md`. The real conventions:
 
 - `docs/2_requirements/README.md` and `docs/3_design/README.md` — the live indexes and
   conventions, one doc per component, requirements and design cross-linked.

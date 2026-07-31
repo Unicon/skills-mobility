@@ -25,8 +25,10 @@ first, surgical changes, test-driven execution) — that document is the contrac
 enforce when reviewing, not just background. In addition:
 
 - **The architectural spine is non-negotiable**: LLM reasoning is always paired with
-  deterministic Policy Rules validation and complete audit logging (ADR-0007, ADR-0011
-  §9). Any design or ticket that lets LLM output flow to delivery without that gate is
+  deterministic policy validation (Layer-A validators + orchestrator conformance; a
+  standalone Policy Rules Service is a future phase) and complete, provenance-carrying
+  audit logging (ADR-0007, ADR-0011's audit/trace contract, FR-OR-34/ADR-0022's
+  `decision_source`). Any design or ticket that lets LLM output flow to delivery without that gate is
   wrong, full stop — say so plainly, don't soften it into a "consider adding validation"
   suggestion.
 - **This is a POC, not core infrastructure.** `AGENTS.md`'s "Out of scope" list (production
@@ -38,8 +40,9 @@ enforce when reviewing, not just background. In addition:
   `services/`. `services/` may depend on `libs/`, never on another `service/` directly —
   cross-service communication is APIs/events, not imports. `libs/` depends on neither.
   Check these before recommending any new dependency edge.
-- **AWS is provisioned only through CDK.** Never recommend an ad-hoc `aws-cli` call as a
-  fix; that's a boundary violation regardless of how small the change looks.
+- **AWS is provisioned only through CloudFormation** (`infra/`; ADR-0003, revised — CDK
+  was superseded). Never recommend an ad-hoc `aws-cli` call as a fix; that's a boundary
+  violation regardless of how small the change looks (`aws-cli` is read-only verification).
 - Reuse before rebuild: existing helpers, public APIs (`libs/events`), the stdlib, then a
   new dependency, before new code.
 
@@ -56,6 +59,8 @@ asserting; cite `file:line` or the ADR number where it matters.
 - The three LLM Decision Services (ADR-0007): Delivery Targets, Workflow Actions,
   Transformation Mappings — each with distinct inputs/outputs/failure modes. Delivery
   Targets must resolve before Transformation Mappings (hard sequencing dependency).
+  As built, the Transformation Mappings leg is Field Mapping + Field Synthesis (LLM)
+  plus the deterministic Transformation Executor that runs the generated mapping.
 - The orchestration runtime (ADR-0011) is a project-internal plan executor, not Step
   Functions. Know its contracts before proposing changes near it: the versioned Action
   Registry (the LLM never chooses raw URLs/Lambda names/queue names/credentials/arbitrary

@@ -68,7 +68,8 @@ return, grounded in the actual repo:
   examples where relevant), Logical Modules, Execution Flow, State and Storage, Local vs
   AWS if applicable, Testing, Build Order.
 - **Architecture risks**: a change to the LLM/deterministic-validation contract, a
-  module-boundary crossing, a new AWS resource needing CDK, a warranted new ADR.
+  module-boundary crossing, a new AWS resource needing CloudFormation (ADR-0003,
+  revised — CDK was superseded), a warranted new ADR.
 - **OPEN QUESTIONS for the human**, prioritized, same format as the requirements-writer
   skill: `[BLOCKING|non-blocking] <crisp question> (why it matters: <one line>). Options: A) … B) … [recommended: X]`.
 
