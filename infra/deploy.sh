@@ -123,7 +123,7 @@ deploy_service delivery-router TimeoutSeconds=90 \
   LearncardIssuerUrl="$LEARNCARD_ISSUER_URL" \
   LearncardWalletUrl="$LEARNCARD_WALLET_URL"
 deploy_service orchestrator    DynamoTable="$TABLE" TimeoutSeconds=120 \
-  OrchestratorIssuerDid="${DEMO_ISSUER_DID:-}" \
+  OrchestratorIssuerDid="${LEARNCARD_ISSUER_DID:-did:web:network.learncard.com:users:smi-demo-organization}" \
   ContextBuilderUrl="$CONTEXT_BUILDER_URL" \
   DeliveryTargetsUrl="$DELIVERY_TARGETS_URL" \
   WorkflowActionsUrl="$WORKFLOW_ACTIONS_URL" \
