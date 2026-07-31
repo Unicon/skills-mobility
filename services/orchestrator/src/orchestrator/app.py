@@ -166,6 +166,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         store: ExecutionStore = app.state.store
         return {"deleted": store.delete_plan(plan_id)}
 
+    @app.post("/admin/reset", tags=["admin"])
+    def reset_executions() -> dict[str, Any]:
+        """Demo reset terminus: clear execution state (reusable plans survive,
+        FR-OR-29). Reached standalone or via the mock-lms → event-consumer
+        reset cascade."""
+        store: ExecutionStore = app.state.store
+        return {"ok": True, "executions_cleared": store.reset_executions()}
+
     @app.get("/healthz", tags=["meta"])
     def healthz() -> dict[str, Any]:
         return {"status": "ok"}

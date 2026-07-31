@@ -12,6 +12,10 @@ export default defineConfig({
     proxy: {
       "/executions": { target: BACKEND, changeOrigin: true },
       "/healthz": { target: BACKEND, changeOrigin: true },
+      // The demo-reset cascade starts at the Mock LMS (which forwards to the
+      // Event Consumer → Orchestrator); deployed, a CloudFront behavior routes
+      // /demo/* to the mock-lms origin the same way.
+      "/demo": { target: "http://127.0.0.1:8000", changeOrigin: true },
     },
   },
   test: {

@@ -111,8 +111,10 @@ def run_action(
 
 @router.post("/reset")
 def reset(emitter: EmitterDep) -> dict[str, Any]:
-    """Clear emission state so a demo can re-run cleanly. Seed data is read-only."""
+    """Clear emission state so a demo can re-run cleanly, and cascade the reset
+    down the chain (Event Consumer → Orchestrator) so re-running a learner's
+    events isn't blocked by ingress dedup. Seed data is read-only."""
     captured = getattr(emitter, "emitted", None)
     if captured is not None:
         captured.clear()
-    return {"ok": True}
+    return {"ok": True, "event_consumer": emitter.reset_downstream()}

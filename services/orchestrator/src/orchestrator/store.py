@@ -199,6 +199,17 @@ class ExecutionStore:
         self._conn.commit()
         return cur.rowcount > 0
 
+    def reset_executions(self) -> int:
+        """Clear all execution state so a demo can re-run cleanly (the terminus
+        of the mock-lms → event-consumer → here reset cascade). Stored reusable
+        plans survive — they're templates, not per-run state (FR-OR-29)."""
+        cur = self._conn.execute("DELETE FROM workflow_execution")
+        cleared = cur.rowcount
+        self._conn.execute("DELETE FROM workflow_decision")
+        self._conn.execute("DELETE FROM workflow_step_execution")
+        self._conn.commit()
+        return cleared
+
     # --- read model ---------------------------------------------------------
 
     def get_execution_metadata(self, execution_id: str) -> ExecutionMetadata | None:

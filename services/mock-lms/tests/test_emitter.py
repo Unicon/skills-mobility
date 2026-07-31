@@ -50,3 +50,31 @@ def test_without_forward_url_only_captures():
     emitter = LocalEmitter()  # no forward_url → no HTTP client, capture only
     emitter.emit(envelope)
     assert emitter.emitted == [envelope]
+
+
+def test_reset_downstream_posts_reset_and_reports():
+    seen: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        return httpx.Response(200, json={"ok": True})
+
+    emitter = LocalEmitter(
+        client=httpx.Client(transport=httpx.MockTransport(handler), base_url="http://ec")
+    )
+    assert emitter.reset_downstream() == "reset"
+    assert seen["url"] == "http://ec/reset"
+
+
+def test_reset_downstream_without_forwarding_is_not_configured():
+    assert LocalEmitter().reset_downstream() == "not_configured"
+
+
+def test_reset_downstream_reports_unreachable_on_http_error():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(503)
+
+    emitter = LocalEmitter(
+        client=httpx.Client(transport=httpx.MockTransport(handler), base_url="http://ec")
+    )
+    assert emitter.reset_downstream() == "unreachable"

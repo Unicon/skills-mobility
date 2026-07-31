@@ -58,3 +58,27 @@ def test_duplicate_does_not_hand_off(store, skill_event):
     consumer.process(skill_event(event_id="evt_1_redelivered"), store, spy)
 
     assert len(calls) == 1  # only the first (created); the duplicate is short-circuited
+
+
+def test_http_handoff_reset_downstream_posts_admin_reset():
+    seen: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        return httpx.Response(200, json={"ok": True})
+
+    handoff = HttpHandoff(
+        "http://orch", client=httpx.Client(transport=httpx.MockTransport(handler), base_url="http://orch")
+    )
+    assert handoff.reset_downstream() == "reset"
+    assert seen["url"] == "http://orch/admin/reset"
+
+
+def test_http_handoff_reset_downstream_reports_unreachable():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(503)
+
+    handoff = HttpHandoff(
+        "http://orch", client=httpx.Client(transport=httpx.MockTransport(handler), base_url="http://orch")
+    )
+    assert handoff.reset_downstream() == "unreachable"
