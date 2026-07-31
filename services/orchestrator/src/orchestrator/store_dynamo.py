@@ -219,6 +219,16 @@ class DynamoExecutionStore:
             return fallback
         return len(json.loads(item["body"]).get("steps", []))
 
+    def reset_executions(self) -> int:
+        """Clear all execution items so a demo can re-run cleanly (the terminus
+        of the mock-lms → event-consumer → here reset cascade). Plan items
+        (``PLAN#`` pk) survive — they're templates, not per-run state (FR-OR-29)."""
+        items = self._scan(Attr("entity").eq("execution"))
+        with self._table.batch_writer() as batch:
+            for item in items:
+                batch.delete_item(Key={"pk": item["pk"]})
+        return len(items)
+
     def _scan(self, filter_expr: ConditionBase) -> list[dict[str, Any]]:
         items: list[dict[str, Any]] = []
         kwargs: dict[str, Any] = {"FilterExpression": filter_expr}

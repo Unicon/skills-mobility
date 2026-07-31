@@ -175,3 +175,17 @@ def test_state_persists_across_store_instances(dynamo: DynamoExecutionStore) -> 
     assert meta.status == "completed"
     assert meta.result == {"outcome": "delivered"}
     assert [d.kind for d in meta.decisions] == ["gate"]
+
+
+def test_reset_executions_clears_exec_items_but_keeps_plans(dynamo):
+    dynamo.create_execution("exec_r1", "evt_1", "corr_1", "skill_mastered")
+    dynamo.create_execution("exec_r2", "evt_2", "corr_2", "skill_mastered")
+    plan = planner.delivery_phase_plan(
+        "skill_mastered", planner.select_delivery_targets(), "2026-07-31T00:00:00Z"
+    )
+    dynamo.save_plan(plan, "skill_mastered|k")
+
+    assert dynamo.reset_executions() == 2
+    assert dynamo.list_executions() == []
+    # Plans are templates, not per-run state — the reset must not touch them.
+    assert dynamo.get_plan_by_key("skill_mastered|k") is not None
