@@ -99,7 +99,7 @@ Before this skeleton can be deployed against a live AWS account:
 
 5. **Lambda-compatible Dockerfiles** — current Dockerfiles target local/Docker Compose use. Each needs to be updated (or a separate `Dockerfile.lambda` added) to use the AWS Lambda base image and expose the `handler` symbol.
 
-6. **Parameter files** — `infra/params/dev/` now has a `<service>.json` for all nine services in the deploy matrix (timeouts mirror the live-verified demo deploy; the four LLM services default to replay mode — flip via `ExtraEnvJson`).
+6. **Mode switching** — `ExtraEnvJson` isn't wired to anything yet (`lambda-service.yml` passes it through as one opaque `EXTRA_ENV_JSON` string no service reads; e.g. Field Mapping's `Settings.mode` reads `FIELD_MAPPING_MODE` via its own `env_prefix`). Flipping a deployed LLM service (field-mapping, field-synthesis, delivery-targets, workflow-actions) from replay to bedrock mode currently requires a manual Lambda console env-var override.
 
 7. **Orchestrator SQS refactor** — see [Orchestrator SQS gap](#orchestrator-sqs-gap) above.
 
