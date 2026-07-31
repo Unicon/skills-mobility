@@ -117,4 +117,4 @@ def reset(emitter: EmitterDep) -> dict[str, Any]:
     captured = getattr(emitter, "emitted", None)
     if captured is not None:
         captured.clear()
-    return {"ok": True, "event_consumer": emitter.reset_downstream()}
+    return {"ok": True, **emitter.reset_downstream()}

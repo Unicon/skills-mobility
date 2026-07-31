@@ -167,6 +167,10 @@ def test_unknown_learner_is_rejected(client: TestClient):
 
 
 def test_reset_ok(client: TestClient):
-    # Test client runs with capture-only emission: the cascade hop reports that
-    # no Event Consumer is configured rather than pretending it cleared one.
-    assert client.post("/demo/reset").json() == {"ok": True, "event_consumer": "not_configured"}
+    # Test client runs with capture-only emission: both cascade hops report that
+    # nothing downstream is configured rather than pretending anything cleared.
+    assert client.post("/demo/reset").json() == {
+        "ok": True,
+        "event_consumer": "not_configured",
+        "orchestrator": "not_configured",
+    }

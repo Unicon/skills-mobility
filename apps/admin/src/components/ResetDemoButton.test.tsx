@@ -21,7 +21,7 @@ describe("ResetDemoButton", () => {
 
   test("confirm → POSTs /demo/reset and reports success", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
-    const calls = stubFetch({ ok: true, event_consumer: "reset" });
+    const calls = stubFetch({ ok: true, event_consumer: "reset", orchestrator: "reset" });
 
     render(<ResetDemoButton />);
     fireEvent.click(screen.getByRole("button", { name: /reset demo/i }));
@@ -42,7 +42,8 @@ describe("ResetDemoButton", () => {
 
   test("a cascade hop that did not clear is reported as partial, not success", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
-    stubFetch({ ok: true, event_consumer: "unreachable" });
+    // The middle hop succeeding must not render success if the terminus failed.
+    stubFetch({ ok: true, event_consumer: "reset", orchestrator: "unreachable" });
 
     render(<ResetDemoButton />);
     fireEvent.click(screen.getByRole("button", { name: /reset demo/i }));

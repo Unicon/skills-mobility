@@ -20,7 +20,7 @@ class Emitter(Protocol):
 
     def emit(self, envelope: LiveEventEnvelope) -> None: ...
 
-    def reset_downstream(self) -> str: ...
+    def reset_downstream(self) -> dict[str, str]: ...
 
 
 class LocalEmitter:
@@ -47,18 +47,24 @@ class LocalEmitter:
         if self._client is not None:
             self._client.post("/ingest", json=envelope.model_dump(mode="json"))
 
-    def reset_downstream(self) -> str:
+    def reset_downstream(self) -> dict[str, str]:
         """Cascade a demo reset to the Event Consumer (which cascades to the
-        Orchestrator). The outcome is reported, not swallowed — a reset that
-        didn't actually clear downstream state must be visible to the caller."""
+        Orchestrator). BOTH hops' outcomes are reported, not swallowed — the
+        first live run hid a failed orchestrator terminus behind a succeeding
+        Event Consumer hop, so reporting only the immediate downstream lies."""
         if self._client is None:
-            return "not_configured"
+            return {"event_consumer": "not_configured", "orchestrator": "not_configured"}
         try:
             resp = self._client.post("/reset")
             resp.raise_for_status()
         except httpx.HTTPError:
-            return "unreachable"
-        return "reset"
+            return {"event_consumer": "unreachable", "orchestrator": "unknown"}
+        orchestrator = "unknown"
+        try:
+            orchestrator = str(resp.json().get("orchestrator", "unknown"))
+        except ValueError:
+            pass
+        return {"event_consumer": "reset", "orchestrator": orchestrator}
 
 
 class EventBridgeEmitter:
@@ -74,5 +80,5 @@ class EventBridgeEmitter:
             "EventBridgeEmitter is not wired yet; use MOCK_LMS_EMITTER=local for the POC."
         )
 
-    def reset_downstream(self) -> str:  # pragma: no cover - not wired yet
-        return "not_configured"
+    def reset_downstream(self) -> dict[str, str]:  # pragma: no cover - not wired yet
+        return {"event_consumer": "not_configured", "orchestrator": "not_configured"}
