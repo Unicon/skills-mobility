@@ -109,6 +109,14 @@ Parameters:
     Description: >
       Issuer DID stamped into credentials (must be a resolvable LearnCard
       profile DID for live issuance; the code default is a placeholder domain).
+  IssuerSecureSeed:
+    Type: String
+    Default: ""
+    NoEcho: true
+    Description: >
+      Raw signing seed for the LearnCard issuer profile (overrides
+      IssuerSeedLabel; the profile's registered keys must match). Supplied at
+      deploy time — never committed.
   IssuerSeedLabel:
     Type: String
     Default: ""
@@ -161,6 +169,7 @@ Resources:
           LEARNCARD_API_TOKEN: !Ref LearncardApiToken
           # Issuer adapter (Node) reads unprefixed names; other services ignore them.
           SEED_LABEL: !Ref IssuerSeedLabel
+          SECURE_SEED: !Ref IssuerSecureSeed
           PROFILE_ID: !Ref IssuerProfileId
           PROFILE_NAME: !Ref IssuerProfileName
           ORCHESTRATOR_DYNAMO_TABLE: !Ref DynamoTable

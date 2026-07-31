@@ -88,9 +88,10 @@ for svc in "${SERVICES[@]}"; do
     # comes from the deployer's env (tools/learncard-demo/.env — never committed).
     delivery-router)   deploy_service "$svc" TimeoutSeconds=90 ;;
     learncard-issuer-adapter) deploy_service "$svc" TimeoutSeconds=60 \
+      IssuerSecureSeed="${SECURE_SEED:-}" \
       IssuerSeedLabel="${ISSUER_SEED_LABEL:-organization}" \
-      IssuerProfileId="${ISSUER_PROFILE_ID:-smi-demo-organization}" \
-      IssuerProfileName="${ISSUER_PROFILE_NAME:-SMI Demo Organization}" ;;
+      IssuerProfileId="${LEARNCARD_ISSUER_PROFILE_ID:-smi-demo-organization}" \
+      IssuerProfileName="${LEARNCARD_ISSUER_PROFILE_NAME:-SMI Demo Organization}" ;;
     learncard-wallet-adapter) deploy_service "$svc" TimeoutSeconds=60 \
       LearncardApiUrl="${LEARNCARD_API_URL:-https://network.learncard.com/api}" \
       LearncardApiToken="${LEARNCARD_API_TOKEN:?set LEARNCARD_API_TOKEN (tools/learncard-demo/.env)}" ;;
@@ -123,7 +124,7 @@ deploy_service delivery-router TimeoutSeconds=90 \
   LearncardIssuerUrl="$LEARNCARD_ISSUER_URL" \
   LearncardWalletUrl="$LEARNCARD_WALLET_URL"
 deploy_service orchestrator    DynamoTable="$TABLE" TimeoutSeconds=120 \
-  OrchestratorIssuerDid="${LEARNCARD_ISSUER_DID:-did:web:network.learncard.com:users:smi-demo-organization}" \
+  OrchestratorIssuerDid="${LEARNCARD_ISSUER_DID:-}" \
   ContextBuilderUrl="$CONTEXT_BUILDER_URL" \
   DeliveryTargetsUrl="$DELIVERY_TARGETS_URL" \
   WorkflowActionsUrl="$WORKFLOW_ACTIONS_URL" \
