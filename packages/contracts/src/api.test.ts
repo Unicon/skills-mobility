@@ -32,6 +32,24 @@ describe("api", () => {
     await expect(api.courses()).resolves.toEqual(fixture);
   });
 
+  test("array params are sent percent-encoded, never as literal brackets", async () => {
+    // CloudFront / Lambda Function URLs 400 on raw [] in query strings.
+    const paths: string[] = [];
+    const fetchSpy = vi.fn(async (path: string | URL | Request) => {
+      paths.push(String(path));
+      return new Response(JSON.stringify([]), { status: 200 });
+    });
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+
+    await api.modules("ACCY-491");
+    await api.submissions("ACCY-491", "learner_1");
+    expect(paths).toEqual([
+      "/api/v1/courses/ACCY-491/modules?include%5B%5D=items",
+      "/api/v1/courses/ACCY-491/students/submissions?student_ids%5B%5D=learner_1",
+    ]);
+    for (const path of paths) expect(path).not.toMatch(/[\[\]]/);
+  });
+
   test("runAction() POSTs scope + user_id in the body", async () => {
     const fixture: RunResult = {
       correlation_id: "corr_1",
@@ -111,7 +129,19 @@ describe("orchestratorApi", () => {
       correlation_id: "corr_1",
       event_type: "skill_mastered",
       status: "completed",
-      gate_decision: { decision: "continue_to_delivery_targets", confidence: 1, rationale: "stub" },
+      decisions: [
+        {
+          kind: "gate",
+          confidence: 1,
+          rationale: "stub",
+          outcome: "continue",
+          candidates: [],
+          artifact_ref: null,
+          invocation_log_ref: null,
+          decision_source: null,
+          created_at: "2026-07-09T00:00:00Z",
+        },
+      ],
       plan_id: "phase1-skill-mastered.v1",
       steps: [],
       result: {},

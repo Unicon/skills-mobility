@@ -1,0 +1,103 @@
+{
+ "_README": "Labels follow the resolved routing: the bifurcation is by course subject via the institution's partnership associations \u2014 Accounting (ACCY-*) routes to LearnCard (issuer + wallet) via the Pretend Association of Accountants; Finance (FINC-*) routes to SmartResume via the Pretend Association of Finance. issue_learncard_badge runs first for every credential; the selected target distinguishes only the final delivery step.",
+ "scenarios": [
+  {
+   "corpus_scenario_id": "course_completed.accy.v1",
+   "event_type": "course_completed",
+   "source_system": "mock_lms",
+   "learner_context": {
+    "course": {
+     "id": "ACCY-111",
+     "name": "Introduction to Accounting",
+     "description": "Foundational accounting course in the ACCY subject."
+    }
+   },
+   "expected_targets": [
+    "learncard_issuer",
+    "learncard_wallet"
+   ]
+  },
+  {
+   "corpus_scenario_id": "course_completed.finc.v1",
+   "event_type": "course_completed",
+   "source_system": "mock_lms",
+   "learner_context": {
+    "course": {
+     "id": "FINC-106",
+     "name": "Principles of Finance",
+     "description": "Foundational finance course in the FINC subject."
+    }
+   },
+   "expected_targets": [
+    "learncard_issuer",
+    "smart_resume"
+   ]
+  },
+  {
+   "corpus_scenario_id": "skill_mastered.accy.v1",
+   "event_type": "skill_mastered",
+   "source_system": "mock_lms",
+   "learner_context": {
+    "course": {
+     "id": "ACCY-374",
+     "name": "Intermediate Financial Accounting"
+    },
+    "outcome": {
+     "display_name": "Prepare a classified balance sheet"
+    }
+   },
+   "expected_targets": [
+    "learncard_issuer",
+    "learncard_wallet"
+   ]
+  },
+  {
+   "corpus_scenario_id": "skill_mastered.finc.v1",
+   "event_type": "skill_mastered",
+   "source_system": "mock_lms",
+   "learner_context": {
+    "course": {
+     "id": "FINC-321",
+     "name": "Applied Securities Analysis"
+    },
+    "outcome": {
+     "display_name": "Value a security"
+    }
+   },
+   "expected_targets": [
+    "learncard_issuer",
+    "smart_resume"
+   ]
+  },
+  {
+   "corpus_scenario_id": "course_completed.accy_2.v1",
+   "event_type": "course_completed",
+   "source_system": "mock_lms",
+   "learner_context": {
+    "course": {
+     "id": "ACCY-491",
+     "name": "Auditing & Assurance Honors"
+    }
+   },
+   "expected_targets": [
+    "learncard_issuer",
+    "learncard_wallet"
+   ]
+  },
+  {
+   "corpus_scenario_id": "course_completed.finc_2.v1",
+   "event_type": "course_completed",
+   "source_system": "mock_lms",
+   "learner_context": {
+    "course": {
+     "id": "FINC-439",
+     "name": "Capital Markets Honors"
+    }
+   },
+   "expected_targets": [
+    "learncard_issuer",
+    "smart_resume"
+   ]
+  }
+ ]
+}

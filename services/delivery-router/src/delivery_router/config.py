@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     # Adapter endpoint base URLs (unset -> that action can't be dispatched).
     learncard_issuer_url: str | None = None
     learncard_wallet_url: str | None = None
+    smartresume_url: str | None = None
 
     # Shared delivery mechanics (deterministic, config-driven).
     request_timeout: float = 30.0
@@ -46,6 +47,7 @@ class Settings(BaseSettings):
         return {
             AdapterKey.LEARNCARD_ISSUER: self.learncard_issuer_url,
             AdapterKey.LEARNCARD_WALLET: self.learncard_wallet_url,
+            AdapterKey.SMART_RESUME: self.smartresume_url,
         }[adapter_key]
 
 

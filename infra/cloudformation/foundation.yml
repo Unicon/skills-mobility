@@ -1,0 +1,100 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Skills Mobility — Foundation stack.
+  Provisions shared primitives (EventBridge bus, SQS work queue + DLQ,
+  DynamoDB execution-state table) and exports their names/ARNs for service
+  stacks to import. CI deploy identity is the Ops-managed
+  skills-mobility-dev-deploy role (GitHub-OIDC trust added under the Ops
+  ticket's Task 4), so this template creates no IAM.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: skills-mobility
+    Description: Prefix applied to all resource names and export keys.
+
+  EnvName:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Deployment environment tier.
+
+Resources:
+
+  # ---------------------------------------------------------------------------
+  # EventBridge custom bus
+  # ---------------------------------------------------------------------------
+  EventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Sub "${ProjectName}-${EnvName}"
+
+  # ---------------------------------------------------------------------------
+  # SQS — orchestrator work queue + dead-letter queue
+  # ---------------------------------------------------------------------------
+  OrchestratorDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-${EnvName}-orchestrator-dlq"
+      MessageRetentionPeriod: 1209600  # 14 days
+
+  OrchestratorQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-${EnvName}-orchestrator"
+      VisibilityTimeout: 120  # must be >= Lambda timeout for the worker
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt OrchestratorDLQ.Arn
+        maxReceiveCount: 3
+
+  # ---------------------------------------------------------------------------
+  # DynamoDB — execution state
+  # ---------------------------------------------------------------------------
+  ExecutionStateTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-${EnvName}-execution-state"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: execution_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: execution_id
+          KeyType: HASH
+
+Outputs:
+  EventBusName:
+    Value: !Ref EventBus
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-event-bus-name"
+
+  EventBusArn:
+    Value: !GetAtt EventBus.Arn
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-event-bus-arn"
+
+  OrchestratorQueueUrl:
+    Value: !Ref OrchestratorQueue
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-orchestrator-queue-url"
+
+  OrchestratorQueueArn:
+    Value: !GetAtt OrchestratorQueue.Arn
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-orchestrator-queue-arn"
+
+  OrchestratorDLQArn:
+    Value: !GetAtt OrchestratorDLQ.Arn
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-orchestrator-dlq-arn"
+
+  ExecutionStateTableName:
+    Value: !Ref ExecutionStateTable
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-table-name"
+
+  ExecutionStateTableArn:
+    Value: !GetAtt ExecutionStateTable.Arn
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-table-arn"
+

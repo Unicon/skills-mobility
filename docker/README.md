@@ -8,9 +8,10 @@ scoped "spine now, grow as the delivery PRs merge.")
 docker compose up --build     # from the repo root
 ```
 
-Then: mock-lms `http://localhost:8000`, context-builder `:8100`, event-consumer
-`:8200`, orchestrator `:8400`, profile-resolver `:8700`, delivery-router `:8800`,
-issuer-adapter `:8910`, wallet-adapter `:8900` (each serves `/healthz`).
+Then: mock-lms `http://localhost:8000`, context-builder `:8100`, field-mapping
+`:8120`, event-consumer `:8200`, orchestrator `:8400`, profile-resolver `:8700`,
+delivery-router `:8800`, issuer-adapter `:8910`, wallet-adapter `:8900` (each
+serves `/healthz`).
 
 The LearnCard adapters/resolver need secrets (tokens + issuer seed) from the demo
 provisioning step — see **Secrets** below. Without them the stack still comes up,
@@ -24,7 +25,9 @@ mock-lms (8000) --emits--> event-consumer (8200) --hands off--> orchestrator (84
      |                                                          builds context
      +------------------ context-builder (8100) <----------------------+
                                                                         |
-                          resolve learner + deliver credential         v
+                     map/transform + resolve learner + deliver          v
+   field-mapping (8120) <------------------------------------- orchestrator
+   transformation-executor (8160) <---------------------------- orchestrator
    profile-resolver (8700) <---------------------------------- orchestrator
    delivery-router (8800) <------------------------------------ orchestrator
         |  routes by action
@@ -40,6 +43,8 @@ Set via compose env (services reach each other by service name):
 | event-consumer | `EVENT_CONSUMER_ORCHESTRATOR_URL` | `http://orchestrator:8400` |
 | context-builder | `CONTEXT_BUILDER_LMS_BASE_URL` | `http://mock-lms:8000` |
 | orchestrator | `ORCHESTRATOR_CONTEXT_BUILDER_URL` | `http://context-builder:8100` |
+| orchestrator | `ORCHESTRATOR_FIELD_MAPPING_URL` | `http://field-mapping:8120` |
+| orchestrator | `ORCHESTRATOR_TRANSFORMATION_EXECUTOR_URL` | `http://transformation-executor:8160` |
 | orchestrator | `ORCHESTRATOR_PROFILE_RESOLVER_URL` | `http://profile-resolver:8700` |
 | orchestrator | `ORCHESTRATOR_DELIVERY_ROUTER_URL` | `http://delivery-router:8800` |
 | delivery-router | `DELIVERY_ROUTER_LEARNCARD_ISSUER_URL` | `http://learncard-issuer-adapter:8910` |
@@ -55,7 +60,6 @@ provisioning step (`tools/learncard-demo`, ADR-0020) — `provision.mjs` derives
 fixed demo wallets from committed non-secret labels and emits the tokens/seed:
 
 - `LEARNCARD_API_TOKEN` — sender bearer for profile-resolver + wallet-adapter.
-- `LEARNCARD_RECIPIENT_API_TOKEN` — recipient read token for the wallet read-back.
 - `SEED_LABEL` (default `organization`) — the issuer adapter derives its signing
   seed from this label internally (#48 option b): nothing to copy or compute by
   hand. In the demo the issuer is the *organization* profile `provision.mjs`
@@ -79,15 +83,6 @@ logs`, not just uvicorn's access lines.
 The **LearnCard Issuer Adapter** is the one non-Python service (Node/TS), so it
 has its own image (`docker/Dockerfile.node`: `npm ci` + `tsc` build, `express`
 listens on `0.0.0.0`).
-
-## Depends on (branches → main)
-
-This compose references the delivery services' code + the orchestrator's delivery
-wiring, so it is only buildable once these are on `main`: the LearnCard stack
-(#48/#49/#50/#51/#56), the demo provisioning (#54), and the orchestrator seam
-wiring (#58) + demo-recipient resolution (#59). Until then `docker compose config`
-validates, but `up --build` needs those merged (the shared Python image installs
-the workspace via `uv sync --frozen`, which needs their `uv.lock` members).
 
 ## Not included
 

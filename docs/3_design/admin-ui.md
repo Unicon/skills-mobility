@@ -61,7 +61,7 @@ The per-workflow and per-step views render the Orchestrator's **execution read m
   "event_type": "skill_mastered",
   "status": "completed",          // created | planning | ready | running | completed | failed
   "gate_decision": {               // pre-target Workflow Actions decision (AI-reasoning surface)
-    "decision": "continue_to_delivery_targets",
+    "decision": "continue",
     "confidence": 1.0,
     "rationale": "Deterministic Phase 1 happy-path gate decision."
   },

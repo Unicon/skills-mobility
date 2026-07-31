@@ -23,6 +23,11 @@ class Settings(BaseSettings):
 
     # LLM adapter mode: "replay" (deterministic fixtures) or "bedrock" (live).
     mode: str = "replay"
+    # Bedrock invocation (design §9, ADR-0010) — used only in "bedrock" mode.
+    # Invoke via the inference-profile id; the bare foundation-model id fails on-demand.
+    model_id: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    aws_region: str = "us-east-1"
+    max_tokens: int = 4096
     # Directory for stored mapping / synthesis-request / invocation-log artifacts.
     artifact_dir: str = "artifact-output/field-mapping"
     # Reuse a previously stored mapping artifact instead of regenerating (§13).

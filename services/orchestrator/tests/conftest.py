@@ -12,7 +12,24 @@ from orchestrator.config import Settings
 
 @pytest.fixture
 def client() -> TestClient:
-    return TestClient(create_app(Settings(db_path=":memory:")))
+    # Pin every seam URL to None so a developer's local .env can't turn the
+    # stubs into real Http*Clients that fire at (or ConnectError against) live
+    # services during tests — CWD-safe .env loading now finds a service-dir
+    # .env regardless of where pytest runs. test_app's /run-workflow tests
+    # exercise exactly these seams.
+    return TestClient(
+        create_app(
+            Settings(
+                db_path=":memory:",
+                context_builder_url=None,
+                profile_resolver_url=None,
+                delivery_router_url=None,
+                field_mapping_url=None,
+                delivery_targets_url=None,
+                workflow_actions_url=None,
+            )
+        )
+    )
 
 
 @pytest.fixture

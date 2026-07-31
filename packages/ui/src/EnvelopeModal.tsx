@@ -14,6 +14,7 @@ export function EnvelopeModal({
   onClose: () => void;
   onCopy: (text: string, label: string) => void;
 }) {
+  // DUPE:reduced-motion-guard
   const prefersReducedMotion = useReducedMotion();
   // Captured synchronously on first render (before Radix's own mount-autofocus
   // effect moves focus into the dialog), since there's no Dialog.Trigger here —

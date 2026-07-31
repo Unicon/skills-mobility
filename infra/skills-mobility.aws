@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# skills-mobility.aws — declarative environment for the skills-mobility infra.
+# Source this file; do NOT execute it directly.
+#
+# Usage (by deploy.sh):
+#   source infra/skills-mobility.aws
+#
+# To target a different environment:
+#   ENV=staging source infra/skills-mobility.aws
+
+# ---------------------------------------------------------------------------
+# Core settings
+# ---------------------------------------------------------------------------
+PROJECT=skills-mobility
+AWS_REGION=us-east-1
+
+# S3 bucket that holds uploaded CloudFormation templates.
+# Create once manually (or via the foundation stack) before first deploy:
+#   aws s3 mb s3://<bucket> --region us-east-1 --profile skills
+TEMPLATE_BUCKET=<YOUR-CFN-TEMPLATE-BUCKET>
+
+# AWS SSO profile configured in ~/.aws/config for this project.
+SSO_PROFILE=skills
+
+# Deployment environment tier: dev | staging | prod
+ENV=${ENV:-dev}
+
+# ---------------------------------------------------------------------------
+# Stack map: stack-name-suffix → template basename (no path, no extension).
+# deploy.sh builds the full stack name as "${PROJECT}-${ENV}-${key}".
+# Templates live in infra/cloudformation/<value>.yml.
+# Parameter files live in infra/params/${ENV}/<value>.json (same basename).
+# ---------------------------------------------------------------------------
+declare -A STACKS=(
+  [foundation]=foundation
+
+  # The 9-service transformation chain — the same set .github/workflows/deploy.yml's
+  # matrix deploys (keep the two lists in sync; this file is the authoritative one).
+  # Every service below has a params/dev/<svc>.json.
+  [mock-lms]=lambda-service
+  [event-consumer]=lambda-service
+  [context-builder]=lambda-service
+  [delivery-targets]=lambda-service
+  [workflow-actions]=lambda-service
+  [field-mapping]=lambda-service
+  [field-synthesis]=lambda-service
+  [transformation-executor]=lambda-service
+  [orchestrator]=lambda-service
+
+  # On main but intentionally NOT in the POC deploy slice (LearnCard delivery is
+  # stubbed; SmartResume delivery + its mock run only in docker-compose):
+  # [delivery-router]=lambda-service
+  # [learncard-issuer-adapter]=lambda-service
+  # [learncard-profile-resolver]=lambda-service
+  # [learncard-wallet-adapter]=lambda-service
+  # [smartresume-adapter]=lambda-service
+  # [mock-smartresume]=lambda-service
+)
+
+# Deploy order: foundation MUST be first (exports are consumed by service stacks).
+# Service stacks have no inter-stack dependencies, so the rest can be in any order.
+STACK_ORDER=(
+  foundation
+  mock-lms
+  event-consumer
+  context-builder
+  delivery-targets
+  workflow-actions
+  field-mapping
+  field-synthesis
+  transformation-executor
+  orchestrator
+)

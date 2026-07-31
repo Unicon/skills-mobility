@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from field_mapping.catalog_store import CatalogNotFoundError, CatalogStore
 from field_mapping.contracts import DeliveryTarget, TransformationType
@@ -37,12 +39,24 @@ def test_resolve_target_catalog_by_target_and_transformation_type() -> None:
     assert wallet["x-transformation-type"] == "wallet_payload"
 
 
-def test_unknown_fetch_profile_or_target_is_a_typed_error() -> None:
+def test_resolve_credential_template_target() -> None:
+    # credential_template is keyed by transformation_type alone (no delivery_target, ADR-0017).
+    ct = store.resolve_target(
+        transformation_type=TransformationType.CREDENTIAL_TEMPLATE, delivery_target=None
+    )
+    assert ct["x-transformation-type"] == "credential_template"
+
+
+def test_unknown_fetch_profile_or_target_is_a_typed_error(tmp_path: Path) -> None:
     with pytest.raises(CatalogNotFoundError):
         store.resolve_fetch_profile(source_system="mock_lms", fetch_profile_id="nope.v9")
 
-    # credential_template catalog is deferred (not authored) -> typed error, not a crash.
+    # A genuinely absent target catalog file raises the file-existence error (not the
+    # delivery_target parameter guard). Point at an empty catalogs dir so the test's
+    # validity doesn't depend on which real catalogs happen to be unimplemented today.
+    empty = CatalogStore(base_dir=tmp_path)
     with pytest.raises(CatalogNotFoundError):
-        store.resolve_target(
-            transformation_type=TransformationType.CREDENTIAL_TEMPLATE, delivery_target=None
+        empty.resolve_target(
+            transformation_type=TransformationType.ISSUER_PAYLOAD,
+            delivery_target=DeliveryTarget.LEARNCARD_ISSUER,
         )

@@ -9,7 +9,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from .artifact_store import ArtifactStore
-from .catalog_store import CatalogStore
+from .bedrock_adapter import BedrockAdapter, BedrockResponseError
+from .catalog_store import CatalogNotFoundError, CatalogStore
 from .config import Settings, get_settings
 from .contracts import MappingRequest, MappingResponse
 from .llm_adapter import LLMAdapter
@@ -19,11 +20,16 @@ from .service import MappingService
 
 def build_service(settings: Settings, *, adapter: LLMAdapter | None = None) -> MappingService:
     if adapter is None:
-        if settings.mode != "replay":
-            raise NotImplementedError(
-                f"adapter mode '{settings.mode}' is not implemented yet (only 'replay')"
+        if settings.mode == "replay":
+            adapter = ReplayAdapter()
+        elif settings.mode == "bedrock":
+            adapter = BedrockAdapter(
+                model_id=settings.model_id,
+                region=settings.aws_region,
+                max_tokens=settings.max_tokens,
             )
-        adapter = ReplayAdapter()
+        else:
+            raise ValueError(f"unknown adapter mode '{settings.mode}' (expected replay|bedrock)")
     return MappingService(
         catalog_store=CatalogStore(),
         artifact_store=ArtifactStore(Path(settings.artifact_dir)),
@@ -43,6 +49,21 @@ def create_app(service: MappingService | None = None) -> FastAPI:
     ) -> JSONResponse:
         return JSONResponse(
             status_code=404, content={"detail": "no replay fixture for this request"}
+        )
+
+    @app.exception_handler(CatalogNotFoundError)
+    async def _catalog_not_found(_req: Request, exc: CatalogNotFoundError) -> JSONResponse:
+        # An uncataloged (transformation_type, delivery_target) or fetch profile is a
+        # coverage gap the caller can act on, not a server fault (was an opaque 500 —
+        # hit live by smart_resume mapping requests before its target catalog existed).
+        return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+    @app.exception_handler(BedrockResponseError)
+    async def _bedrock_response_error(
+        _req: Request, exc: BedrockResponseError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=502, content={"detail": f"upstream model error: {exc}"}
         )
 
     @app.get("/healthz")

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Protocol
+from urllib.parse import quote
 
 import httpx
 
@@ -29,7 +30,12 @@ class HttpxLMSClient:
         self._client = httpx.Client(base_url=base_url, timeout=timeout)
 
     def get(self, path: str) -> LMSResponse:
-        resp = self._client.get(path)
+        # Percent-encode reserved characters (Canvas-style include[]=/uuids[]=
+        # brackets) while leaving path separators and query structure intact.
+        # httpx passes brackets through verbatim (fine against local uvicorn)
+        # but Lambda Function URLs mishandle them (first live AWS run). "%" is
+        # safe so already-encoded input stays untouched (idempotent).
+        resp = self._client.get(quote(path, safe="/=&?%"))
         try:
             data: Any = resp.json()
         except ValueError:

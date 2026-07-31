@@ -148,10 +148,28 @@ export interface StepResult {
   finished_at: string;
 }
 
-export interface GateDecision {
-  decision: "continue_to_delivery_targets" | "terminate";
+export type DecisionKind = "gate" | "delivery_targets" | "field_mapping" | "workflow_actions_plan";
+
+export interface DecisionCandidate {
+  label: string;
   confidence: number;
   rationale: string;
+  selected: boolean;
+}
+
+/** Provenance of a decision (ADR-0022): real LLM seam output vs deterministic fallback. */
+export type DecisionSource = "llm" | "deterministic_fallback";
+
+export interface DecisionArtifact {
+  kind: DecisionKind;
+  confidence: number | null;
+  rationale: string;
+  outcome: string;
+  candidates: DecisionCandidate[];
+  artifact_ref: string | null;
+  invocation_log_ref: string | null;
+  decision_source: DecisionSource | null;
+  created_at: string;
 }
 
 export interface ExecutionMetadata {
@@ -159,7 +177,7 @@ export interface ExecutionMetadata {
   correlation_id: string;
   event_type: string | null;
   status: WorkflowStatus;
-  gate_decision: GateDecision | null;
+  decisions: DecisionArtifact[];
   plan_id: string | null;
   steps: StepResult[];
   result: Record<string, unknown>;

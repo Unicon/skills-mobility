@@ -10,7 +10,7 @@ here over HTTP when their service URLs are configured (see app.py).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, NamedTuple, Protocol
 
 import httpx
 
@@ -41,6 +41,12 @@ class ProfileResolverClient(Protocol):
 class FieldMappingClient(Protocol):
     def map(
         self, request: dict[str, Any], ctx: EnvelopeContext, step_id: str
+    ) -> dict[str, Any]: ...
+
+
+class FieldSynthesisClient(Protocol):
+    def synthesize(
+        self, transformation_type: str, synthesis_request: dict[str, Any], ctx: EnvelopeContext
     ) -> dict[str, Any]: ...
 
 
@@ -98,6 +104,16 @@ class StubFieldMapping:
         }
 
 
+class StubFieldSynthesis:
+    """Phase-1 Field Synthesis stub: no synthesized values (the stub mapping
+    requires no synthesis). Used when no field_synthesis_url is configured."""
+
+    def synthesize(
+        self, transformation_type: str, synthesis_request: dict[str, Any], ctx: EnvelopeContext
+    ) -> dict[str, Any]:
+        return {"status": "succeeded", "values": {}}
+
+
 class StubDeliveryRouter:
     """Canned delivery results (the real router — #56 — calls LearnCard adapters)."""
 
@@ -119,6 +135,13 @@ class StubDeliveryRouter:
                 "action": action,
                 "external_reference_id": "stub-delivered",
                 "result": {"delivery_state": "accepted"},
+            }
+        if action == "deliver_to_smartresume":
+            return {
+                "status": "succeeded",
+                "action": action,
+                "external_reference_id": "stub-smartresume",
+                "result": {"redirect_url": "https://mock.smartresume.example/createmyresume/stub"},
             }
         return {
             "status": "failed",
@@ -147,6 +170,7 @@ class HttpContextBuilderClient:
 _ADAPTER_KEY_BY_ACTION = {
     "issue_learncard_badge": "learncard_issuer",
     "deliver_to_learncard_wallet": "learncard_wallet",
+    "deliver_to_smartresume": "smart_resume",
 }
 
 
@@ -222,6 +246,63 @@ class HttpDeliveryRouterClient:
         return body
 
 
+class TransformationExecutorClient(Protocol):
+    def execute(
+        self,
+        transformation_type: str,
+        delivery_target: str | None,
+        mapping: str,
+        source_payloads: dict[str, Any],
+        synthesized: dict[str, Any],
+        ctx: EnvelopeContext,
+        target_schema: dict[str, Any] | None = None,
+    ) -> dict[str, Any]: ...
+
+
+class HttpTransformationExecutorClient:
+    """Real Transformation Executor client — POSTs to /execute and returns the
+    executor's ``result`` dict on success. Raises ``RuntimeError`` on a
+    non-succeeded response so the action's best-effort wrapper can fall through."""
+
+    def __init__(self, base_url: str, client: httpx.Client | None = None) -> None:
+        self._client = client or httpx.Client(base_url=base_url, timeout=30.0)
+
+    def execute(
+        self,
+        transformation_type: str,
+        delivery_target: str | None,
+        mapping: str,
+        source_payloads: dict[str, Any],
+        synthesized: dict[str, Any],
+        ctx: EnvelopeContext,
+        target_schema: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        resp = self._client.post(
+            "/execute",
+            json={
+                "execution_id": ctx.execution_id,
+                "event_id": ctx.correlation_id,
+                "correlation_id": ctx.correlation_id,
+                "transformation_type": transformation_type,
+                "delivery_target": delivery_target,
+                "mapping": mapping,
+                "source_payloads": source_payloads,
+                "synthesized": synthesized,
+                "target_schema": target_schema or {},
+            },
+        )
+        resp.raise_for_status()
+        body: dict[str, Any] = resp.json()
+        if body.get("status") != "succeeded":
+            error = body.get("error") or {}
+            raise RuntimeError(
+                f"transformation-executor returned {body.get('status')}: "
+                f"{error.get('message', '')}"
+            )
+        result: dict[str, Any] = body["result"]
+        return result
+
+
 class HttpFieldMappingClient:
     """Real Field Mapping client (#27) — POSTs a MappingRequest to /map and returns
     the §10 response envelope. The caller (actions._generate_payload_mapping) treats
@@ -246,11 +327,50 @@ class HttpFieldMappingClient:
         return body
 
 
+class HttpFieldSynthesisClient:
+    """Real Field Synthesis client (#85) — POSTs to /synthesize-fields with the
+    synthesis-request artifact inline (the two services keep separate artifact
+    stores, so a ref would not resolve) and returns the response envelope, which
+    carries the generated ``values`` inline. Best-effort: the caller falls back to
+    empty synthesized values on failure, so a Field Synthesis outage does not fail
+    the workflow (the obv3 stand-in still delivers)."""
+
+    def __init__(self, base_url: str, client: httpx.Client | None = None) -> None:
+        self._client = client or httpx.Client(base_url=base_url, timeout=60.0)
+
+    def synthesize(
+        self, transformation_type: str, synthesis_request: dict[str, Any], ctx: EnvelopeContext
+    ) -> dict[str, Any]:
+        resp = self._client.post(
+            "/synthesize-fields",
+            json={
+                "execution_id": ctx.execution_id,
+                "event_id": ctx.correlation_id,
+                "transformation_type": transformation_type,
+                "synthesis_request": synthesis_request,
+            },
+        )
+        resp.raise_for_status()
+        body: dict[str, Any] = resp.json()
+        return body
+
+
 # --- LLM Decision Service planner seams (#27 / ADR-0007) ---
 # When their URLs are configured the planner path calls these real services;
 # otherwise the engine falls back to the deterministic planner stubs. The engine
 # treats them as best-effort — a failure falls back rather than failing the
 # workflow (the deterministic plan still runs).
+
+
+class TargetsDecision(NamedTuple):
+    """The Delivery Targets outcome the engine records: the flat target list the
+    planner consumes, plus the decision-level confidence/rationale from the
+    service's rich response (design #77 §3 — readable without a second
+    round-trip to the stored artifact)."""
+
+    targets: list[str]
+    confidence: float | None = None
+    rationale: str | None = None
 
 
 class DeliveryTargetsClient(Protocol):
@@ -260,7 +380,7 @@ class DeliveryTargetsClient(Protocol):
         source_system: str,
         learner_context: dict[str, Any],
         ctx: EnvelopeContext,
-    ) -> list[str]: ...
+    ) -> TargetsDecision: ...
 
 
 class WorkflowActionsClient(Protocol):
@@ -285,7 +405,10 @@ class WorkflowActionsClient(Protocol):
 
 class HttpDeliveryTargetsClient:
     """Real Delivery Targets LLM Decision Service (#77) — POSTs to
-    /select-delivery-targets and returns the flat selected-targets list."""
+    /select-delivery-targets. The response's ``selected_targets`` is the rich
+    per-target list (§3: delivery_target + confidence + rationale); this returns
+    the flat names plus a decision-level confidence (the weakest per-target
+    score, conservative for the audit record) and the joined rationales."""
 
     def __init__(self, base_url: str, client: httpx.Client | None = None) -> None:
         self._client = client or httpx.Client(base_url=base_url, timeout=60.0)
@@ -296,7 +419,7 @@ class HttpDeliveryTargetsClient:
         source_system: str,
         learner_context: dict[str, Any],
         ctx: EnvelopeContext,
-    ) -> list[str]:
+    ) -> TargetsDecision:
         resp = self._client.post(
             "/select-delivery-targets",
             json={
@@ -311,8 +434,18 @@ class HttpDeliveryTargetsClient:
         body: dict[str, Any] = resp.json()
         if body.get("status") != "succeeded":
             raise RuntimeError(f"delivery-targets returned {body.get('status')}")
-        targets: list[str] = list(body["selected_targets"])
-        return targets
+        selections: list[dict[str, Any]] = list(body["selected_targets"])
+        confidences = [s["confidence"] for s in selections if s.get("confidence") is not None]
+        return TargetsDecision(
+            targets=[s["delivery_target"] for s in selections],
+            confidence=min(confidences) if confidences else None,
+            rationale="; ".join(
+                f"{s['delivery_target']}: {s['rationale']}"
+                for s in selections
+                if s.get("rationale")
+            )
+            or None,
+        )
 
 
 class HttpWorkflowActionsClient:
@@ -347,12 +480,15 @@ class HttpWorkflowActionsClient:
             raise RuntimeError(f"workflow-actions gate returned {body.get('status')}")
         raw = str(body.get("decision") or "terminate")
         rationale = str(body.get("rationale") or "")
-        if raw == "continue_to_delivery_targets":
-            return GateDecision(decision="continue_to_delivery_targets",
-                                confidence=body.get("confidence", 1.0), rationale=rationale)
-        # Any terminate_* reason maps to the orchestrator's "terminate" Literal.
-        return GateDecision(decision="terminate", confidence=body.get("confidence", 1.0),
-                            rationale=f"{raw}: {rationale}" if rationale else raw)
+        if raw == "continue":
+            return GateDecision(decision="continue",
+                                confidence=body.get("confidence"), rationale=rationale)
+        # Per FR-WA-2 the service returns a bare "terminate" with the reason in
+        # rationale. Tolerate a legacy "terminate_<reason>" by folding it into rationale.
+        if raw != "terminate":
+            rationale = f"{raw}: {rationale}" if rationale else raw
+        return GateDecision(decision="terminate", confidence=body.get("confidence"),
+                            rationale=rationale)
 
     def delivery_phase_plan(
         self,

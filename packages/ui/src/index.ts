@@ -1,4 +1,10 @@
+export { BotIcon } from "./BotIcon";
+export { ClampedBlock } from "./ClampedBlock";
+export { ConfidenceMeter } from "./ConfidenceMeter";
 export { CopyableId } from "./CopyableId";
+export { DecisionNode } from "./DecisionNode";
 export { EnvelopeModal } from "./EnvelopeModal";
 export { eventColor } from "./eventColor";
+export { FlowConnector } from "./FlowConnector";
 export { highlightJson } from "./highlightJson";
+export { PipelineInfoNode } from "./PipelineInfoNode";

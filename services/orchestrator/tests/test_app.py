@@ -38,10 +38,52 @@ def test_run_workflow_completes_and_persists(client, sample_event):
     assert body["execution_id"] == "exec_42"
     assert body["status"] == "completed"
     assert body["event_type"] == "skill_mastered"
-    assert body["gate_decision"]["decision"] == "continue_to_delivery_targets"
-    assert body["plan_id"] == "phase1-skill_mastered.v1"
+    assert [d["kind"] for d in body["decisions"]] == [
+        "gate",
+        "delivery_targets",
+        "workflow_actions_plan",
+    ]
+    gate_decision, targets_decision, plan_decision = body["decisions"]
+    assert gate_decision == {
+        "kind": "gate",
+        "confidence": None,
+        "rationale": "Deterministic Phase 1 happy-path gate decision.",
+        "outcome": "continue",
+        "candidates": [],
+        "artifact_ref": None,
+        "invocation_log_ref": None,
+        # Unconfigured seam -> the stub is the deterministic fallback, and the
+        # record says so explicitly (provenance, ADR-0022).
+        "decision_source": "deterministic_fallback",
+        "created_at": gate_decision["created_at"],
+    }
+    # Neither Delivery Targets nor Workflow Actions is configured in tests, so both
+    # fall back to the deterministic stubs (best-effort seams, #79).
+    assert targets_decision == {
+        "kind": "delivery_targets",
+        "confidence": None,
+        "rationale": "",
+        "outcome": "learncard_issuer, learncard_wallet",
+        "candidates": [],
+        "artifact_ref": None,
+        "invocation_log_ref": None,
+        "decision_source": "deterministic_fallback",
+        "created_at": targets_decision["created_at"],
+    }
+    assert plan_decision == {
+        "kind": "workflow_actions_plan",
+        "confidence": None,
+        "rationale": "Deterministic Phase 1 LearnCard workflow.",
+        "outcome": "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1",
+        "candidates": [],
+        "artifact_ref": None,
+        "invocation_log_ref": None,
+        "decision_source": "deterministic_fallback",
+        "created_at": plan_decision["created_at"],
+    }
+    assert body["plan_id"] == "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1"
     assert [s["action_id"] for s in body["steps"]][0] == "resolve_learncard_profile"
-    assert len(body["steps"]) == 8
+    assert len(body["steps"]) == 11
     assert all(s["status"] == "succeeded" for s in body["steps"])
     assert body["result"]["recipient_profile_id"].startswith("@")
     # Read-model fields the Admin UI needs (#28 G3/G4): correlation id + timestamps.
@@ -53,12 +95,35 @@ def test_run_workflow_completes_and_persists(client, sample_event):
     assert got.json()["status"] == "completed"
 
 
+def test_run_workflow_terminate_gate_persists_decision(client):
+    # An unsupported event type: the pre-target gate terminates before delivery,
+    # but the `decisions` array still records the gate outcome (#28, ADR-0007).
+    event = {"metadata": {"event_name": "badge_awarded", "user_id": "U1"}, "body": {}}
+    resp = client.post("/run-workflow", json={"execution_id": "exec_term", "event": event})
+    body = resp.json()
+    assert body["status"] == "completed"
+    assert body["decisions"] == [
+        {
+            "kind": "gate",
+            "confidence": None,
+            "rationale": "Unsupported event type for Phase 1: badge_awarded.",
+            "outcome": "terminate",
+            "candidates": [],
+            "artifact_ref": None,
+            "invocation_log_ref": None,
+            "decision_source": "deterministic_fallback",
+            "created_at": body["decisions"][0]["created_at"],
+        }
+    ]
+    assert body["plan_id"] is None
+
+
 def test_course_completed_path_completes(client, course_event):
     resp = client.post("/run-workflow", json={"execution_id": "exec_cc", "event": course_event})
     body = resp.json()
     assert body["status"] == "completed"
     assert body["event_type"] == "course_completed"
-    assert body["plan_id"] == "phase1-course_completed.v1"
+    assert body["plan_id"] == "phase1-course_completed.learncard_issuer.learncard_wallet.v1"
 
 
 def test_plan_lookup_toggle_and_delete(client, sample_event):
@@ -67,9 +132,10 @@ def test_plan_lookup_toggle_and_delete(client, sample_event):
     assert client.put("/admin/plan-lookup-toggle", json={"enabled": True}).json() == {
         "reusable_plan_lookup_enabled": True
     }
-    assert client.delete("/admin/plans/phase1-skill_mastered.v1").json() == {"deleted": True}
+    plan_id = "phase1-skill_mastered.learncard_issuer.learncard_wallet.v1"
+    assert client.delete(f"/admin/plans/{plan_id}").json() == {"deleted": True}
     # Second delete is a no-op (already gone).
-    assert client.delete("/admin/plans/phase1-skill_mastered.v1").json() == {"deleted": False}
+    assert client.delete(f"/admin/plans/{plan_id}").json() == {"deleted": False}
 
 
 def test_list_executions_and_correlation_filter(client, sample_event, course_event):
@@ -83,7 +149,7 @@ def test_list_executions_and_correlation_filter(client, sample_event, course_eve
     a = next(r for r in rows if r["execution_id"] == "exec_a")
     assert a["correlation_id"] == "corr_1"
     assert a["status"] == "completed"
-    assert a["step_progress"] == {"completed": 8, "total": 8}
+    assert a["step_progress"] == {"completed": 11, "total": 11}
     assert a["created_at"] and a["updated_at"]
     assert "steps" not in a and "result" not in a  # compact projection
 
@@ -130,7 +196,9 @@ def test_settings_load_from_service_dotenv_regardless_of_cwd(tmp_path, monkeypat
         monkeypatch.delenv(var, raising=False)
     monkeypatch.chdir(tmp_path)  # a CWD that is NOT the service dir
     original = ENV_FILE.read_text() if ENV_FILE.exists() else None
-    ENV_FILE.write_text("ORCHESTRATOR_DB_PATH=:memory:\nLEARNCARD_DEMO_RECIPIENT_PROFILE_ID=@demo\n")
+    ENV_FILE.write_text(
+        "ORCHESTRATOR_DB_PATH=:memory:\nLEARNCARD_DEMO_RECIPIENT_PROFILE_ID=@demo\n"
+    )
     try:
         s = Settings()
         assert s.db_path == ":memory:"

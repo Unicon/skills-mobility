@@ -8,7 +8,7 @@
         "description": "The minimum unsigned Open Badges 3.0 credential the LearnCard Issuer Adapter signs (LearnCard SDK UnsignedVC shape).",
         "x-transformation-type": "issuer_payload",
         "x-delivery-target": "learncard_issuer",
-        "required": ["@context", "type", "issuer", "credentialSubject"],
+        "required": ["@context", "type", "id", "issuer", "credentialSubject", "validFrom"],
         "properties": {
           "@context": {
             "type": "array", "items": { "type": "string" },
@@ -21,6 +21,55 @@
             "description": "Credential types.",
             "x-no-mapping-behavior": "disallowed",
             "examples": [["VerifiableCredential", "OpenBadgeCredential"]]
+          },
+          "id": {
+            "type": "string",
+            "description": "Unambiguous credential identifier (URN); injected by the pipeline, not the LLM.",
+            "x-no-mapping-behavior": "disallowed",
+            "examples": ["urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890"]
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Credential validity start timestamp; injected by the pipeline at issuance time.",
+            "x-no-mapping-behavior": "disallowed",
+            "examples": ["2024-01-15T00:00:00Z"]
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Credential expiry timestamp (optional); inject from policy if applicable.",
+            "x-no-mapping-behavior": "disallowed",
+            "examples": ["2027-01-15T00:00:00Z"]
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name for the credential as shown in wallets.",
+            "x-no-mapping-behavior": "blank",
+            "examples": ["Python Programming Certificate"]
+          },
+          "description": {
+            "type": "string",
+            "description": "Short description of the credential for display purposes.",
+            "x-no-mapping-behavior": "blank",
+            "examples": ["Awarded for completing the Python Programming course."]
+          },
+          "image": {
+            "type": "object",
+            "description": "Visual representation of the credential.",
+            "required": ["id", "type"],
+            "properties": {
+              "id": { "type": "string", "description": "URI or data URI for the credential image.", "x-no-mapping-behavior": "blank", "examples": ["https://example.com/badges/python.png"] },
+              "type": { "type": "string", "description": "Fixed to 'Image'.", "x-no-mapping-behavior": "disallowed", "examples": ["Image"] },
+              "caption": { "type": "string", "description": "Short caption describing the image.", "x-no-mapping-behavior": "blank", "examples": ["Python Programming badge"] }
+            }
+          },
+          "awardedDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date the credential was awarded to the recipient.",
+            "x-no-mapping-behavior": "blank",
+            "examples": ["2024-01-15T00:00:00Z"]
           },
           "issuer": {
             "type": "object",
@@ -38,16 +87,301 @@
             "properties": {
               "id": { "type": "string", "description": "Recipient DID resolved by the Profile Resolver.", "x-no-mapping-behavior": "disallowed", "examples": ["did:web:network.learncard.com:users:learner"] },
               "type": { "type": "array", "items": { "type": "string" }, "description": "Subject type.", "x-no-mapping-behavior": "disallowed", "examples": [["AchievementSubject"]] },
+              "activityStartDate": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Date the learner began the activity.",
+                "x-no-mapping-behavior": "blank",
+                "examples": ["2023-09-01T00:00:00Z"]
+              },
+              "activityEndDate": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Date the learner completed the activity.",
+                "x-no-mapping-behavior": "blank",
+                "examples": ["2023-12-15T00:00:00Z"]
+              },
+              "creditsEarned": {
+                "type": "number",
+                "description": "Number of academic credits earned.",
+                "x-no-mapping-behavior": "blank",
+                "examples": [3]
+              },
+              "identifier": {
+                "type": "array",
+                "description": "Alternative identifiers for the subject (e.g. hashed email).",
+                "items": {
+                  "type": "object",
+                  "required": ["type", "hashed", "identityHash", "identityType"],
+                  "properties": {
+                    "type": { "type": "string", "description": "Fixed to 'IdentityObject'.", "x-no-mapping-behavior": "disallowed", "examples": ["IdentityObject"] },
+                    "hashed": { "type": "boolean", "description": "Whether identityHash is hashed.", "x-no-mapping-behavior": "blank", "examples": [true] },
+                    "identityHash": { "type": "string", "description": "The identity value or hash (e.g. 'sha256$...').", "x-no-mapping-behavior": "blank", "examples": ["sha256$abc123"] },
+                    "identityType": { "type": "string", "description": "Type of identity (emailAddress, name, systemId, etc.).", "x-no-mapping-behavior": "blank", "examples": ["emailAddress"] },
+                    "salt": { "type": "string", "description": "Salt used when hashing.", "x-no-mapping-behavior": "blank", "examples": ["seasalt"] }
+                  }
+                }
+              },
+              "licenseNumber": {
+                "type": "string",
+                "description": "License number associated with this credential.",
+                "x-no-mapping-behavior": "blank",
+                "examples": ["LIC-2024-0042"]
+              },
+              "narrative": {
+                "type": "string",
+                "description": "Narrative description of the subject's achievement (markdown).",
+                "x-no-mapping-behavior": "blank",
+                "examples": ["Completed all modules with distinction."]
+              },
+              "result": {
+                "type": "array",
+                "description": "Performance results for the subject.",
+                "items": {
+                  "type": "object",
+                  "required": ["type"],
+                  "properties": {
+                    "type": { "type": "array", "items": { "type": "string" }, "description": "Must include 'Result'.", "x-no-mapping-behavior": "disallowed", "examples": [["Result"]] },
+                    "achievedLevel": { "type": "string", "description": "URI of the RubricCriterionLevel achieved.", "x-no-mapping-behavior": "blank", "examples": ["urn:poc:level:mastery"] },
+                    "resultDescription": { "type": "string", "description": "URI referencing the ResultDescription.", "x-no-mapping-behavior": "blank", "examples": ["urn:poc:resultdesc:score"] },
+                    "status": { "type": "string", "description": "Completion status (e.g. Completed, InProgress).", "x-no-mapping-behavior": "blank", "examples": ["Completed"] },
+                    "value": { "type": "string", "description": "Performance result value (score, grade, etc.).", "x-no-mapping-behavior": "blank", "examples": ["95"] }
+                  }
+                }
+              },
+              "role": {
+                "type": "string",
+                "description": "Learner's role or title at time of credential.",
+                "x-no-mapping-behavior": "blank",
+                "examples": ["Student"]
+              },
+              "source": {
+                "type": "object",
+                "description": "Originating institution profile.",
+                "required": ["id", "type"],
+                "properties": {
+                  "id": { "type": "string", "description": "Institution DID or URI.", "x-no-mapping-behavior": "blank", "examples": ["did:web:university.example.com"] },
+                  "type": { "type": "array", "items": { "type": "string" }, "description": "Must include 'Profile'.", "x-no-mapping-behavior": "disallowed", "examples": [["Profile"]] },
+                  "name": { "type": "string", "description": "Institution name.", "x-no-mapping-behavior": "blank", "examples": ["Example University"] }
+                }
+              },
+              "term": {
+                "type": "string",
+                "description": "Academic term when the credential was earned.",
+                "x-no-mapping-behavior": "blank",
+                "examples": ["Fall 2023"]
+              },
+              "image": {
+                "type": "object",
+                "description": "Image representing the subject's achievement display (AchievementSubject's own image \u2014 distinct from the achievement's badge image and the credential-level image).",
+                "required": ["id", "type"],
+                "properties": {
+                  "id": { "type": "string", "description": "URI or data URI for the subject image.", "x-no-mapping-behavior": "blank", "examples": ["https://example.com/subjects/learner-achievement.png"] },
+                  "type": { "type": "string", "description": "Fixed to 'Image'.", "x-no-mapping-behavior": "disallowed", "examples": ["Image"] },
+                  "caption": { "type": "string", "description": "Short caption for the subject image.", "x-no-mapping-behavior": "blank", "examples": ["Learner achievement display"] }
+                }
+              },
               "achievement": {
                 "type": "object",
                 "description": "The achievement being credentialed.",
-                "required": ["id", "type", "name"],
+                "required": ["id", "type", "name", "description", "criteria"],
                 "properties": {
                   "id": { "type": "string", "description": "Achievement id (URN; derived from the achievement name).", "x-no-mapping-behavior": "disallowed", "examples": ["urn:poc:achievement:demonstrate-the-sample-competency"] },
                   "type": { "type": "array", "items": { "type": "string" }, "description": "Achievement type.", "x-no-mapping-behavior": "disallowed", "examples": [["Achievement"]] },
                   "name": { "type": "string", "description": "Achievement name (from the outcome display name/title).", "x-no-mapping-behavior": "blank", "examples": ["Demonstrate the sample competency"] },
-                  "description": { "type": "string", "description": "Achievement description (synthesis-backed when synthesis is allowed).", "x-no-mapping-behavior": "blank", "examples": ["Awarded for demonstrating the achievement."] }
+                  "description": { "type": "string", "description": "Achievement description (OBv3 requires this field; synthesis-backed when synthesis is allowed).", "x-no-mapping-behavior": "blank", "examples": ["Awarded for demonstrating the achievement."] },
+                  "criteria": {
+                    "type": "object",
+                    "description": "How the achievement is earned. Carried forward from the credential_template phase (the DCC Credential Co-writer produces a narrative); synthesis-backed when synthesis is allowed.",
+                    "properties": {
+                      "narrative": { "type": "string", "description": "Narrative describing the criteria for earning the achievement.", "x-no-mapping-behavior": "blank", "examples": ["Complete the module assessment demonstrating mastery of the listed transactions."] }
+                    }
+                  },
+                  "achievementType": {
+                    "type": "string",
+                    "description": "Categorizes the achievement (e.g. Badge, Certificate, Competency). Use a value from the OBv3 extensible enumeration.",
+                    "x-no-mapping-behavior": "blank",
+                    "examples": ["Competency"]
+                  },
+                  "alignment": {
+                    "type": "array",
+                    "description": "Framework alignments — used by SmartResume SkillSync to match skills to competency frameworks.",
+                    "items": {
+                      "type": "object",
+                      "required": ["type", "targetName", "targetUrl"],
+                      "properties": {
+                        "type": { "type": "array", "items": { "type": "string" }, "description": "Must include 'Alignment'.", "x-no-mapping-behavior": "disallowed", "examples": [["Alignment"]] },
+                        "targetName": { "type": "string", "description": "Name of the aligned framework target.", "x-no-mapping-behavior": "blank", "examples": ["Python Programming"] },
+                        "targetUrl": { "type": "string", "description": "URL of the aligned framework target.", "x-no-mapping-behavior": "blank", "examples": ["https://skills.emsidata.com/skills/KS1200364C9C1LK3MKCT"] },
+                        "targetCode": { "type": "string", "description": "Local identifier within the framework.", "x-no-mapping-behavior": "blank", "examples": ["KS1200364C9C1LK3MKCT"] },
+                        "targetFramework": { "type": "string", "description": "Name of the framework (e.g. EMSI Skills, O*NET).", "x-no-mapping-behavior": "blank", "examples": ["EMSI Skills"] },
+                        "targetDescription": { "type": "string", "description": "Brief description of the aligned target.", "x-no-mapping-behavior": "blank", "examples": ["Ability to write Python code."] },
+                        "targetType": { "type": "string", "description": "Type of alignment target (e.g. ceasn:Competency, CFItem).", "x-no-mapping-behavior": "blank", "examples": ["ceasn:Competency"] }
+                      }
+                    }
+                  },
+                  "creator": {
+                    "type": "object",
+                    "description": "Profile of the achievement creator/author.",
+                    "required": ["id", "type"],
+                    "properties": {
+                      "id": { "type": "string", "description": "Creator DID or URI.", "x-no-mapping-behavior": "blank", "examples": ["did:web:university.example.com"] },
+                      "type": { "type": "array", "items": { "type": "string" }, "description": "Must include 'Profile'.", "x-no-mapping-behavior": "disallowed", "examples": [["Profile"]] },
+                      "name": { "type": "string", "description": "Creator name.", "x-no-mapping-behavior": "blank", "examples": ["Example University"] }
+                    }
+                  },
+                  "creditsAvailable": {
+                    "type": "number",
+                    "description": "Number of credits a learner can earn from this achievement.",
+                    "x-no-mapping-behavior": "blank",
+                    "examples": [3]
+                  },
+                  "fieldOfStudy": {
+                    "type": "string",
+                    "description": "Subject domain or field of study.",
+                    "x-no-mapping-behavior": "blank",
+                    "examples": ["Computer Science"]
+                  },
+                  "humanCode": {
+                    "type": "string",
+                    "description": "Human-readable code for the achievement.",
+                    "x-no-mapping-behavior": "blank",
+                    "examples": ["CS-101"]
+                  },
+                  "image": {
+                    "type": "object",
+                    "description": "Visual representation of the achievement (badge image).",
+                    "required": ["id", "type"],
+                    "properties": {
+                      "id": { "type": "string", "description": "URI or data URI for the achievement image.", "x-no-mapping-behavior": "blank", "examples": ["https://example.com/badges/achievement.png"] },
+                      "type": { "type": "string", "description": "Fixed to 'Image'.", "x-no-mapping-behavior": "disallowed", "examples": ["Image"] },
+                      "caption": { "type": "string", "description": "Short caption for the achievement image.", "x-no-mapping-behavior": "blank", "examples": ["Python achievement badge"] }
+                    }
+                  },
+                  "inLanguage": {
+                    "type": "string",
+                    "description": "BCP47 language tag for the achievement content.",
+                    "x-no-mapping-behavior": "blank",
+                    "examples": ["en-US"]
+                  },
+                  "otherIdentifier": {
+                    "type": "array",
+                    "description": "Alternative identifiers for the achievement.",
+                    "items": {
+                      "type": "object",
+                      "required": ["type", "identifier", "identifierType"],
+                      "properties": {
+                        "type": { "type": "string", "description": "Fixed to 'IdentifierEntry'.", "x-no-mapping-behavior": "disallowed", "examples": ["IdentifierEntry"] },
+                        "identifier": { "type": "string", "description": "The identifier value.", "x-no-mapping-behavior": "blank", "examples": ["course-12345"] },
+                        "identifierType": { "type": "string", "description": "Type of the identifier (e.g. sourcedId, systemId).", "x-no-mapping-behavior": "blank", "examples": ["sourcedId"] }
+                      }
+                    }
+                  },
+                  "related": {
+                    "type": "array",
+                    "description": "Related achievements (e.g. prerequisites or follow-on credentials).",
+                    "items": {
+                      "type": "object",
+                      "required": ["id", "type"],
+                      "properties": {
+                        "id": { "type": "string", "description": "URI of the related achievement.", "x-no-mapping-behavior": "blank", "examples": ["urn:poc:achievement:python-advanced"] },
+                        "type": { "type": "array", "items": { "type": "string" }, "description": "Must include 'Related'.", "x-no-mapping-behavior": "disallowed", "examples": [["Related"]] },
+                        "inLanguage": { "type": "string", "description": "BCP47 language tag.", "x-no-mapping-behavior": "blank", "examples": ["en-US"] },
+                        "version": { "type": "string", "description": "Version of the related achievement.", "x-no-mapping-behavior": "blank", "examples": ["2.0"] }
+                      }
+                    }
+                  },
+                  "resultDescription": {
+                    "type": "array",
+                    "description": "Describes possible result types/rubrics for this achievement.",
+                    "items": {
+                      "type": "object",
+                      "required": ["id", "type", "name", "resultType"],
+                      "properties": {
+                        "id": { "type": "string", "description": "URI identifying this result description.", "x-no-mapping-behavior": "blank", "examples": ["urn:poc:resultdesc:score"] },
+                        "type": { "type": "array", "items": { "type": "string" }, "description": "Must include 'ResultDescription'.", "x-no-mapping-behavior": "disallowed", "examples": [["ResultDescription"]] },
+                        "name": { "type": "string", "description": "Name of the result description.", "x-no-mapping-behavior": "blank", "examples": ["Final Score"] },
+                        "resultType": { "type": "string", "description": "Type of result (e.g. Percent, LetterGrade, RubricCriterion).", "x-no-mapping-behavior": "blank", "examples": ["Percent"] },
+                        "valueMin": { "type": "string", "description": "Minimum possible value.", "x-no-mapping-behavior": "blank", "examples": ["0"] },
+                        "valueMax": { "type": "string", "description": "Maximum possible value.", "x-no-mapping-behavior": "blank", "examples": ["100"] }
+                      }
+                    }
+                  },
+                  "specialization": {
+                    "type": "string",
+                    "description": "Specialization or focus area of the achievement.",
+                    "x-no-mapping-behavior": "blank",
+                    "examples": ["Data Science"]
+                  },
+                  "tag": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "Keywords/searchable tags for the achievement.",
+                    "x-no-mapping-behavior": "blank",
+                    "examples": [["python", "programming", "data-science"]]
+                  },
+                  "version": {
+                    "type": "string",
+                    "description": "Version of the achievement definition.",
+                    "x-no-mapping-behavior": "blank",
+                    "examples": ["1.0"]
+                  }
                 }
+              }
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "description": "Supporting documentation for the credential.",
+            "items": {
+              "type": "object",
+              "required": ["type"],
+              "properties": {
+                "type": { "type": "array", "items": { "type": "string" }, "description": "Must include 'Evidence'.", "x-no-mapping-behavior": "disallowed", "examples": [["Evidence"]] },
+                "id": { "type": "string", "description": "URI pointing to the evidence.", "x-no-mapping-behavior": "blank", "examples": ["https://example.com/portfolio/python-project"] },
+                "name": { "type": "string", "description": "Name of the evidence item.", "x-no-mapping-behavior": "blank", "examples": ["Final Project Submission"] },
+                "description": { "type": "string", "description": "Description of what the evidence demonstrates.", "x-no-mapping-behavior": "blank", "examples": ["A working Python web application demonstrating mastery."] },
+                "genre": { "type": "string", "description": "Category/type of evidence (e.g. Portfolio, Assessment).", "x-no-mapping-behavior": "blank", "examples": ["Portfolio"] },
+                "audience": { "type": "string", "description": "Intended audience for the evidence.", "x-no-mapping-behavior": "blank", "examples": ["Employer"] },
+                "narrative": { "type": "string", "description": "Narrative description of the evidence (markdown).", "x-no-mapping-behavior": "blank", "examples": ["The learner built a REST API using FastAPI."] }
+              }
+            }
+          },
+          "credentialSchema": {
+            "type": "array",
+            "description": "Schema references for the credential; injected by the pipeline.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string", "description": "URI identifying the schema.", "x-no-mapping-behavior": "disallowed", "examples": ["https://purl.imsglobal.org/spec/ob/v3p0/schema/json/ob_v3p0_achievementcredential_schema.json"] },
+                "type": { "type": "string", "description": "Schema type (e.g. JsonSchemaValidator2019).", "x-no-mapping-behavior": "disallowed", "examples": ["JsonSchemaValidator2019"] }
+              }
+            }
+          },
+          "credentialStatus": {
+            "type": "object",
+            "description": "Revocation/suspension status; managed by the pipeline/issuer, not the LLM.",
+            "properties": {
+              "id": { "type": "string", "description": "URI for the credential status entry.", "x-no-mapping-behavior": "disallowed", "examples": ["https://example.com/status/1#123"] },
+              "type": { "type": "string", "description": "Status mechanism type (e.g. StatusList2021Entry).", "x-no-mapping-behavior": "disallowed", "examples": ["StatusList2021Entry"] }
+            }
+          },
+          "refreshService": {
+            "type": "object",
+            "description": "Credential refresh mechanism; managed by the pipeline/issuer, not the LLM.",
+            "properties": {
+              "id": { "type": "string", "description": "URI of the refresh service.", "x-no-mapping-behavior": "disallowed", "examples": ["https://example.com/refresh/1"] },
+              "type": { "type": "string", "description": "Refresh service type.", "x-no-mapping-behavior": "disallowed", "examples": ["1EdTechCredentialRefresh"] }
+            }
+          },
+          "termsOfUse": {
+            "type": "array",
+            "description": "Usage terms and policies; injected by the pipeline, not the LLM.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string", "description": "URI identifying the terms of use.", "x-no-mapping-behavior": "disallowed", "examples": ["https://example.com/terms/1"] },
+                "type": { "type": "string", "description": "Terms of use type.", "x-no-mapping-behavior": "disallowed", "examples": ["IssuerPolicy"] }
               }
             }
           }

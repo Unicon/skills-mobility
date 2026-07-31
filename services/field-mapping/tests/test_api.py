@@ -1,9 +1,12 @@
 from pathlib import Path
+from typing import Any
 
 from fastapi.testclient import TestClient
 from field_mapping.api import create_app
 from field_mapping.artifact_store import ArtifactStore
+from field_mapping.bedrock_adapter import BedrockResponseError
 from field_mapping.catalog_store import CatalogStore
+from field_mapping.contracts import LlmCallMeta, MappingGeneration, MappingRequest
 from field_mapping.replay_adapter import ReplayAdapter
 from field_mapping.service import MappingService
 
@@ -15,6 +18,9 @@ _SEAM_KEYS = {
     "synthesis_request_ref",
     "requires_synthesis",
     "llm_invocation_log_ref",
+    "mapping",
+    "target_schema",
+    "synthesis_request",
 }
 
 
@@ -53,8 +59,56 @@ def test_no_matching_fixture_returns_404(tmp_path: Path) -> None:
     assert resp.json()["detail"] == "no replay fixture for this request"
 
 
+def test_uncataloged_fetch_profile_returns_404_not_500(tmp_path: Path) -> None:
+    # A fetch_profile_id that will never exist must surface as an addressable 404
+    # via CatalogNotFoundError, not an opaque 500. (A missing-target example like
+    # smart_resume would expire once its catalog lands, #138.)
+    bogus = {
+        "execution_id": "exec_1",
+        "event_id": "evt_1",
+        "transformation_type": "credential_template",
+        "source_system": "mock_lms",
+        "fetch_profile_id": "nonexistent_profile_for_testing.v1",
+        "synthesis_allowed": False,
+        "source_payloads": {
+            "outcome": {"code": "1.0.0", "display_name": "X", "description": "Y"},
+        },
+    }
+    resp = _client(tmp_path).post("/map", json=bogus)
+    assert resp.status_code == 404
+    assert "nonexistent_profile_for_testing.v1" in resp.json()["detail"]
+
+
 def test_swagger_example_body_returns_200(tmp_path: Path) -> None:
     # The Swagger example (ISSUER_BODY) must produce a successful mapping, not 500.
     resp = _client(tmp_path).post("/map", json=ISSUER_BODY)
     assert resp.status_code == 200
     assert resp.json()["status"] == "succeeded"
+
+
+class _BedrockErrorAdapter:
+    """Stub adapter that always raises BedrockResponseError (item 7)."""
+
+    def generate(
+        self,
+        request: MappingRequest,
+        *,
+        target_schema: dict[str, Any],
+        source_catalogs: dict[str, dict[str, Any]] | None = None,
+    ) -> tuple[MappingGeneration, LlmCallMeta]:
+        raise BedrockResponseError(
+            "tool output did not match schema: missing required field 'jsonata'"
+        )
+
+
+def test_bedrock_response_error_returns_502(tmp_path: Path) -> None:
+    # A BedrockResponseError from the adapter must surface as 502, not an unhandled 500.
+    service = MappingService(
+        catalog_store=CatalogStore(),
+        artifact_store=ArtifactStore(tmp_path / "artifacts"),
+        adapter=_BedrockErrorAdapter(),
+    )
+    client = TestClient(create_app(service), raise_server_exceptions=False)
+    resp = client.post("/map", json=WALLET_BODY)
+    assert resp.status_code == 502
+    assert "detail" in resp.json()

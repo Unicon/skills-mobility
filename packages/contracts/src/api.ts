@@ -34,10 +34,13 @@ export const api = {
     }),
   reset: () => req<{ ok: boolean }>("/demo/reset", { method: "POST" }),
 
-  // LMS Resource APIs (the same reads the Context Builder uses).
+  // LMS Resource APIs (the same reads the Context Builder uses). Canvas-style
+  // array params are sent pre-encoded (%5B%5D, not literal []) — CloudFront and
+  // Lambda Function URLs reject raw brackets with a 400, though local uvicorn
+  // accepts both. Same constraint as the Context Builder's lms_client.
   course: (courseId: string) => req<Course>(`/api/v1/courses/${courseId}`),
   modules: (courseId: string) =>
-    req<Module[]>(`/api/v1/courses/${courseId}/modules?include[]=items`),
+    req<Module[]>(`/api/v1/courses/${courseId}/modules?include%5B%5D=items`),
   assignments: (courseId: string) =>
     req<Assignment[]>(`/api/v1/courses/${courseId}/assignments`),
   rubrics: (courseId: string) => req<Rubric[]>(`/api/v1/courses/${courseId}/rubrics`),
@@ -45,7 +48,7 @@ export const api = {
     req<Outcome>(`/api/v1/outcomes/${encodeURIComponent(outcomeId)}`),
   submissions: (courseId: string, userId: string) =>
     req<Submission[]>(
-      `/api/v1/courses/${courseId}/students/submissions?student_ids[]=${encodeURIComponent(userId)}`,
+      `/api/v1/courses/${courseId}/students/submissions?student_ids%5B%5D=${encodeURIComponent(userId)}`,
     ),
 };
 

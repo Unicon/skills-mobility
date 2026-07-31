@@ -1,0 +1,165 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Allow OIDC token issuance for AWS credential exchange.
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ACCOUNT_ID: "584569945336"
+  ECR_REGISTRY: "584569945336.dkr.ecr.us-east-1.amazonaws.com"
+  # The shared deploy role (OPS-TICKET-aws-demo.md Task 2): PowerUserAccess +
+  # scoped iam:PassRole, with a GitHub-OIDC trust statement for this repo's
+  # main branch (Task 4). Same role a human deployer assumes as `smi-deploy`.
+  DEPLOY_ROLE_ARN: "arn:aws:iam::584569945336:role/skills-mobility-dev-deploy"
+  PROJECT: skills-mobility
+  ENV: dev
+
+jobs:
+  build-and-push:
+    name: Build & push — ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # The 9-service transformation chain (see infra/DEPLOY.md). The LearnCard
+        # delivery services (profile-resolver / delivery-router / issuer-adapter)
+        # are stubbed in the POC deploy — add them here when delivery goes live.
+        service:
+          - mock-lms
+          - event-consumer
+          - context-builder
+          - delivery-targets
+          - workflow-actions
+          - field-mapping
+          - field-synthesis
+          - transformation-executor
+          - orchestrator
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assume deploy role via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Authenticate Docker to ECR
+        run: |
+          aws ecr get-login-password --region "$AWS_REGION" \
+            | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+
+      - name: Ensure ECR repository exists
+        run: |
+          aws ecr describe-repositories \
+            --repository-names "${{ env.PROJECT }}/${{ matrix.service }}" \
+            --region "$AWS_REGION" 2>/dev/null \
+          || aws ecr create-repository \
+            --repository-name "${{ env.PROJECT }}/${{ matrix.service }}" \
+            --region "$AWS_REGION"
+
+      - name: Set up QEMU + Buildx (arm64 cross-build)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        id: build
+        env:
+          IMAGE_URI: ${{ env.ECR_REGISTRY }}/${{ env.PROJECT }}/${{ matrix.service }}:${{ github.sha }}
+        run: |
+          # Each service has a Lambda image at services/<name>/Dockerfile.lambda
+          # (Mangum handler in <pkg>/lambda_handler.py), built from the repo root.
+          # arm64 to match the functions' Architectures; --provenance=false because
+          # buildx attestation manifest-lists are rejected by Lambda.
+          docker buildx build \
+            --platform linux/arm64 \
+            --provenance=false \
+            -t "$IMAGE_URI" \
+            -f "services/${{ matrix.service }}/Dockerfile.lambda" \
+            --push \
+            .
+          echo "image_uri=${IMAGE_URI}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy CloudFormation stack
+        run: |
+          STACK_NAME="${{ env.PROJECT }}-${{ env.ENV }}-${{ matrix.service }}"
+          PARAMS_FILE="infra/params/${{ env.ENV }}/${{ matrix.service }}.json"
+          TEMPLATE_BUCKET="${{ env.PROJECT }}-${{ env.ENV }}-cfn-templates"
+
+          # Upload latest templates (idempotent; cheap).
+          aws s3 sync infra/cloudformation/ \
+            "s3://${TEMPLATE_BUCKET}/cloudformation/" \
+            --region "$AWS_REGION"
+
+          TEMPLATE_URL="https://${TEMPLATE_BUCKET}.s3.${AWS_REGION}.amazonaws.com/cloudformation/lambda-service.yml"
+
+          # One --parameter-overrides flag only: the CLI treats a repeated flag as
+          # replace-not-merge, so file params and the ImageUri override must travel
+          # in the same token list. Expand the params file (ImageUri excluded — the
+          # committed placeholder always loses to the freshly-pushed image) and
+          # append the SHA-tagged ImageUri.
+          PARAM_ARGS=()
+          if [[ -f "${PARAMS_FILE}" ]]; then
+            while IFS= read -r kv; do PARAM_ARGS+=("$kv"); done < <(
+              jq -r '.[] | select(.ParameterKey != "ImageUri")
+                     | "\(.ParameterKey)=\(.ParameterValue)"' "${PARAMS_FILE}"
+            )
+          fi
+          PARAM_ARGS+=("ImageUri=${{ steps.build.outputs.image_uri }}")
+
+          aws cloudformation deploy \
+            --region              "$AWS_REGION" \
+            --template-url        "$TEMPLATE_URL" \
+            --stack-name          "$STACK_NAME" \
+            --parameter-overrides "${PARAM_ARGS[@]}" \
+            --capabilities        CAPABILITY_IAM \
+            --no-fail-on-empty-changeset
+
+  deploy-foundation:
+    name: Deploy foundation stack
+    runs-on: ubuntu-latest
+    # Foundation has no image; only re-deploy when its template or params change.
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.modified, 'infra/cloudformation/foundation.yml') ||
+      contains(github.event.head_commit.modified, 'infra/params/dev/foundation.json')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assume deploy role via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sync templates to S3
+        run: |
+          TEMPLATE_BUCKET="${{ env.PROJECT }}-${{ env.ENV }}-cfn-templates"
+          aws s3 sync infra/cloudformation/ \
+            "s3://${TEMPLATE_BUCKET}/cloudformation/" \
+            --region "$AWS_REGION"
+
+      - name: Deploy foundation
+        run: |
+          TEMPLATE_BUCKET="${{ env.PROJECT }}-${{ env.ENV }}-cfn-templates"
+          TEMPLATE_URL="https://${TEMPLATE_BUCKET}.s3.${AWS_REGION}.amazonaws.com/cloudformation/foundation.yml"
+
+          aws cloudformation deploy \
+            --region              "$AWS_REGION" \
+            --template-url        "$TEMPLATE_URL" \
+            --stack-name          "${{ env.PROJECT }}-${{ env.ENV }}-foundation" \
+            --parameter-overrides "file://infra/params/${{ env.ENV }}/foundation.json" \
+            --capabilities        CAPABILITY_IAM \
+            --no-fail-on-empty-changeset
