@@ -97,7 +97,7 @@ The useful minimal shape is:
 
 ```json
 {
-  "decision": "continue_to_delivery_targets",
+  "decision": "continue",
   "confidence": 1.0,
   "rationale": "Deterministic Phase 1 happy-path gate decision."
 }

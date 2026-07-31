@@ -70,7 +70,7 @@ Recommended shape:
 }
 ```
 
-The `selected_targets` values are drawn only from the available-delivery-targets catalog (§5). `confidence` is the model's 0–1 self-assessment and `rationale` is a brief natural-language explanation, consistent with the confidence/rationale structured-output contract in [ADR-0010](../decisions/0010-llm-model-access-strategy.md) §165.
+The `selected_targets` values are drawn only from the available-delivery-targets catalog (§5). `confidence` is the model's 0–1 self-assessment and `rationale` is a brief natural-language explanation, consistent with the confidence/rationale structured-output contract in [ADR-0010](../decisions/0010-llm-model-access-strategy.md) ("Confidence and rationale as structured output").
 
 ## 3. Response Contract
 
@@ -253,7 +253,7 @@ Bedrock structured outputs can enforce JSON-schema-conformant results for Conver
 
 ### Recommended starting settings
 
-- `temperature`: `0.0` — a routing decision should be stable and reproducible ([ADR-0010](../decisions/0010-llm-model-access-strategy.md) §161 groups Delivery Targets with the low-temperature structured-output services)
+- `temperature`: `0.0` — a routing decision should be stable and reproducible ([ADR-0010](../decisions/0010-llm-model-access-strategy.md) ("Generation parameters") groups Delivery Targets with the low-temperature structured-output services)
 - `max_tokens`: modest, since the output is a short list of targets with brief rationales
 - one baseline Bedrock model across services initially, then per-service tuning later
 
@@ -379,7 +379,7 @@ Decisions made during pre-development design review that are not already capture
 
 ### Starting model
 
-Following the Field Mapping design, a small, fast Bedrock model (for example, the Claude Haiku tier) is a reasonable starting point for this service, since routing is a constrained structured-output task. The exact invocable Bedrock model ID string (which may include a date/version suffix, per AWS's Bedrock ID format, and is typically an inference-profile-qualified id) should be verified against the current AWS Bedrock model catalog at implementation time rather than hardcoded here. The model ID should be runtime configuration so it can be changed without a code change. Per ADR-0010 §143, if routing quality is low the Workflow Actions and reasoning-heavy services are the first candidates for a larger model; Delivery Targets is a constrained task where prompt and catalog quality should be exhausted first.
+Following the Field Mapping design, a small, fast Bedrock model (for example, the Claude Haiku tier) is a reasonable starting point for this service, since routing is a constrained structured-output task. The exact invocable Bedrock model ID string (which may include a date/version suffix, per AWS's Bedrock ID format, and is typically an inference-profile-qualified id) should be verified against the current AWS Bedrock model catalog at implementation time rather than hardcoded here. The model ID should be runtime configuration so it can be changed without a code change. Per ADR-0010 ("Implication for the POC"), if routing quality is low the Workflow Actions and reasoning-heavy services are the first candidates for a larger model; Delivery Targets is a constrained task where prompt and catalog quality should be exhausted first.
 
 ### Artifact storage for local development
 

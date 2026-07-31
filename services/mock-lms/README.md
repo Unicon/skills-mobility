@@ -33,6 +33,10 @@ src/mock_lms/
 ```bash
 uv sync --all-packages
 uv run mock-lms                 # serves on http://127.0.0.1:8000
+
+# Forward emitted events to a running Event Consumer (unset = events are
+# emitted locally only; see .env.example for the full MOCK_LMS_* set):
+MOCK_LMS_EVENT_CONSUMER_URL=http://127.0.0.1:8200 uv run mock-lms
 ```
 
 OpenAPI docs are at `/docs`. The committed `fixtures/catalog.json` loads

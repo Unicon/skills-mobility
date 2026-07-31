@@ -21,7 +21,7 @@ The Field Synthesis LLM Decision Service is responsible for:
 - ensuring that every generated value is grounded in and derived from the source material supplied in the brief for that placeholder,
 - returning a flat map of generated values keyed by `placeholder_id` inline in the synchronous response,
 - storing the synthesis result artifact and returning a storage-correlation reference alongside the inline values,
-- and recording invocation metadata per ADR-0010 §60.
+- and recording invocation metadata per ADR-0010 ("Decision").
 
 The service is not responsible for:
 

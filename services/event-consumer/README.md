@@ -68,6 +68,10 @@ uv run event-consumer                                          # :8200
 
 # 2. Start the Mock LMS pointed at it (terminal 2)
 MOCK_LMS_EVENT_CONSUMER_URL=http://127.0.0.1:8200 uv run mock-lms   # :8000
+
+# Optional third hop — hand executions off to a running Orchestrator instead of
+# capturing them in the outbox (start it first: `uv run orchestrator`, :8400):
+EVENT_CONSUMER_ORCHESTRATOR_URL=http://127.0.0.1:8400 uv run event-consumer
 ```
 
 Trigger an event from the Mock LMS UI (or `POST /demo/courses/{id}/actions`), then
