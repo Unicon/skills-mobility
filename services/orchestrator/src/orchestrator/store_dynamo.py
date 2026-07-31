@@ -224,9 +224,11 @@ class DynamoExecutionStore:
         of the mock-lms → event-consumer → here reset cascade). Plan items
         (``PLAN#`` pk) survive — they're templates, not per-run state (FR-OR-29)."""
         items = self._scan(Attr("entity").eq("execution"))
-        with self._table.batch_writer() as batch:
-            for item in items:
-                batch.delete_item(Key={"pk": item["pk"]})
+        # Per-item deletes, NOT batch_writer: the Ops-managed exec role grants
+        # item-level CRUD (DeleteItem) but not dynamodb:BatchWriteItem — found
+        # live as an AccessDeniedException. Reset volume is demo-scale.
+        for item in items:
+            self._table.delete_item(Key={"pk": item["pk"]})
         return len(items)
 
     def _scan(self, filter_expr: ConditionBase) -> list[dict[str, Any]]:
