@@ -97,8 +97,9 @@ def test_executes_steps_in_order_and_threads_data(sample_event):
     # ...and the signed credential + resolved profile into wallet delivery.
     wallet = router.calls[1][1]
     assert "proof" in wallet["signed_credential"]
-    assert wallet["recipient_profile_id"].startswith("@")
-    assert result["recipient_profile_id"].startswith("@")
+    # Plain profileId — the wallet API path-interpolates it ("@" 404s live).
+    assert not wallet["recipient_profile_id"].startswith("@")
+    assert result["recipient_profile_id"] == wallet["recipient_profile_id"]
 
     # All eleven steps persisted as succeeded, in order.
     meta = store.get_execution_metadata("exec_1")

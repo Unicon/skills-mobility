@@ -74,6 +74,13 @@ After processing all fields, populate:
   flags — never `g` (JSONata `$replace` with a regex already replaces every
   match). Use JSONata functions (`$replace`, `$lowercase`, `$substring`, …).
 - `placeholder_ids` and `synthesis_requests` must correspond one-to-one.
+- `synthesis_requests` is a JSON **array of objects** in the tool input — never a
+  JSON-encoded string. Each entry carries ONLY `placeholder_id`, `target_path`,
+  `source_payload_paths` (array of path strings), and `instruction` (plain text).
+  Do **not** include a `source_payloads` object — the service snapshots the
+  referenced values itself from `source_payload_paths`, and JSONata expressions
+  are never valid inside `synthesis_requests` (they belong only in the `jsonata`
+  field).
 - If `synthesis_allowed` is `false`, you MUST NOT classify any field as synthesis:
   every field is direct or resolves via the target's no-mapping behavior. Produce
   no placeholders and no synthesis requests.

@@ -85,7 +85,8 @@ def test_run_workflow_completes_and_persists(client, sample_event):
     assert [s["action_id"] for s in body["steps"]][0] == "resolve_learncard_profile"
     assert len(body["steps"]) == 11
     assert all(s["status"] == "succeeded" for s in body["steps"])
-    assert body["result"]["recipient_profile_id"].startswith("@")
+    # Plain profileId (the wallet API interpolates it into a path; "@" 404s live).
+    assert body["result"]["recipient_profile_id"] == "smi-demo-learner"
     # Read-model fields the Admin UI needs (#28 G3/G4): correlation id + timestamps.
     assert body["correlation_id"] == "corr_1"
     assert body["created_at"] and body["updated_at"]

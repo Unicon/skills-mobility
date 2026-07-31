@@ -3,6 +3,7 @@ from typing import Any
 import pytest
 from field_mapping.contracts import (
     DeliveryTarget,
+    MappingGeneration,
     MappingRequest,
     MappingResponse,
     TransformationType,
@@ -90,3 +91,51 @@ def test_requires_synthesis_derived_never_true_when_synthesis_forbidden() -> Non
         placeholder_ids=["achievement_description"],
     )
     assert resp.requires_synthesis is False
+
+
+def test_mapping_generation_decodes_stringified_arrays():
+    # #152 root cause: Claude's toolUse output serialized synthesis_requests as
+    # a JSON STRING; the exact live shape must now parse.
+    gen = MappingGeneration(
+        jsonata="{ }",
+        placeholder_ids='["achievement_description"]',
+        synthesis_requests=(
+            '[{"placeholder_id": "achievement_description",'
+            ' "target_path": "credentialSubject.achievement.description",'
+            ' "source_payload_paths": ["outcome.description"],'
+            ' "instruction": "Describe the achievement."}]'
+        ),
+        confidence=0.9,
+        rationale="r",
+    )
+    assert gen.placeholder_ids == ["achievement_description"]
+    assert gen.synthesis_requests[0].placeholder_id == "achievement_description"
+
+
+def test_mapping_generation_still_rejects_non_array_strings():
+    # The tolerance is a JSON decode, not acceptance of arbitrary strings.
+    with pytest.raises(ValidationError):
+        MappingGeneration(
+            jsonata="{ }", synthesis_requests="not json", confidence=0.9, rationale="r"
+        )
+    with pytest.raises(ValidationError):
+        MappingGeneration(
+            jsonata="{ }", synthesis_requests='{"a": 1}', confidence=0.9, rationale="r"
+        )
+
+
+def test_mapping_generation_decodes_arrays_with_raw_control_chars():
+    # #152 second half (live): the model writes multi-line instruction text with
+    # RAW newlines inside the JSON string values — invalid strict JSON.
+    gen = MappingGeneration(
+        jsonata="{ }",
+        synthesis_requests=(
+            '[{"placeholder_id": "achievement_description",'
+            ' "target_path": "credentialSubject.achievement.description",'
+            ' "source_payload_paths": ["outcome.description"],'
+            ' "instruction": "Describe the achievement.\nUse two sentences."}]'
+        ),  # the \n above is a REAL newline inside the JSON string — invalid strict JSON
+        confidence=0.9,
+        rationale="r",
+    )
+    assert "\n" in gen.synthesis_requests[0].instruction
