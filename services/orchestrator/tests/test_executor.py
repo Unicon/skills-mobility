@@ -100,6 +100,8 @@ def test_executes_steps_in_order_and_threads_data(sample_event):
     # Plain profileId — the wallet API path-interpolates it ("@" 404s live).
     assert not wallet["recipient_profile_id"].startswith("@")
     assert result["recipient_profile_id"] == wallet["recipient_profile_id"]
+    # The summary reads the wallet delivery result (#139).
+    assert result["delivery"] == {"delivery_state": "accepted"}
 
     # All eleven steps persisted as succeeded, in order.
     meta = store.get_execution_metadata("exec_1")
@@ -314,11 +316,16 @@ def test_smartresume_plan_executes_end_to_end(sample_event):
     )
     plan = planner.delivery_phase_plan("skill_mastered", ["smart_resume"], "2026-06-24T00:00:00Z")
 
-    status, _ = execute_plan(plan, _ctx(sample_event), deps, store, "exec_sr")
+    status, result = execute_plan(plan, _ctx(sample_event), deps, store, "exec_sr")
 
     assert status == "completed"
     dispatched_actions = [a for a, _ in router.calls]
     assert dispatched_actions == ["issue_learncard_badge", "deliver_to_smartresume"]
+    # The summary reads whichever delivery action the plan contained (#139) —
+    # a smart_resume-only run must not report delivery: null.
+    assert result["delivery"] == {
+        "redirect_url": "https://mock.smartresume.example/createmyresume/stub"
+    }
     # Issuance always runs; no wallet steps for a SmartResume selection.
     meta = store.get_execution_metadata("exec_sr")
     assert meta is not None
