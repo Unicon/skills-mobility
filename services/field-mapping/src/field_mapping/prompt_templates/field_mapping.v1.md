@@ -74,20 +74,30 @@ After processing all fields, populate:
   flags — never `g` (JSONata `$replace` with a regex already replaces every
   match). Use JSONata functions (`$replace`, `$lowercase`, `$substring`, …).
 - `placeholder_ids` and `synthesis_requests` must correspond one-to-one.
+- `synthesized.*` and `source_payloads.*` are **raw JSONata references — never
+  wrap them in quotes**. `"id": synthesized.credential_id` is correct;
+  `"id": "synthesized.credential_id"` emits the literal text into the output
+  and fails downstream.
 - **Every `required` field in the target schema — at every nesting level — must be
   present in your mapping output.** Before emitting, re-check each object you
   construct against the schema: if you build an object (e.g. `achievement`), every
   field its schema marks `required` (e.g. `name`, `description`, `criteria`) must
-  be mapped from a source path or synthesized — never omitted. An optional object
-  you omit entirely is fine; a required field missing from an object you DID build
-  fails validation.
+  be mapped from a source path or synthesized — never omitted. The flip side:
+  **do not build an optional object you cannot fully populate** — if the source
+  data can't supply an optional object's required fields (e.g. `alignment`,
+  `identifier`, `resultDescription`), omit that object entirely rather than
+  emitting it incomplete. An optional object you omit entirely is fine; a
+  required field missing from an object you DID build fails validation.
 - `synthesis_requests` is a JSON **array of objects** in the tool input — never a
   JSON-encoded string. Each entry carries ONLY `placeholder_id`, `target_path`,
   `source_payload_paths` (array of path strings), and `instruction` (plain text).
   Do **not** include a `source_payloads` object — the service snapshots the
   referenced values itself from `source_payload_paths`, and JSONata expressions
   are never valid inside `synthesis_requests` (they belong only in the `jsonata`
-  field).
+  field). `source_payload_paths` must contain **at least one path for every
+  entry**: ground each request in the source data that informs it — for
+  generated identifiers or dates, reference the fields the value derives from
+  (e.g. `outcome.code`, `submission.graded_at`).
 - If `synthesis_allowed` is `false`, you MUST NOT classify any field as synthesis:
   every field is direct or resolves via the target's no-mapping behavior. Produce
   no placeholders and no synthesis requests.
