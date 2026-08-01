@@ -49,6 +49,8 @@ Set via compose env (services reach each other by service name):
 | orchestrator | `ORCHESTRATOR_DELIVERY_ROUTER_URL` | `http://delivery-router:8800` |
 | delivery-router | `DELIVERY_ROUTER_LEARNCARD_ISSUER_URL` | `http://learncard-issuer-adapter:8910` |
 | delivery-router | `DELIVERY_ROUTER_LEARNCARD_WALLET_URL` | `http://learncard-wallet-adapter:8900` |
+| delivery-router | `DELIVERY_ROUTER_SMARTRESUME_URL` | `http://smartresume-adapter:8920` |
+| smartresume-adapter | `SMARTRESUME_ADAPTER_API_URL` | `http://mock-smartresume:8930` |
 
 SQLite state for event-consumer, orchestrator and profile-resolver lives in named volumes.
 
