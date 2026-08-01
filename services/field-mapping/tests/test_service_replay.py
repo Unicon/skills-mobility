@@ -131,6 +131,69 @@ def test_course_completed_wallet_replay_end_to_end(
     assert artifact.placeholder_ids == []
 
 
+def test_smartresume_replay_end_to_end(
+    make_service: Any,
+    artifact_store: ArtifactStore,
+    smartresume_request: MappingRequest,
+) -> None:
+    # The smart_resume delivery pass (#138): same wallet_payload phase keyed to the
+    # smart_resume target catalog; no synthesis (synthesis_allowed is false).
+    resp = make_service().map(smartresume_request)
+
+    assert resp.status == "succeeded"
+    assert resp.requires_synthesis is False
+    assert resp.synthesis_request_ref is None
+    assert resp.mapping is not None and "recipient" in resp.mapping
+    artifact = artifact_store.load_mapping(resp.mapping_artifact_ref or "")
+    assert artifact.delivery_target is not None
+    assert artifact.delivery_target.value == "smart_resume"
+    assert artifact.placeholder_ids == []
+
+
+def test_course_completed_smartresume_replay_end_to_end(
+    make_service: Any,
+    artifact_store: ArtifactStore,
+    course_smartresume_request: MappingRequest,
+) -> None:
+    resp = make_service().map(course_smartresume_request)
+
+    assert resp.status == "succeeded"
+    assert resp.requires_synthesis is False
+    artifact = artifact_store.load_mapping(resp.mapping_artifact_ref or "")
+    assert artifact.placeholder_ids == []
+
+
+def test_credential_template_replay_produces_synthesis_request(
+    make_service: Any,
+    artifact_store: ArtifactStore,
+    ct_request: MappingRequest,
+) -> None:
+    # The credential_template pass (#138): achievement content only, with the
+    # description synthesis-backed like the issuer fixture.
+    resp = make_service().map(ct_request)
+
+    assert resp.status == "succeeded"
+    assert resp.requires_synthesis is True
+    assert resp.synthesis_request_ref is not None
+    synth = artifact_store.load_synthesis_request(resp.synthesis_request_ref)
+    assert synth.requests[0].placeholder_id == "achievement_description"
+    artifact = artifact_store.load_mapping(resp.mapping_artifact_ref or "")
+    assert artifact.transformation_type.value == "credential_template"
+
+
+def test_course_completed_credential_template_replay_end_to_end(
+    make_service: Any,
+    artifact_store: ArtifactStore,
+    course_ct_request: MappingRequest,
+) -> None:
+    resp = make_service().map(course_ct_request)
+
+    assert resp.status == "succeeded"
+    assert resp.requires_synthesis is True
+    artifact = artifact_store.load_mapping(resp.mapping_artifact_ref or "")
+    assert artifact.placeholder_ids == ["course_achievement_description"]
+
+
 def test_source_catalogs_wired_into_adapter(
     make_service: Any, wallet_request: MappingRequest
 ) -> None:

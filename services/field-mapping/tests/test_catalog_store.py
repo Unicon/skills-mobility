@@ -38,6 +38,13 @@ def test_resolve_target_catalog_by_target_and_transformation_type() -> None:
     )
     assert wallet["x-transformation-type"] == "wallet_payload"
 
+    smartresume = store.resolve_target(
+        transformation_type=TransformationType.WALLET_PAYLOAD,
+        delivery_target=DeliveryTarget.SMART_RESUME,
+    )
+    assert smartresume["x-delivery-target"] == "smart_resume"
+    assert smartresume["required"] == ["recipient", "credentials"]
+
 
 def test_resolve_credential_template_target() -> None:
     # credential_template is keyed by transformation_type alone (no delivery_target, ADR-0017).
