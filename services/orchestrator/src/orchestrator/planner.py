@@ -177,6 +177,12 @@ def _issuer_prefix(fetch_profile_id: str) -> list[PlanStep]:
                 "delivery_target": InputBinding(source="literal", value="learncard_issuer"),
                 "mapping": InputBinding(source="step", step_id=5),
                 "synthesis": InputBinding(source="step", step_id=6),
+                # The issuer mapping reads the stored credential template as a
+                # source artifact (ADR-0017) — the TRANSLATION step must thread it
+                # too, or the executor evaluates the mapping without it and every
+                # template-sourced field silently drops (found live once #157 made
+                # the ct chain real; same missing-binding class as #102 item 1).
+                "credential_template": InputBinding(source="step", step_id=4),
             },
             "issuer_payload",
         ),
