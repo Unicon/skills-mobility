@@ -104,6 +104,18 @@ Resources:
       RepositoryName: !Sub "${ProjectName}/transformation-executor"
       EmptyOnDelete: true
 
+  SmartresumeAdapterRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}/smartresume-adapter"
+      EmptyOnDelete: true
+
+  MockSmartresumeRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}/mock-smartresume"
+      EmptyOnDelete: true
+
   # Mock LMS console static assets (private; fronted by CloudFront).
   MockLmsUiBucket:
     Type: AWS::S3::Bucket

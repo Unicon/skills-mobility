@@ -129,6 +129,23 @@ Parameters:
     Type: String
     Default: ""
     Description: LearnCard issuer display name.
+  SmartresumeUrl:
+    Type: String
+    Default: ""
+    Description: Delivery Router seam — SmartResume Adapter Function URL.
+  SmartresumeApiUrl:
+    Type: String
+    Default: ""
+    Description: SmartResume (CredentialConnect) API base for the adapter — the Mock SmartResume Function URL in the demo.
+  SmartresumeClientId:
+    Type: String
+    Default: "mock-client-id"
+    Description: CredentialConnect OAuth2 client id (shared by the adapter and the mock so they stay in lockstep).
+  SmartresumeAccessKey:
+    Type: String
+    Default: "mock-access-key"
+    NoEcho: true
+    Description: CredentialConnect OAuth2 access key (shared by the adapter and the mock).
   LlmMode:
     Type: String
     Default: replay
@@ -165,6 +182,14 @@ Resources:
           ORCHESTRATOR_ISSUER_ID: !Ref OrchestratorIssuerDid
           DELIVERY_ROUTER_LEARNCARD_ISSUER_URL: !Ref LearncardIssuerUrl
           DELIVERY_ROUTER_LEARNCARD_WALLET_URL: !Ref LearncardWalletUrl
+          DELIVERY_ROUTER_SMARTRESUME_URL: !Ref SmartresumeUrl
+          # SmartResume pair: the same client-id/access-key params feed both sides
+          # so the OAuth pair can never drift apart.
+          SMARTRESUME_ADAPTER_API_URL: !Ref SmartresumeApiUrl
+          SMARTRESUME_ADAPTER_CLIENT_ID: !Ref SmartresumeClientId
+          SMARTRESUME_ADAPTER_ACCESS_KEY: !Ref SmartresumeAccessKey
+          MOCK_SMARTRESUME_CLIENT_ID: !Ref SmartresumeClientId
+          MOCK_SMARTRESUME_ACCESS_KEY: !Ref SmartresumeAccessKey
           LEARNCARD_API_URL: !Ref LearncardApiUrl
           LEARNCARD_API_TOKEN: !Ref LearncardApiToken
           # Issuer adapter (Node) reads unprefixed names; other services ignore them.

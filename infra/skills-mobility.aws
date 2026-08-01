@@ -47,14 +47,15 @@ declare -A STACKS=(
   [transformation-executor]=lambda-service
   [orchestrator]=lambda-service
 
-  # On main but intentionally NOT in the POC deploy slice (LearnCard delivery is
-  # stubbed; SmartResume delivery + its mock run only in docker-compose):
-  # [delivery-router]=lambda-service
-  # [learncard-issuer-adapter]=lambda-service
+  [delivery-router]=lambda-service
+  [learncard-issuer-adapter]=lambda-service
+  [learncard-wallet-adapter]=lambda-service
+  [smartresume-adapter]=lambda-service
+  [mock-smartresume]=lambda-service
+
+  # On main but intentionally NOT in the POC deploy slice (the orchestrator's
+  # resolver seam stays a stub pointed at the real demo learner):
   # [learncard-profile-resolver]=lambda-service
-  # [learncard-wallet-adapter]=lambda-service
-  # [smartresume-adapter]=lambda-service
-  # [mock-smartresume]=lambda-service
 )
 
 # Deploy order: foundation MUST be first (exports are consumed by service stacks).

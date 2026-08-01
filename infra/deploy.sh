@@ -34,6 +34,7 @@ TMPL="$(dirname "$0")/cloudformation/lambda-service-demo.yml"
 # last so pass 2 can wire the URLs its downstream seams expose.
 SERVICES=(mock-lms event-consumer context-builder delivery-targets workflow-actions \
   field-mapping field-synthesis transformation-executor \
+  mock-smartresume smartresume-adapter \
   delivery-router learncard-issuer-adapter learncard-wallet-adapter orchestrator)
 
 aws() { command aws --region "$REGION" "$@"; }
@@ -87,6 +88,9 @@ for svc in "${SERVICES[@]}"; do
     # them. Issuer identity derives from the public seed label; the wallet token
     # comes from the deployer's env (tools/learncard-demo/.env — never committed).
     delivery-router)   deploy_service "$svc" TimeoutSeconds=90 ;;
+    mock-smartresume|smartresume-adapter) deploy_service "$svc" \
+      SmartresumeClientId="${SMARTRESUME_CLIENT_ID:-mock-client-id}" \
+      SmartresumeAccessKey="${SMARTRESUME_ACCESS_KEY:-mock-access-key}" ;;
     learncard-issuer-adapter) deploy_service "$svc" TimeoutSeconds=60 \
       IssuerSecureSeed="${SECURE_SEED:-}" \
       IssuerSeedLabel="${ISSUER_SEED_LABEL:-organization}" \
@@ -113,6 +117,8 @@ TRANSFORMATION_EXECUTOR_URL=$(url_of transformation-executor)
 DELIVERY_ROUTER_URL=$(url_of delivery-router)
 LEARNCARD_ISSUER_URL=$(url_of learncard-issuer-adapter)
 LEARNCARD_WALLET_URL=$(url_of learncard-wallet-adapter)
+SMARTRESUME_ADAPTER_URL=$(url_of smartresume-adapter)
+MOCK_SMARTRESUME_URL=$(url_of mock-smartresume)
 printf "  orchestrator: %s\n  mock-lms: %s\n" "$ORCHESTRATOR_URL" "$MOCK_LMS_URL"
 
 # --- Pass 2: wire the chain (feed URLs back into the consumers) ------------
@@ -120,9 +126,14 @@ echo "== pass 2: wire the chain =="
 deploy_service mock-lms        TimeoutSeconds=150 EventConsumerUrl="$EVENT_CONSUMER_URL"
 deploy_service event-consumer  TimeoutSeconds=150 OrchestratorUrl="$ORCHESTRATOR_URL"
 deploy_service context-builder LmsBaseUrl="$MOCK_LMS_URL"
+deploy_service smartresume-adapter \
+  SmartresumeApiUrl="$MOCK_SMARTRESUME_URL" \
+  SmartresumeClientId="${SMARTRESUME_CLIENT_ID:-mock-client-id}" \
+  SmartresumeAccessKey="${SMARTRESUME_ACCESS_KEY:-mock-access-key}"
 deploy_service delivery-router TimeoutSeconds=90 \
   LearncardIssuerUrl="$LEARNCARD_ISSUER_URL" \
-  LearncardWalletUrl="$LEARNCARD_WALLET_URL"
+  LearncardWalletUrl="$LEARNCARD_WALLET_URL" \
+  SmartresumeUrl="$SMARTRESUME_ADAPTER_URL"
 deploy_service orchestrator    DynamoTable="$TABLE" TimeoutSeconds=120 \
   OrchestratorIssuerDid="${LEARNCARD_ISSUER_DID:-}" \
   ContextBuilderUrl="$CONTEXT_BUILDER_URL" \
