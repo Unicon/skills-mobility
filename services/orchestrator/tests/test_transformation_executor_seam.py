@@ -274,6 +274,25 @@ def test_issuer_executor_called_when_configured_with_jsonata() -> None:
     assert out == {"unsigned_vc": executor_result}
 
 
+def test_issuer_translation_threads_the_credential_template() -> None:
+    # Found live (#157 aftermath): without the step-7 credential_template
+    # binding, the executor evaluated the mapping without its template source
+    # and every template-sourced field (achievement.description/criteria)
+    # silently dropped — rejected only later by the TE's schema validation.
+    executor_result = {"ok": True}
+    spy = _SpyExecutor(result=executor_result)
+    template = {"credentialSubject": {"achievement": {"description": "d"}}}
+    inputs = {
+        **_ISSUER_BASE,
+        "mapping": _MAPPING_WITH_JSONATA,
+        "credential_template": {"credential_template": template},
+    }
+
+    _execute_issuer_payload_translation(inputs, _deps(spy))
+
+    assert spy.calls[0]["source_payloads"]["credential_template"] == template
+
+
 def test_issuer_target_schema_threaded_to_executor() -> None:
     executor_result = {"type": "VerifiableCredential", "id": "urn:vc:1"}
     spy = _SpyExecutor(result=executor_result)
