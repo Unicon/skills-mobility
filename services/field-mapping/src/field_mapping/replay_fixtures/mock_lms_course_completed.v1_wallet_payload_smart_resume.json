@@ -1,0 +1,7 @@
+{
+  "jsonata": "{ \"recipient\": { \"id\": source_payloads.profile_resolution.recipient_did }, \"credentials\": [source_payloads.issued_badge] }",
+  "placeholder_ids": [],
+  "synthesis_requests": [],
+  "confidence": 0.99,
+  "rationale": "Both target fields map directly: the recipient id is the resolved recipient DID and the already-signed credential passes through verbatim as the single-element credentials array. No synthesis (synthesis_allowed is false for this phase)."
+}
