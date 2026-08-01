@@ -24,5 +24,8 @@ E2E_DEMO_CREDENTIAL='user:pass' \
 npm run e2e -w e2e
 ```
 
-`E2E_COURSE` picks the course fired (default `ACCY-111` → wallet branch; use a
-`FINC-*` course for the SmartResume branch).
+By default the check runs **both delivery branches** as separate tests:
+`ACCY-111` (→ `deliver_to_learncard_wallet`) and `FINC-106`
+(→ `deliver_to_smartresume`), each asserting its branch's delivery step ran and
+that `result.delivery` is populated (#139). `E2E_COURSE` narrows the run to a
+single course (an unlisted course runs as a wallet-branch scenario).
