@@ -74,6 +74,13 @@ After processing all fields, populate:
   flags — never `g` (JSONata `$replace` with a regex already replaces every
   match). Use JSONata functions (`$replace`, `$lowercase`, `$substring`, …).
 - `placeholder_ids` and `synthesis_requests` must correspond one-to-one.
+- **Every `required` field in the target schema — at every nesting level — must be
+  present in your mapping output.** Before emitting, re-check each object you
+  construct against the schema: if you build an object (e.g. `achievement`), every
+  field its schema marks `required` (e.g. `name`, `description`, `criteria`) must
+  be mapped from a source path or synthesized — never omitted. An optional object
+  you omit entirely is fine; a required field missing from an object you DID build
+  fails validation.
 - `synthesis_requests` is a JSON **array of objects** in the tool input — never a
   JSON-encoded string. Each entry carries ONLY `placeholder_id`, `target_path`,
   `source_payload_paths` (array of path strings), and `instruction` (plain text).
