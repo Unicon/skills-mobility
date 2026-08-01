@@ -1,0 +1,9 @@
+# Container-image Lambda for delivery-router: FastAPI via Mangum behind a Function URL.
+# Build from the repo root:
+#   docker build -f services/delivery-router/Dockerfile.lambda -t delivery-router-lambda .
+FROM public.ecr.aws/lambda/python:3.12
+
+COPY services/delivery-router /build/delivery-router
+RUN pip install --no-cache-dir /build/delivery-router[lambda]
+
+CMD ["delivery_router.lambda_handler.handler"]

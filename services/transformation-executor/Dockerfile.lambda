@@ -1,0 +1,9 @@
+# Container-image Lambda for transformation-executor: FastAPI via Mangum behind a Function URL.
+# Build from the repo root:
+#   docker build -f services/transformation-executor/Dockerfile.lambda -t transformation-executor-lambda .
+FROM public.ecr.aws/lambda/python:3.12
+
+COPY services/transformation-executor /build/transformation-executor
+RUN pip install --no-cache-dir /build/transformation-executor[lambda]
+
+CMD ["transformation_executor.lambda_handler.handler"]
