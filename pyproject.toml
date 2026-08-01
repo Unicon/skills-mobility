@@ -42,6 +42,12 @@ select = ["E", "F", "I", "UP", "B"]
 python_version = "3.12"
 strict = true
 
+[[tool.mypy.overrides]]
+# The Lambda entrypoints import mangum, which is an optional ([lambda]) extra
+# installed only in the container-image builds — never in the dev venv.
+module = ["mangum.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 # importlib mode so same-named test modules across packages (e.g. several
 # services' test_app.py / test_engine.py) don't collide on collection.

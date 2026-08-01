@@ -149,11 +149,14 @@ services:
     environment:
       DELIVERY_ROUTER_LEARNCARD_ISSUER_URL: http://learncard-issuer-adapter:8910
       DELIVERY_ROUTER_LEARNCARD_WALLET_URL: http://learncard-wallet-adapter:8900
+      DELIVERY_ROUTER_SMARTRESUME_URL: http://smartresume-adapter:8920
     ports: ["8800:8800"]
     depends_on:
       learncard-issuer-adapter:
         condition: service_healthy
       learncard-wallet-adapter:
+        condition: service_healthy
+      smartresume-adapter:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8800/healthz')"]
@@ -194,6 +197,39 @@ services:
     ports: ["8900:8900"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8900/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # --- SmartResume delivery layer (#87; CredentialConnect-shaped) ---
+
+  # Mock SmartResume: stands in for the real CredentialConnect API (OAuth2
+  # client-credentials token + POST /api/v1/credentials -> redirect_url).
+  mock-smartresume:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('mock_smartresume.app:create_app', factory=True, host='0.0.0.0', port=8930)"]
+    ports: ["8930:8930"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8930/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  smartresume-adapter:
+    <<: *python
+    command: ["uv", "run", "python", "-c", "import logging,uvicorn; logging.basicConfig(level='INFO'); uvicorn.run('smartresume_adapter.app:create_app', factory=True, host='0.0.0.0', port=8920)"]
+    environment:
+      SMARTRESUME_ADAPTER_API_URL: http://mock-smartresume:8930
+      # Must match the mock's MOCK_SMARTRESUME_CLIENT_ID / _ACCESS_KEY defaults
+      # (the adapter's own defaults are empty strings -> token calls 401).
+      SMARTRESUME_ADAPTER_CLIENT_ID: mock-client-id
+      SMARTRESUME_ADAPTER_ACCESS_KEY: mock-access-key
+    ports: ["8920:8920"]
+    depends_on:
+      mock-smartresume:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8920/healthz')"]
       interval: 10s
       timeout: 3s
       retries: 5
