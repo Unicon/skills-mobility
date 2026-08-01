@@ -1,0 +1,36 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "SmartResume — delivery payload (wallet_payload)", "version": "1.0.0" },
+  "components": {
+    "schemas": {
+      "SmartResumeDeliveryPayload": {
+        "type": "object",
+        "description": "The SmartResume-delivery payload: the resolved recipient plus the already-signed OBv3 credential(s), forwarded by the SmartResume Adapter as the CredentialConnect POST /api/v1/credentials body (the adapter adds @context and protocol fields itself). synthesis_allowed is false for this phase (no Field Synthesis step provisioned).",
+        "x-transformation-type": "wallet_payload",
+        "x-delivery-target": "smart_resume",
+        "required": ["recipient", "credentials"],
+        "properties": {
+          "recipient": {
+            "type": "object",
+            "description": "The credential recipient. Only the id is derivable from this phase's sources — do not invent contact fields (name, email) that the sources do not carry.",
+            "required": ["id"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Recipient identifier — the recipient DID resolved upstream by the Profile Resolver.",
+                "x-no-mapping-behavior": "disallowed",
+                "examples": ["did:web:network.learncard.com:users:smi-demo-learner"]
+              }
+            }
+          },
+          "credentials": {
+            "type": "array",
+            "items": { "type": "object", "additionalProperties": true },
+            "description": "The complete signed OBv3 credential(s) from the Issuer Adapter, passed through verbatim as a single-element array.",
+            "x-no-mapping-behavior": "disallowed"
+          }
+        }
+      }
+    }
+  }
+}
