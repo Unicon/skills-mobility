@@ -31,6 +31,10 @@ def build_unsigned_obv3(
     return {
         "@context": _OBV3_CONTEXT,
         "type": ["VerifiableCredential", "OpenBadgeCredential"],
+        # Downstream deliverers (SmartResume CredentialConnect) require a
+        # top-level credential id; the mapped path is schema-guaranteed to carry
+        # one, so the stand-in must too (the catalog calls it pipeline-injected).
+        "id": f"urn:poc:credential:{_slug(name)}",
         "issuer": {"id": issuer_id, "type": ["Profile"]},
         "credentialSubject": {
             "id": recipient_did,

@@ -94,6 +94,9 @@ def test_executes_steps_in_order_and_threads_data(sample_event):
     # Step bindings threaded the resolved DID into the issuer payload...
     unsigned = router.calls[0][1]["unsigned_vc"]
     assert unsigned["credentialSubject"]["id"].startswith("did:web:")
+    # The stand-in VC must carry a top-level id — SmartResume delivery 400s
+    # without one, and the mapped path is schema-guaranteed to include it.
+    assert unsigned["id"].startswith("urn:poc:credential:")
     # ...and the signed credential + resolved profile into wallet delivery.
     wallet = router.calls[1][1]
     assert "proof" in wallet["signed_credential"]
