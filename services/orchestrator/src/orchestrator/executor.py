@@ -117,5 +117,11 @@ def _assemble_result(plan: DeliveryPhasePlan, outputs: dict[int, dict[str, Any]]
     return {
         "recipient_profile_id": out("resolve_learncard_profile").get("profile_id"),
         "issued_ref": out("issue_learncard_badge").get("external_reference_id"),
-        "delivery": out("deliver_to_learncard_wallet").get("result"),
+        # Whichever final-delivery action the plan contained (#139): smart_resume-only
+        # plans have no wallet step, and reporting delivery: null there reads like a
+        # failed delivery on a walkthrough.
+        "delivery": (
+            out("deliver_to_learncard_wallet").get("result")
+            or out("deliver_to_smartresume").get("result")
+        ),
     }
