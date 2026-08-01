@@ -38,7 +38,10 @@ class BedrockAdapter:
         *,
         model_id: str,
         region: str,
-        max_tokens: int = 4096,
+        # 8192: the full-OBv3 prompt (schema + catalogs + hard rules) can push a
+        # complete tool call past 4096 output tokens — found live as
+        # stop_reason=max_tokens with an EMPTY tool_input (#154's logging).
+        max_tokens: int = 8192,
         client: Any = None,
     ) -> None:
         self._model_id = model_id

@@ -206,3 +206,22 @@ def test_nested_required_in_array_items_flagged_when_built():
     errors = []
     validators._check_target_required_fields(expr, NESTED_SCHEMA, errors)
     assert any("alignment.targetName" in e for e in errors)
+
+
+def test_quoted_reference_literals_flagged():
+    # Live #160 aftermath: '"id": "synthesized.credential_id"' put the literal
+    # text into the credential and the LearnCard signer rejected it.
+    expr = '{ "id": "synthesized.credential_id", "name": source_payloads.outcome.display_name }'
+    errors = []
+    validators._check_quoted_reference_literals(expr, errors)
+    assert errors and "synthesized.credential_id" in errors[0]
+
+
+def test_raw_references_and_ordinary_strings_pass():
+    expr = (
+        '{ "id": synthesized.credential_id, "type": ["Achievement"],'
+        ' "note": "a plain sentence." }'
+    )
+    errors = []
+    validators._check_quoted_reference_literals(expr, errors)
+    assert errors == []
