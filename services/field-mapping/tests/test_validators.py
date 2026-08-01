@@ -1,5 +1,6 @@
 from typing import Any
 
+from field_mapping import validators
 from field_mapping.contracts import MappingGeneration, MappingRequest, SynthesisRequestEntry
 from field_mapping.validators import _top_level_object_keys, validate_generation
 
@@ -141,3 +142,67 @@ def test_computed_key_not_counted_as_top_level() -> None:
     # The computed concatenation result "ab" is not extracted as a key — the parser
     # only captures quoted string literals that are immediately followed by `:`.
     assert "ab" not in keys
+
+
+NESTED_SCHEMA = {
+    "type": "object",
+    "required": ["credentialSubject"],
+    "properties": {
+        "credentialSubject": {
+            "type": "object",
+            "properties": {
+                "achievement": {
+                    "$ref": "#/$defs/Achievement",
+                },
+            },
+        },
+    },
+    "$defs": {
+        "Achievement": {
+            "type": "object",
+            "required": ["name", "description"],
+            "properties": {
+                "name": {"type": "string"},
+                "description": {"type": "string"},
+                "alignment": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": ["targetName"],
+                        "properties": {"targetName": {"type": "string"}},
+                    },
+                },
+            },
+        },
+    },
+}
+
+
+def test_nested_required_flagged_when_parent_built_without_leaf():
+    # #125 live failure shape: the mapping constructs `achievement` but omits its
+    # required name/description — FM must fail this itself, not defer to the TE.
+    expr = '{ "credentialSubject": { "achievement": { "id": "x" } } }'
+    errors = []
+    validators._check_target_required_fields(expr, NESTED_SCHEMA, errors)
+    joined = " ".join(errors)
+    assert "credentialSubject.achievement.name" in joined
+    assert "credentialSubject.achievement.description" in joined
+
+
+def test_nested_required_inside_omitted_optional_branch_passes():
+    # `alignment` is optional; omitting it entirely must NOT flag its required
+    # leaves (JSON Schema semantics — required binds only when the branch exists).
+    expr = '{ "credentialSubject": { "achievement": { "name": "n", "description": "d" } } }'
+    errors = []
+    validators._check_target_required_fields(expr, NESTED_SCHEMA, errors)
+    assert errors == []
+
+
+def test_nested_required_in_array_items_flagged_when_built():
+    expr = (
+        '{ "credentialSubject": { "achievement": { "name": "n", "description": "d",'
+        ' "alignment": [{ "targetUrl": "u" }] } } }'
+    )
+    errors = []
+    validators._check_target_required_fields(expr, NESTED_SCHEMA, errors)
+    assert any("alignment.targetName" in e for e in errors)
