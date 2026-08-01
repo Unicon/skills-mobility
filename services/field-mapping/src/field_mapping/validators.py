@@ -34,6 +34,7 @@ def validate_generation(
     _check_jsonata_parses(generation.jsonata, errors)  # §11.4
     _check_source_paths(generation.jsonata, request.source_payloads, errors)  # §11.5
     _check_target_required_fields(generation.jsonata, target_schema, errors)  # §11.6
+    _check_quoted_reference_literals(generation.jsonata, errors)  # live #160 aftermath
     _check_synthesis_permission(generation, request, errors)  # §6 hard constraint
     _check_confidence_rationale(generation, errors)  # FR-FM-14
     return errors
@@ -177,6 +178,49 @@ def _all_object_keys(expr: str) -> set[str]:
             stack.pop()
         i += 1
     return keys
+
+
+_QUOTED_REF = re.compile(r"^(?:synthesized|source_payloads)\.[A-Za-z0-9_.\[\]']+$")
+
+
+def _check_quoted_reference_literals(expr: str, errors: list[str]) -> None:
+    """A string literal whose content is a ``synthesized.*`` / ``source_payloads.*``
+    path is (with overwhelming likelihood) a reference the model wrapped in
+    quotes — JSONata then emits the literal TEXT into the output (found live:
+    ``"id": "synthesized.credential_id"`` reached the LearnCard signer and was
+    rejected as invalid characters). References must be raw JSONata."""
+    for literal in _string_literals(expr):
+        if _QUOTED_REF.match(literal):
+            errors.append(
+                f"reference '{literal}' is emitted as a quoted string literal — "
+                "synthesized.*/source_payloads.* must be raw JSONata references"
+            )
+
+
+def _string_literals(expr: str) -> list[str]:
+    """All string literals in the expression (same tokenizer discipline as the
+    key extractors; keys included — a key can never match a dotted-path regex
+    that requires a '.')."""
+    out: list[str] = []
+    i, n = 0, len(expr)
+    while i < n:
+        c = expr[i]
+        if c in "\"'":
+            j, buf = i + 1, []
+            while j < n:
+                if expr[j] == "\\" and j + 1 < n:
+                    buf.append(expr[j + 1])
+                    j += 2
+                    continue
+                if expr[j] == c:
+                    break
+                buf.append(expr[j])
+                j += 1
+            out.append("".join(buf))
+            i = j + 1
+            continue
+        i += 1
+    return out
 
 
 def _check_synthesis_permission(
