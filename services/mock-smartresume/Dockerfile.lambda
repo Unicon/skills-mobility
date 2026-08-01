@@ -1,0 +1,9 @@
+# Container-image Lambda for mock-smartresume: FastAPI via Mangum behind a Function URL.
+# Build from the repo root:
+#   docker build -f services/mock-smartresume/Dockerfile.lambda -t mock-smartresume-lambda .
+FROM public.ecr.aws/lambda/python:3.12
+
+COPY services/mock-smartresume /build/mock-smartresume
+RUN pip install --no-cache-dir /build/mock-smartresume[lambda]
+
+CMD ["mock_smartresume.lambda_handler.handler"]
