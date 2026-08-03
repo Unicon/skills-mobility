@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     # Local mapping store (ADR-0014: SQLite locally). ":memory:" for ephemeral runs.
     db_path: str = "learncard-profile-resolver.db"
 
+    # DynamoDB mapping store (ADR-0014: Lambda). When set, it replaces the SQLite
+    # store — same selection seam as the orchestrator's ORCHESTRATOR_DYNAMO_TABLE.
+    dynamo_table: str | None = None
+    aws_region: str | None = None
+
     # Root log level for the service entrypoint (e.g. INFO, DEBUG, WARNING).
     log_level: str = "INFO"
 

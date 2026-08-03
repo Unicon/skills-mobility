@@ -1,0 +1,15 @@
+# Container-image Lambda for learncard-profile-resolver: FastAPI via Mangum
+# behind a Function URL. Build from the repo root:
+#   docker build -f services/learncard-profile-resolver/Dockerfile.lambda -t learncard-profile-resolver-lambda .
+FROM public.ecr.aws/lambda/python:3.12
+
+# learncard-api is a uv-workspace path dependency, not on PyPI. Install it
+# first so the service install below finds the requirement already satisfied
+# instead of reaching out to PyPI for it.
+COPY libs/learncard-api /build/learncard-api
+COPY services/learncard-profile-resolver /build/learncard-profile-resolver
+RUN pip install --no-cache-dir /build/learncard-api \
+ && pip install --no-cache-dir /build/learncard-profile-resolver[lambda]
+
+# module.function the Lambda runtime imports.
+CMD ["learncard_profile_resolver.lambda_handler.handler"]

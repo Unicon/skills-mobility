@@ -28,6 +28,9 @@ dev = [
     "coverage>=7",
     "faker>=30",
     "types-pyyaml>=6",
+    # DynamoDB mapping store (profile-resolver) + its in-process AWS fake for tests.
+    "boto3>=1.35",
+    "moto>=5",
     "types-jsonschema>=4.21",
 ]
 
@@ -45,7 +48,7 @@ strict = true
 [[tool.mypy.overrides]]
 # The Lambda entrypoints import mangum, which is an optional ([lambda]) extra
 # installed only in the container-image builds — never in the dev venv.
-module = ["mangum.*"]
+module = ["mangum.*", "boto3.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
