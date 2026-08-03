@@ -1,9 +1,11 @@
 name: Deploy
 
+# Manual-only (#170): with Dockerfile.lambda files now on main, a push trigger
+# would build successfully and deploy main's infra templates/params — which are
+# the stale #107 starter set — over the live skills-mobility-dev-* stacks that
+# infra/deploy.sh (demo/e2e-aligned) maintains. Re-enable the push trigger only
+# once main's templates/params are brought up to date with the demo branch's.
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 # Allow OIDC token issuance for AWS credential exchange.

@@ -845,15 +845,22 @@ dependencies = [
     { name = "uvicorn" },
 ]
 
+[package.optional-dependencies]
+lambda = [
+    { name = "mangum" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "learncard-api", editable = "libs/learncard-api" },
+    { name = "mangum", marker = "extra == 'lambda'", specifier = ">=0.19" },
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pydantic-settings", specifier = ">=2.4" },
     { name = "uvicorn", specifier = ">=0.30" },
 ]
+provides-extras = ["lambda"]
 
 [[package]]
 name = "learncard-wallet-adapter"

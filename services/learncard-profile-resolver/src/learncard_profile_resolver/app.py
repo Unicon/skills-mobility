@@ -18,7 +18,7 @@ from learncard_api import LearnCardClient, LearnCardSettings
 from learncard_profile_resolver import resolver, resultmap
 from learncard_profile_resolver.config import ENV_FILE, Settings, get_settings
 from learncard_profile_resolver.schemas import ResolveRequest, ResolveResponse
-from learncard_profile_resolver.store import SqliteMappingStore
+from learncard_profile_resolver.store import MappingStore, SqliteMappingStore
 
 logger = logging.getLogger("learncard_profile_resolver")
 
@@ -32,7 +32,14 @@ def create_app(
     # empty token would build an "Authorization: Bearer " header that httpx rejects.
     # _env_file is a runtime pydantic-settings arg mypy doesn't model on __init__.
     client = client or LearnCardClient(LearnCardSettings(_env_file=ENV_FILE))  # type: ignore[call-arg]
-    store = SqliteMappingStore(settings.db_path)
+    store: MappingStore
+    if settings.dynamo_table:
+        # Lazy import so local/compose (SQLite) never needs boto3.
+        from learncard_profile_resolver.store_dynamo import DynamoMappingStore
+
+        store = DynamoMappingStore(settings.dynamo_table, region=settings.aws_region)
+    else:
+        store = SqliteMappingStore(settings.db_path)
     app = FastAPI(
         title="LearnCard Profile Resolver",
         version="0.1.0",
