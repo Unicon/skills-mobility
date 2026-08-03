@@ -1,0 +1,9 @@
+# Container-image Lambda for the Delivery Targets LLM Decision Service.
+# Build from the repo root:
+#   docker build -f services/delivery-targets/Dockerfile.lambda -t delivery-targets-lambda .
+FROM public.ecr.aws/lambda/python:3.12
+
+COPY services/delivery-targets /build/delivery-targets
+RUN pip install --no-cache-dir /build/delivery-targets[lambda]
+
+CMD ["delivery_targets.lambda_handler.handler"]

@@ -12,6 +12,9 @@ dependencies = [
     "uvicorn>=0.30",
 ]
 
+[project.optional-dependencies]
+lambda = ["mangum>=0.19"]
+
 [project.scripts]
 learncard-wallet-adapter = "learncard_wallet_adapter.app:run"
 

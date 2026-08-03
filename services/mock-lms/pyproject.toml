@@ -12,6 +12,10 @@ dependencies = [
     "uvicorn>=0.30",
 ]
 
+[project.optional-dependencies]
+# Installed only in the container-image Lambda build; keeps local/compose lean.
+lambda = ["mangum>=0.19"]
+
 [project.scripts]
 mock-lms = "mock_lms.app:run"
 # Authoring tool: generate + capture fixtures. Requires the dev dependency group (Faker).
