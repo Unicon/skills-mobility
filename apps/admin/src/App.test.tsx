@@ -52,6 +52,17 @@ describe("App routing", () => {
     expect(await screen.findByRole("button", { name: "Open workflow exec_1" })).toBeTruthy();
   });
 
+  test("shows the demo warm-up reminder", async () => {
+    vi.mocked(orchestratorApi.listExecutions).mockResolvedValue([listedExecution]);
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(/fire two warm-up events before presenting/i)).toBeTruthy();
+  });
+
   test("clicking a row navigates to its execution's detail route", async () => {
     vi.mocked(orchestratorApi.listExecutions).mockResolvedValue([listedExecution]);
     vi.mocked(orchestratorApi.getExecution).mockResolvedValue(fullExecution);
