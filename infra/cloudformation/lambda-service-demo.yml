@@ -146,6 +146,16 @@ Parameters:
     Default: "mock-access-key"
     NoEcho: true
     Description: CredentialConnect OAuth2 access key (shared by the adapter and the mock).
+  WarmingScheduleEnabled:
+    Type: String
+    Default: "true"
+    AllowedValues: ["true", "false"]
+    Description: >
+      Invoke the function with a synthetic GET /healthz event every 5 minutes.
+      Container-image Lambdas left idle for weeks are deactivated by the
+      platform and FAIL their first real invocation while reactivating (hit
+      live 2026-08-27: lost event + fallback/failed demo runs). The warmer
+      keeps every function active for ~zero cost. Set "false" to opt out.
   LlmMode:
     Type: String
     Default: replay
@@ -153,6 +163,9 @@ Parameters:
     Description: >
       LLM adapter mode for the four Bedrock-backed services (delivery-targets,
       workflow-actions, field-mapping, field-synthesis).
+
+Conditions:
+  WarmingEnabled: !Equals [!Ref WarmingScheduleEnabled, "true"]
 
 Resources:
   LambdaFunction:
@@ -239,6 +252,32 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: "*"
       InvokedViaFunctionUrl: true
+
+  # Scheduled warmer (see WarmingScheduleEnabled). EventBridge invokes the
+  # function directly with a Function-URL-shaped (HTTP API v2) GET /healthz
+  # event, so both Mangum (Python) and serverless-http (Node) handle it as a
+  # normal health check — no HTTP hop, no extra role (resource permission).
+  WarmingRule:
+    Type: AWS::Events::Rule
+    Condition: WarmingEnabled
+    Properties:
+      Name: !Sub "${ProjectName}-${EnvName}-${ServiceName}-warmer"
+      Description: Keep the function active; idle container-image Lambdas fail their first invocation.
+      ScheduleExpression: rate(5 minutes)
+      State: ENABLED
+      Targets:
+        - Id: warm
+          Arn: !GetAtt LambdaFunction.Arn
+          Input: '{"version":"2.0","routeKey":"GET /healthz","rawPath":"/healthz","rawQueryString":"","headers":{"host":"warmer.internal","user-agent":"scheduled-warmer"},"requestContext":{"accountId":"anonymous","apiId":"warmer","domainName":"warmer.internal","http":{"method":"GET","path":"/healthz","protocol":"HTTP/1.1","sourceIp":"127.0.0.1","userAgent":"scheduled-warmer"},"requestId":"scheduled-warmer","routeKey":"GET /healthz","stage":"$default","time":"01/Jan/2026:00:00:00 +0000","timeEpoch":1767225600000},"isBase64Encoded":false}'
+
+  WarmingPermission:
+    Type: AWS::Lambda::Permission
+    Condition: WarmingEnabled
+    Properties:
+      FunctionName: !Ref LambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt WarmingRule.Arn
 
 Outputs:
   FunctionUrl:
