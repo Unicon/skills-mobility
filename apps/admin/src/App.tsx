@@ -27,6 +27,12 @@ export default function App() {
         <ResetDemoButton />
         <ThemeToggle storageKey="admin-theme" />
       </header>
+      {/* Idle Lambdas fail their first invocation after weeks unused (platform
+          reactivation, 2026-08-27 AACRAO demo) — remind presenters to warm up. */}
+      <p className="demo-hint">
+        Demo tip: after an idle stretch, the first request to each AWS service can fail
+        while it wakes — reset, then fire two warm-up events before presenting.
+      </p>
       <main className="main">
         <Routes>
           <Route path="/" element={<ListRoute />} />
