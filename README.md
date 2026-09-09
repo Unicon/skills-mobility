@@ -2,6 +2,12 @@
 
 Proof of concept for AI-assisted credential orchestration, transformation, and delivery using LLMs.
 
+## What is Skills Mobility Infrastructure (SMI)?
+
+Skills and achievement data have long been difficult to move between education, credentialing, and workforce systems. Even when organizations adopt standards, connecting systems often still requires one-off integrations, manual mapping, and custom transformation work that is costly to build and difficult to scale. Unicon's Skills Mobility Infrastructure is an open-source toolset being developed to address that challenge by creating a reusable way to translate, transform, and route skills-related data between systems while preserving its meaning. The current proof of concept demonstrates this approach through a working orchestration flow that triggers an event, transforms source data, and routes standards-aligned information to a destination.
+
+This repository represents the outcome of a focused proof of concept and should be viewed as an early-stage foundation rather than a production-ready solution. The initial sprint was intentionally scoped to test the approach, identify the most significant technical challenges, and establish a base for continued development. The code is being shared openly under the Apache 2.0 license so others can explore the approach, follow its evolution, and ultimately contribute to infrastructure that can be reused and extended across skills mobility use cases. Unicon is continuing to expand the functionality and is looking for partners to test, validate, and co-design the toolset against real-world skills mobility challenges.
+
 ## Purpose
 
 This project is intended to validate whether an orchestration-centric architecture can:
