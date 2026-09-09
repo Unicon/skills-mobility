@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Skills Mobility — public landing page static hosting (CloudFront + private S3,
+  IAM-free). Single S3 origin via Origin Access Control, and — unlike the two
+  console distributions — deliberately NO Basic-auth Lambda@Edge association:
+  the landing page's audience is people hearing about the project, who must
+  reach it without the demo credential. The consoles it links to stay gated.
+  No IAM roles created; S3 read is granted to CloudFront via a bucket policy.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: skills-mobility
+  EnvName:
+    Type: String
+    Default: dev
+  UiBucketName:
+    Type: String
+    Description: Existing landing-ui bucket (from foundation-demo.yml export).
+
+Resources:
+  Oac:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${ProjectName}-${EnvName}-landing-ui-oac"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub "${ProjectName}-${EnvName} landing page (public, un-gated)"
+        DefaultRootObject: index.html
+        Origins:
+          - Id: s3-landing
+            DomainName: !Sub "${UiBucketName}.s3.${AWS::Region}.amazonaws.com"
+            OriginAccessControlId: !GetAtt Oac.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        DefaultCacheBehavior:
+          TargetOriginId: s3-landing
+          ViewerProtocolPolicy: redirect-to-https
+          # CachingOptimized managed policy — static page, no API origins here.
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+        CustomErrorResponses:
+          # Single-page site: send unknown paths (and OAC 403s) back to the page.
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref UiBucketName
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontRead
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${UiBucketName}/*"
+            Condition:
+              StringEquals:
+                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+
+Outputs:
+  DistributionDomain:
+    Value: !GetAtt Distribution.DomainName
+    Description: CloudFront domain for the landing page — the one URL to remember.
+  DistributionId:
+    Value: !Ref Distribution
+    Description: Use for cache invalidations after re-uploading the page.

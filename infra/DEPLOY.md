@@ -125,3 +125,19 @@ for s in mock-lms event-consumer context-builder delivery-targets workflow-actio
 done
 # foundation stack + ECR images left in place for redeploys
 ```
+
+## Landing page (public)
+
+The one URL to remember — links to both consoles and the repo. Its distribution is
+deliberately **un-gated** (no edge-auth): the audience is people hearing about SMI.
+
+```bash
+aws cloudformation deploy --template-file infra/cloudformation/landing-ui.yml \
+  --stack-name skills-mobility-dev-landing-ui \
+  --parameter-overrides UiBucketName=skills-mobility-dev-landing-ui-584569945336 \
+  --profile skills
+aws s3 cp apps/landing/index.html "s3://skills-mobility-dev-landing-ui-584569945336/" --profile skills
+# then invalidate on re-uploads:
+aws cloudfront create-invalidation --distribution-id <id from stack outputs> --paths '/*' --profile skills
+```
+

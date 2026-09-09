@@ -138,6 +138,16 @@ Resources:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
 
+  LandingUiBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectName}-${EnvName}-landing-ui-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
 Outputs:
   ExecutionStateTableName:
     Value: !Ref ExecutionStateTable
@@ -151,6 +161,10 @@ Outputs:
     Value: !Ref AdminUiBucket
     Export:
       Name: !Sub "${ProjectName}-${EnvName}-admin-ui-bucket"
+  LandingUiBucketName:
+    Value: !Ref LandingUiBucket
+    Export:
+      Name: !Sub "${ProjectName}-${EnvName}-landing-ui-bucket"
   MockLmsUiBucketName:
     Value: !Ref MockLmsUiBucket
     Export:
