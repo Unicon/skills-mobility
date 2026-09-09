@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Skills Mobility Infrastructure</title>
+  <meta
+    name="description"
+    content="Unicon's Skills Mobility Infrastructure — an open-source toolset for translating, transforming, and routing skills-related data between systems while preserving its meaning."
+  />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: linear-gradient(160deg, #0d1420 0%, #101b2d 55%, #0d2233 100%);
+      color: #e8eef7;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 48px 24px;
+      line-height: 1.6;
+    }
+    main { max-width: 780px; }
+    h1 { font-size: 32px; font-weight: 700; letter-spacing: 0.2px; }
+    h1 span { color: #5eb1ff; }
+    .kicker {
+      font-size: 13px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase;
+      color: #ffb347; margin-bottom: 10px;
+    }
+    h2 { font-size: 19px; font-weight: 650; margin: 30px 0 10px; color: #dbe7f5; }
+    p { color: #b7c6d9; font-size: 15.5px; margin-bottom: 14px; }
+    .links { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 26px 0 8px; }
+    .links a {
+      display: block; text-decoration: none; border-radius: 12px; padding: 16px 18px;
+      background: #16233a; border: 1px solid #2a3d5c; color: inherit;
+      transition: border-color 0.15s ease;
+    }
+    .links a:hover { border-color: #5eb1ff; }
+    .links b { display: block; font-size: 15.5px; color: #dbe7f5; margin-bottom: 4px; }
+    .links small { font-size: 12.5px; color: #93a7bf; line-height: 1.45; display: block; }
+    .gated {
+      display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.6px;
+      text-transform: uppercase; padding: 1px 8px; border-radius: 20px; margin-top: 8px;
+      background: #403312; color: #ffcd66;
+    }
+    .open {
+      display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.6px;
+      text-transform: uppercase; padding: 1px 8px; border-radius: 20px; margin-top: 8px;
+      background: #123f2e; color: #59d69a;
+    }
+    footer {
+      margin-top: 34px; padding-top: 16px; border-top: 1px solid #23364f;
+      font-size: 12.5px; color: #7e93ac;
+    }
+    footer a { color: #9fc4ec; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="kicker">Unicon · Proof of Concept</div>
+    <h1>Welcome to Unicon's <span>Skills Mobility Infrastructure</span></h1>
+
+    <h2>What is Skills Mobility Infrastructure (SMI)?</h2>
+    <p>
+      Skills and achievement data have long been difficult to move between education,
+      credentialing, and workforce systems. Even when organizations adopt standards,
+      connecting systems often still requires one-off integrations, manual mapping, and
+      custom transformation work that is costly to build and difficult to scale. Unicon's
+      Skills Mobility Infrastructure is an open-source toolset being developed to address
+      that challenge by creating a reusable way to translate, transform, and route
+      skills-related data between systems while preserving its meaning. The current proof
+      of concept demonstrates this approach through a working orchestration flow that
+      triggers an event, transforms source data, and routes standards-aligned information
+      to destinations.
+    </p>
+    <p>
+      This project represents the outcome of a focused proof of concept and should be
+      viewed as an early-stage foundation rather than a production-ready solution. The
+      initial sprint was intentionally scoped to test the approach, identify the most
+      significant technical challenges, and establish a base for continued development.
+      The code is being shared openly under the Apache 2.0 license so others can explore
+      the approach, follow its evolution, and ultimately contribute to infrastructure
+      that can be reused and extended across skills mobility use cases. Unicon is
+      continuing to expand the functionality and is looking for partners to test,
+      validate, and co-design the toolset against real-world skills mobility challenges.
+    </p>
+
+    <h2>Explore</h2>
+    <div class="links">
+      <a href="https://dfhmhmk3x88rp.cloudfront.net">
+        <b>Mock LMS Console</b>
+        <small>Fire a learner event from a Canvas-style course view and start an orchestration run.</small>
+        <span class="gated">Demo credential required</span>
+      </a>
+      <a href="https://d20uchums0tbiw.cloudfront.net">
+        <b>Admin Console</b>
+        <small>Watch the run live: every step, every AI decision with its rationale, every delivery receipt.</small>
+        <span class="gated">Demo credential required</span>
+      </a>
+      <a href="https://github.com/Unicon/skills-mobility">
+        <b>Source on GitHub</b>
+        <small>The full monorepo — services, consoles, docs, and architecture decision records.</small>
+        <span class="open">Apache-2.0 · Public</span>
+      </a>
+    </div>
+
+    <footer>
+      A <a href="https://www.unicon.net">Unicon</a> internal investment project.
+      Interested in partnering to test, validate, or co-design? Reach out through the
+      GitHub repository.
+    </footer>
+  </main>
+</body>
+</html>

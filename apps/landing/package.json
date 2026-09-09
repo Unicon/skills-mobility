@@ -1,0 +1,6 @@
+{
+  "name": "@skills-mobility/landing",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Public landing page — a single static index.html, no build step. Deploy: aws s3 cp apps/landing/index.html s3://<landing bucket>/ (see infra/DEPLOY.md)."
+}
